@@ -6,8 +6,9 @@ namespace SizerDataCollector
     {
         static void Main(string[] args)
         {
-            Logger.Log("Sizer API Test Client (SETUP PHASE) starting up...");
+            Logger.Log("SizerDataCollector (SETUP PHASE) starting up...");
 
+            // 1. Load configuration (Sizer endpoint + DB connection string)
             CollectorConfig cfg;
             try
             {
@@ -24,9 +25,9 @@ namespace SizerDataCollector
             string serviceUrl = $"http://{cfg.SizerHost}:{cfg.SizerPort}/SizerService/";
 
             Logger.Log("=========================================");
-            Logger.Log("Sizer API Test Client (SETUP PHASE)");
+            Logger.Log("SizerDataCollector – Setup");
             Logger.Log("=========================================");
-            Logger.Log($"Configured Sizer endpoint (from App.config):");
+            Logger.Log("Sizer endpoint configuration:");
             Logger.Log($"  Host: {cfg.SizerHost}");
             Logger.Log($"  Port: {cfg.SizerPort}");
             Logger.Log($"  URL:  {serviceUrl}");
@@ -36,20 +37,21 @@ namespace SizerDataCollector
             Logger.Log($"  Send:    {cfg.SendTimeoutSec}");
             Logger.Log($"  Receive: {cfg.ReceiveTimeoutSec}");
             Logger.Log("");
-            Logger.Log("Database config (not used yet):");
-            Logger.Log(string.IsNullOrWhiteSpace(cfg.TimescaleConnectionString)
-                ? "  TimescaleDb connection string: (not set)"
-                : "  TimescaleDb connection string: (present)");
+
+            // 2. Test and initialize the Timescale/Postgres database
+            DatabaseTester.TestAndInitialize(cfg);
             Logger.Log("");
-            Logger.Log("NOTE:");
-            Logger.Log("  The WCF Service Reference has NOT been added yet,");
-            Logger.Log("  so this app does not attempt to call GetSerialNo() or GetMachineName().");
+
+            // 3. Reminder about Sizer WCF part (not wired yet)
+            Logger.Log("NOTE (Sizer API):");
+            Logger.Log("  The WCF Service Reference for Sizer has NOT been added yet,");
+            Logger.Log("  so this app does not attempt to call GetSerialNo() or GetMachineName() yet.");
             Logger.Log("");
             Logger.Log("NEXT STEPS (when you are on the Sizer network):");
             Logger.Log("  1) Right-click the project → Add → Service Reference...");
             Logger.Log("  2) Use address: http://<sizer-ip>:8001/SizerService/");
             Logger.Log("  3) Namespace: SizerServiceReference");
-            Logger.Log("  4) Replace Program.Main with the WCF test client code to call the API.");
+            Logger.Log("  4) Update Program.Main to create a SizerServiceClient and call GetSerialNo()/GetMachineName().");
             Logger.Log("");
 
             Logger.Log("Press any key to exit...");

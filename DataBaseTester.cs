@@ -128,5 +128,48 @@ namespace SizerDataCollector
 
             Logger.Log("Schema initialization aligned with existing DB structure complete.");
         }
+        public static void UpsertMachine(CollectorConfig cfg, string serialNo, string name)
+        {
+            if (string.IsNullOrWhiteSpace(cfg.TimescaleConnectionString))
+            {
+                Logger.Log("TimescaleDb connection string is empty. Cannot upsert machine.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(serialNo))
+            {
+                Logger.Log("UpsertMachine called with empty serialNo. Skipping.");
+                return;
+            }
+
+            try
+            {
+                using (var conn = new NpgsqlConnection(cfg.TimescaleConnectionString))
+                {
+                    conn.Open();
+
+                    const string sql = @"
+                INSERT INTO machines (serial_no, name)
+                VALUES (@serial_no, @name)
+                ON CONFLICT (serial_no) DO UPDATE
+                    SET name = EXCLUDED.name;
+            ";
+
+                    using (var cmd = new NpgsqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("serial_no", serialNo);
+                        cmd.Parameters.AddWithValue("name", (object)name ?? DBNull.Value);
+
+                        int rows = cmd.ExecuteNonQuery();
+                        Logger.Log($"UpsertMachine: serial_no={serialNo}, name='{name}', rows affected={rows}.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Failed to upsert machine (serial_no={serialNo}).", ex);
+            }
+        }
+
     }
 }

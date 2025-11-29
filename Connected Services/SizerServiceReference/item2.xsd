@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="uri:Compac.Services.Sizer.Service" xmlns:ser="http://schemas.microsoft.com/2003/10/Serialization/" elementFormDefault="qualified" targetNamespace="uri:Compac.Services.Sizer.Service" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd5" namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <xs:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd1" namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+  <xs:complexType name="ArrayOfBatch">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Batch" nillable="true" type="tns:Batch" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfBatch" nillable="true" type="tns:ArrayOfBatch" />
+  <xs:complexType name="Batch">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="AvoidLayoutChange" type="xs:boolean" />
+      <xs:element minOccurs="0" name="AvoidSavingOldLayouts" type="xs:boolean" />
+      <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Comments" nillable="true" type="q1:ArrayOfstring" />
+      <xs:element minOccurs="0" name="EndTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="GrowerCode" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Id" type="xs:int" />
+      <xs:element minOccurs="0" name="IsFinalized" type="xs:boolean" />
+      <xs:element minOccurs="0" name="LaneGroups" nillable="true" type="tns:ArrayOfLaneGroup" />
+      <xs:element minOccurs="0" name="LayoutId" type="ser:guid" />
+      <xs:element minOccurs="0" name="LayoutName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="OverrideLayoutConflicts" type="xs:boolean" />
+      <xs:element minOccurs="0" name="SampleName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="SizingProfileName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="StartTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="TotallingVariety" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="TotallingVarietyCode" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="VarietyId" type="ser:guid" />
+      <xs:element minOccurs="0" name="VarietyName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="VisionMap" type="xs:int" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Batch" nillable="true" type="tns:Batch" />
+  <xs:complexType name="ArrayOfLaneGroup">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="LaneGroup" nillable="true" type="tns:LaneGroup" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfLaneGroup" nillable="true" type="tns:ArrayOfLaneGroup" />
+  <xs:complexType name="LaneGroup">
+    <xs:sequence>
+      <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Lanes" nillable="true" type="q2:ArrayOfint" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="LaneGroup" nillable="true" type="tns:LaneGroup" />
+  <xs:complexType name="ArrayOfLayout">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Layout" nillable="true" type="tns:Layout" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfLayout" nillable="true" type="tns:ArrayOfLayout" />
+  <xs:complexType name="Layout">
+    <xs:sequence>
+      <xs:element xmlns:q3="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Assignments" nillable="true" type="q3:ArrayOfKeyValueOfOutletProductZE8EwetR" />
+      <xs:element minOccurs="0" name="Id" type="ser:guid" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Products" nillable="true" type="tns:ArrayOfProduct" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Layout" nillable="true" type="tns:Layout" />
+  <xs:complexType name="Outlet">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="CurrentProductId" type="ser:guid" />
+      <xs:element minOccurs="0" name="DeliveredFruitPerMinute" type="xs:double" />
+      <xs:element minOccurs="0" name="Id" type="xs:int" />
+      <xs:element minOccurs="0" name="LastDeliveredBatchId" type="xs:int" />
+      <xs:element minOccurs="0" name="MaxRateSquareCMPerMinute" type="xs:int" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="PendingProductId" nillable="true" type="ser:guid" />
+      <xs:element minOccurs="0" name="Status" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Outlet" nillable="true" type="tns:Outlet" />
+  <xs:complexType name="Product">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="DisplayName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Elements" nillable="true" type="tns:ArrayOfElement" />
+      <xs:element minOccurs="0" name="Id" type="ser:guid" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Pack" nillable="true" type="tns:Pack" />
+      <xs:element minOccurs="0" name="SpecialInstructions" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="TargetFill" nillable="true" type="tns:PackTargetFill" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Product" nillable="true" type="tns:Product" />
+  <xs:complexType name="ArrayOfElement">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Element" nillable="true" type="tns:Element" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfElement" nillable="true" type="tns:ArrayOfElement" />
+  <xs:complexType name="Element">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Grade" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Label" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Quality" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Size" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Element" nillable="true" type="tns:Element" />
+  <xs:complexType name="Pack">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="BoxType" nillable="true" type="tns:PackBoxType" />
+      <xs:element minOccurs="0" name="Id" type="ser:guid" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="PackControl" nillable="true" type="tns:PackControl" />
+      <xs:element minOccurs="0" name="Style" nillable="true" type="tns:PackingStyle" />
+      <xs:element minOccurs="0" name="TargetFill" nillable="true" type="tns:PackTargetFill" />
+      <xs:element minOccurs="0" name="UserCode" type="xs:int" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Pack" nillable="true" type="tns:Pack" />
+  <xs:complexType name="PackBoxType">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="DisplayName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Type" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="PackBoxType" nillable="true" type="tns:PackBoxType" />
+  <xs:complexType name="PackControl">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="NumberOfSteps" type="xs:int" />
+      <xs:element minOccurs="0" name="PackChangeTime" type="xs:int" />
+      <xs:element minOccurs="0" name="PackLength" type="xs:int" />
+      <xs:element minOccurs="0" name="StepDelay" type="xs:int" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="PackControl" nillable="true" type="tns:PackControl" />
+  <xs:complexType name="PackingStyle">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="DisplayName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="PackingStyle" nillable="true" type="tns:PackingStyle" />
+  <xs:complexType name="PackTargetFill">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="FillMode" type="tns:PackFillMode" />
+      <xs:element minOccurs="0" name="Quantity" type="xs:int" />
+      <xs:element minOccurs="0" name="WeightDecigram" type="xs:decimal" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="PackTargetFill" nillable="true" type="tns:PackTargetFill" />
+  <xs:simpleType name="PackFillMode">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Weight" />
+      <xs:enumeration value="Quantity" />
+      <xs:enumeration value="WeightAndQuantity" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="PackFillMode" nillable="true" type="tns:PackFillMode" />
+  <xs:complexType name="ArrayOfProduct">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Product" nillable="true" type="tns:Product" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfProduct" nillable="true" type="tns:ArrayOfProduct" />
+  <xs:complexType name="Variety">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Grades" nillable="true" type="tns:ArrayOfGrade" />
+      <xs:element minOccurs="0" name="Id" type="ser:guid" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Qualities" nillable="true" type="tns:ArrayOfQuality" />
+      <xs:element minOccurs="0" name="SizingMaps" nillable="true" type="tns:ArrayOfSizingMap" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Variety" nillable="true" type="tns:Variety" />
+  <xs:complexType name="ArrayOfGrade">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Grade" nillable="true" type="tns:Grade" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfGrade" nillable="true" type="tns:ArrayOfGrade" />
+  <xs:complexType name="Grade">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Grade" nillable="true" type="tns:Grade" />
+  <xs:complexType name="ArrayOfQuality">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Quality" nillable="true" type="tns:Quality" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfQuality" nillable="true" type="tns:ArrayOfQuality" />
+  <xs:complexType name="Quality">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Quality" nillable="true" type="tns:Quality" />
+  <xs:complexType name="ArrayOfSizingMap">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="SizingMap" nillable="true" type="tns:SizingMap" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfSizingMap" nillable="true" type="tns:ArrayOfSizingMap" />
+  <xs:complexType name="SizingMap">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="CoveredQualityGrades" nillable="true" type="tns:ArrayOfQualityGradePair" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Sizes" nillable="true" type="tns:ArrayOfSize" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="SizingMap" nillable="true" type="tns:SizingMap" />
+  <xs:complexType name="ArrayOfQualityGradePair">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="QualityGradePair" nillable="true" type="tns:QualityGradePair" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfQualityGradePair" nillable="true" type="tns:ArrayOfQualityGradePair" />
+  <xs:complexType name="QualityGradePair">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Grade" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Quality" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="QualityGradePair" nillable="true" type="tns:QualityGradePair" />
+  <xs:complexType name="ArrayOfSize">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Size" nillable="true" type="tns:Size" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfSize" nillable="true" type="tns:ArrayOfSize" />
+  <xs:complexType name="Size">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element xmlns:q4="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="Settings" nillable="true" type="q4:ArrayOfKeyValueOfstringstring" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Size" nillable="true" type="tns:Size" />
+  <xs:complexType name="ArrayOfVariety">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Variety" nillable="true" type="tns:Variety" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfVariety" nillable="true" type="tns:ArrayOfVariety" />
+  <xs:complexType name="ArrayOfPack">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Pack" nillable="true" type="tns:Pack" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfPack" nillable="true" type="tns:ArrayOfPack" />
+  <xs:complexType name="ArrayOfLabel">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Label" nillable="true" type="tns:Label" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfLabel" nillable="true" type="tns:ArrayOfLabel" />
+  <xs:complexType name="Label">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="DisplayName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Label" nillable="true" type="tns:Label" />
+  <xs:complexType name="ArrayOfOutlet">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Outlet" nillable="true" type="tns:Outlet" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfOutlet" nillable="true" type="tns:ArrayOfOutlet" />
+  <xs:simpleType name="AlarmPriority">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Low" />
+      <xs:enumeration value="Medium" />
+      <xs:enumeration value="High" />
+      <xs:enumeration value="Critical" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="AlarmPriority" nillable="true" type="tns:AlarmPriority" />
+  <xs:complexType name="Grower">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Address1" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Address2" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Code" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="ContactName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Country" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="EmailAddress" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Fax" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Mobile" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Phone" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="State" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="TownCity" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="TraceabilityId" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="ZipCode" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Grower" nillable="true" type="tns:Grower" />
+  <xs:complexType name="ArrayOfGrower">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Grower" nillable="true" type="tns:Grower" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfGrower" nillable="true" type="tns:ArrayOfGrower" />
+  <xs:complexType name="AbstractSamplingConfiguration">
+    <xs:sequence />
+  </xs:complexType>
+  <xs:element name="AbstractSamplingConfiguration" nillable="true" type="tns:AbstractSamplingConfiguration" />
+  <xs:complexType name="ElementSamplingConfiguration">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:AbstractSamplingConfiguration">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="BatchId" type="xs:int" />
+          <xs:element minOccurs="0" name="Elements" nillable="true" type="tns:ArrayOfElement" />
+          <xs:element minOccurs="0" name="Limit" nillable="true" type="xs:decimal" />
+          <xs:element minOccurs="0" name="LimitUnit" type="tns:SamplingMeasurementUnit" />
+          <xs:element minOccurs="0" name="Ratio" nillable="true" type="tns:Ratio" />
+          <xs:element minOccurs="0" name="RatioRightUnit" type="tns:RatioMeasurementUnit" />
+          <xs:element xmlns:q5="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="LaneNumbers" nillable="true" type="q5:ArrayOfint" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="ElementSamplingConfiguration" nillable="true" type="tns:ElementSamplingConfiguration" />
+  <xs:simpleType name="SamplingMeasurementUnit">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Pieces" />
+      <xs:enumeration value="Decigrams" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="SamplingMeasurementUnit" nillable="true" type="tns:SamplingMeasurementUnit" />
+  <xs:complexType name="Ratio">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Numerator" type="xs:int" />
+      <xs:element minOccurs="0" name="Denominator" type="xs:int" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Ratio" nillable="true" type="tns:Ratio" />
+  <xs:simpleType name="RatioMeasurementUnit">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Pieces" />
+      <xs:enumeration value="CartonEquivalents" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="RatioMeasurementUnit" nillable="true" type="tns:RatioMeasurementUnit" />
+  <xs:complexType name="ProductSamplingConfiguration">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:AbstractSamplingConfiguration">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="BatchId" type="xs:int" />
+          <xs:element xmlns:q6="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="LaneNumbers" nillable="true" type="q6:ArrayOfint" />
+          <xs:element minOccurs="0" name="Limit" nillable="true" type="xs:decimal" />
+          <xs:element minOccurs="0" name="LimitUnit" type="tns:SamplingMeasurementUnit" />
+          <xs:element minOccurs="0" name="ProductId" type="ser:guid" />
+          <xs:element minOccurs="0" name="Ratio" nillable="true" type="tns:Ratio" />
+          <xs:element minOccurs="0" name="RatioRightUnit" type="tns:RatioMeasurementUnit" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="ProductSamplingConfiguration" nillable="true" type="tns:ProductSamplingConfiguration" />
+  <xs:complexType name="ArrayOfSamplingProgress">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="SamplingProgress" nillable="true" type="tns:SamplingProgress" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfSamplingProgress" nillable="true" type="tns:ArrayOfSamplingProgress" />
+  <xs:complexType name="SamplingProgress">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="CurrentCount" type="xs:decimal" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="TargetCount" nillable="true" type="xs:decimal" />
+      <xs:element minOccurs="0" name="Unit" type="tns:SamplingMeasurementUnit" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="SamplingProgress" nillable="true" type="tns:SamplingProgress" />
+</xs:schema>

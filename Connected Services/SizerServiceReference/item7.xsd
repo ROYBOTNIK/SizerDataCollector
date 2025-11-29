@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://Compac.Services.Core" elementFormDefault="qualified" targetNamespace="http://Compac.Services.Core" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="ArgumentFault">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Message" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Name" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Value" nillable="true" type="xs:anyType" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArgumentFault" nillable="true" type="tns:ArgumentFault" />
+</xs:schema>

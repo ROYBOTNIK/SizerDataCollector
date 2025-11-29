@@ -1,0 +1,1241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex" xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy" xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns="urn:clr:Compac.Services.Sizer.Service" xmlns:wsa10="http://www.w3.org/2005/08/addressing" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" targetNamespace="urn:clr:Compac.Services.Sizer.Service" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <xsd:schema targetNamespace="urn:clr:Compac.Services.Sizer.Service/Imports">
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd0" namespace="urn:clr:Compac.Services.Core" />
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd1" namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd2" namespace="http://schemas.datacontract.org/2004/07/Compac.Services.Core" />
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd3" namespace="http://schemas.datacontract.org/2004/07/System" />
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd4" namespace="urn:clr:Compac.Services.Sizer.Service" />
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd5" namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd6" namespace="uri:Compac.Services.Sizer.Service" />
+      <xsd:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd7" namespace="http://Compac.Services.Core" />
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="ISizerService_GetVersion_InputMessage">
+    <wsdl:part xmlns:q1="urn:clr:Compac.Services.Core" name="parameters" element="q1:GetVersion" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetVersion_OutputMessage">
+    <wsdl:part xmlns:q2="urn:clr:Compac.Services.Core" name="parameters" element="q2:GetVersionResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSerialNo_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetSerialNo" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSerialNo_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetSerialNoResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineName_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineName" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineName_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineNameResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetPackhouseName_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetPackhouseName" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetPackhouseName_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetPackhouseNameResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNumberOfPackersForOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetNumberOfPackersForOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNumberOfPackersForOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetNumberOfPackersForOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNumberOfPackersForOutlets_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetNumberOfPackersForOutlets" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNumberOfPackersForOutlets_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetNumberOfPackersForOutletsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetExactNumberOfPackersForOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetExactNumberOfPackersForOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetExactNumberOfPackersForOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetExactNumberOfPackersForOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetExactNumberOfPackersForOutlets_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetExactNumberOfPackersForOutlets" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetExactNumberOfPackersForOutlets_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetExactNumberOfPackersForOutletsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetTotalNumberOfOutletPackers_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetTotalNumberOfOutletPackers" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetTotalNumberOfOutletPackers_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetTotalNumberOfOutletPackersResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetTotalNumberOfOutletPackers_InputMessage">
+    <wsdl:part name="parameters" element="tns:SetTotalNumberOfOutletPackers" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetTotalNumberOfOutletPackers_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SetTotalNumberOfOutletPackersResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetOutletGroup_InputMessage">
+    <wsdl:part name="parameters" element="tns:SetOutletGroup" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetOutletGroup_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SetOutletGroupResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetQueuedBatches_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetQueuedBatches" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetQueuedBatches_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetQueuedBatchesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNextBatchInQueue_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetNextBatchInQueue" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNextBatchInQueue_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetNextBatchInQueueResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNextBatches_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetNextBatches" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNextBatches_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetNextBatchesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNextBatchByLaneGroup_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetNextBatchByLaneGroup" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetNextBatchByLaneGroup_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetNextBatchByLaneGroupResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatch_InputMessage">
+    <wsdl:part name="parameters" element="tns:AddBatch" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatch_OutputMessage">
+    <wsdl:part name="parameters" element="tns:AddBatchResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatch_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q3="http://Compac.Services.Core" name="detail" element="q3:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatches_InputMessage">
+    <wsdl:part name="parameters" element="tns:AddBatches" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatches_OutputMessage">
+    <wsdl:part name="parameters" element="tns:AddBatchesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatches_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q4="http://Compac.Services.Core" name="detail" element="q4:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ClearBatchQueue_InputMessage">
+    <wsdl:part name="parameters" element="tns:ClearBatchQueue" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ClearBatchQueue_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ClearBatchQueueResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveNextBatchInQueue_InputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveNextBatchInQueue" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveNextBatchInQueue_OutputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveNextBatchInQueueResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveNextBatchInQueueForLaneGroup_InputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveNextBatchInQueueForLaneGroup" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveNextBatchInQueueForLaneGroup_OutputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveNextBatchInQueueForLaneGroupResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_StartNextBatchInQueue_InputMessage">
+    <wsdl:part name="parameters" element="tns:StartNextBatchInQueue" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_StartNextBatchInQueue_OutputMessage">
+    <wsdl:part name="parameters" element="tns:StartNextBatchInQueueResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_StartNextBatchInQueueForLaneGroup_InputMessage">
+    <wsdl:part name="parameters" element="tns:StartNextBatchInQueueForLaneGroup" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_StartNextBatchInQueueForLaneGroup_OutputMessage">
+    <wsdl:part name="parameters" element="tns:StartNextBatchInQueueForLaneGroupResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_StartNextBatchInQueueForLaneGroup_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q5="http://Compac.Services.Core" name="detail" element="q5:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentCartonEquivalentWeight_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentCartonEquivalentWeight" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentCartonEquivalentWeight_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentCartonEquivalentWeightResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetCurrentCartonEquivalentWeight_InputMessage">
+    <wsdl:part name="parameters" element="tns:SetCurrentCartonEquivalentWeight" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetCurrentCartonEquivalentWeight_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SetCurrentCartonEquivalentWeightResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLaneSizeFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLaneSizeFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLaneSizeFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLaneSizeFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLanesSizeFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLanesSizeFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLanesSizeFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLanesSizeFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLaneGradeFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLaneGradeFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLaneGradeFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLaneGradeFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLanesGradeFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLanesGradeFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLanesGradeFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLanesGradeFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ForceChangeOnStage_InputMessage">
+    <wsdl:part name="parameters" element="tns:ForceChangeOnStage" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ForceChangeOnStage_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ForceChangeOnStageResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSizingProfileNames_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetSizingProfileNames" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSizingProfileNames_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetSizingProfileNamesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetVarietyNames_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetVarietyNames" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetVarietyNames_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetVarietyNamesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLayouts_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLayouts" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLayouts_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLayoutsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetVarietyByName_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetVarietyByName" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetVarietyByName_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetVarietyByNameResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetVarietyById_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetVarietyById" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetVarietyById_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetVarietyByIdResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveVariety_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveVariety" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveVariety_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveVarietyResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveVarieties_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveVarieties" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveVarieties_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveVarietiesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllVarieties_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllVarieties" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllVarieties_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllVarietiesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLayout_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLayout" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLayout_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLayoutResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveLayout_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveLayout" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveLayout_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveLayoutResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProduct_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetProduct" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProduct_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetProductResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveProducts_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveProducts" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveProducts_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveProductsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllProducts_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllProducts" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllProducts_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllProductsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveProduct_InputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveProduct" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveProduct_OutputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveProductResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_CreateLayout_InputMessage">
+    <wsdl:part name="parameters" element="tns:CreateLayout" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_CreateLayout_OutputMessage">
+    <wsdl:part name="parameters" element="tns:CreateLayoutResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteLayout_InputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteLayout" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteLayout_OutputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteLayoutResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteLayout_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q6="http://Compac.Services.Core" name="detail" element="q6:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateLayout_InputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateLayout" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateLayout_OutputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateLayoutResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateLayout_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q7="http://Compac.Services.Core" name="detail" element="q7:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ActivateLayout_InputMessage">
+    <wsdl:part name="parameters" element="tns:ActivateLayout" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ActivateLayout_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ActivateLayoutResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ActivateLayout_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q8="http://Compac.Services.Core" name="detail" element="q8:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllPacks_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllPacks" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllPacks_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllPacksResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllLabels_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllLabels" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllLabels_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllLabelsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveLabels_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveLabels" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetActiveLabels_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetActiveLabelsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddProduct_InputMessage">
+    <wsdl:part name="parameters" element="tns:AddProduct" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddProduct_OutputMessage">
+    <wsdl:part name="parameters" element="tns:AddProductResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddProduct_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q9="http://Compac.Services.Core" name="detail" element="q9:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateProduct_InputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateProduct" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateProduct_OutputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateProductResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateProduct_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q10="http://Compac.Services.Core" name="detail" element="q10:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteProduct_InputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteProduct" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteProduct_OutputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteProductResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteProduct_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q11="http://Compac.Services.Core" name="detail" element="q11:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ActivateProducts_InputMessage">
+    <wsdl:part name="parameters" element="tns:ActivateProducts" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ActivateProducts_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ActivateProductsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetOutlets_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetOutlets" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetOutlets_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetOutletsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProductAtOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetProductAtOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProductAtOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetProductAtOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchAtOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchAtOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchAtOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchAtOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchAtOutlet_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q12="http://Compac.Services.Core" name="detail" element="q12:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchesAtOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchesAtOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchesAtOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchesAtOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchesAtOutlet_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q13="http://Compac.Services.Core" name="detail" element="q13:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchesForProductAtOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchesForProductAtOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchesForProductAtOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchesForProductAtOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchesForProductAtOutlet_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q14="http://Compac.Services.Core" name="detail" element="q14:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProductUserData_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetProductUserData" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProductUserData_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetProductUserDataResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProductUserData_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q15="http://Compac.Services.Core" name="detail" element="q15:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ChangeProductAtOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeProductAtOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ChangeProductAtOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeProductAtOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ChangeProductAtOutlet_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q16="http://Compac.Services.Core" name="detail" element="q16:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetOutletEnabled_InputMessage">
+    <wsdl:part name="parameters" element="tns:SetOutletEnabled" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetOutletEnabled_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SetOutletEnabledResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ResetOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:ResetOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ResetOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ResetOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_CycleOutlet_InputMessage">
+    <wsdl:part name="parameters" element="tns:CycleOutlet" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_CycleOutlet_OutputMessage">
+    <wsdl:part name="parameters" element="tns:CycleOutletResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProductsInNextAvailableOutletStrategy_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetProductsInNextAvailableOutletStrategy" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetProductsInNextAvailableOutletStrategy_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetProductsInNextAvailableOutletStrategyResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddProductToNextAvailableOutletStrategy_InputMessage">
+    <wsdl:part name="parameters" element="tns:AddProductToNextAvailableOutletStrategy" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddProductToNextAvailableOutletStrategy_OutputMessage">
+    <wsdl:part name="parameters" element="tns:AddProductToNextAvailableOutletStrategyResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddProductToNextAvailableOutletStrategy_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q17="http://Compac.Services.Core" name="detail" element="q17:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveProductFromNextAvailableOutletStrategy_InputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveProductFromNextAvailableOutletStrategy" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveProductFromNextAvailableOutletStrategy_OutputMessage">
+    <wsdl:part name="parameters" element="tns:RemoveProductFromNextAvailableOutletStrategyResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RemoveProductFromNextAvailableOutletStrategy_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q18="http://Compac.Services.Core" name="detail" element="q18:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetOutletFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetOutletFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetOutletFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetOutletFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetOutletsFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetOutletsFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetOutletsFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetOutletsFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineRodsPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineRodsPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineRodsPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineRodsPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineRecycleFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineRecycleFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineRecycleFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineRecycleFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineRejectFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineRejectFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineRejectFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineRejectFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineMissedFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineMissedFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineMissedFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineMissedFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineDroppedFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineDroppedFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineDroppedFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineDroppedFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachinePackedFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachinePackedFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachinePackedFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachinePackedFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineAFW_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineAFW" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineAFW_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineAFWResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAFW_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetAFW" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAFW_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetAFWResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineAVC_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineAVC" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineAVC_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineAVCResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachinePacksPH_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachinePacksPH" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachinePacksPH_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachinePacksPHResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineCupfill_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineCupfill" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineCupfill_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineCupfillResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLanesCupfill_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLanesCupfill" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLanesCupfill_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLanesCupfillResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCupfillForAllLanes_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetCupfillForAllLanes" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCupfillForAllLanes_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetCupfillForAllLanesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetOutletsMaxRateSquareCMPerMinute_InputMessage">
+    <wsdl:part name="parameters" element="tns:SetOutletsMaxRateSquareCMPerMinute" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetOutletsMaxRateSquareCMPerMinute_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SetOutletsMaxRateSquareCMPerMinuteResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineTonnesPH_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineTonnesPH" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineTonnesPH_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineTonnesPHResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RaiseAlarm_InputMessage">
+    <wsdl:part name="parameters" element="tns:RaiseAlarm" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RaiseAlarm_OutputMessage">
+    <wsdl:part name="parameters" element="tns:RaiseAlarmResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RaiseAlarmWithPriority_InputMessage">
+    <wsdl:part name="parameters" element="tns:RaiseAlarmWithPriority" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RaiseAlarmWithPriority_OutputMessage">
+    <wsdl:part name="parameters" element="tns:RaiseAlarmWithPriorityResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RaiseEvent_InputMessage">
+    <wsdl:part name="parameters" element="tns:RaiseEvent" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RaiseEvent_OutputMessage">
+    <wsdl:part name="parameters" element="tns:RaiseEventResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_RaiseEvent_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q19="http://Compac.Services.Core" name="detail" element="q19:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLaneGroups_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetLaneGroups" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetLaneGroups_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetLaneGroupsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatch_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatch" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatch_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatch_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatch" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatch_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatchResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatches_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatches" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatches_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatchesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatchByLane_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatchByLane" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatchByLane_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatchByLaneResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatchByLaneGroup_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatchByLaneGroup" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetCurrentBatchByLaneGroup_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetCurrentBatchByLaneGroupResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_IsCurrentBatch_InputMessage">
+    <wsdl:part name="parameters" element="tns:IsCurrentBatch" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_IsCurrentBatch_OutputMessage">
+    <wsdl:part name="parameters" element="tns:IsCurrentBatchResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchLaneGroups_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchLaneGroups" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchLaneGroups_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchLaneGroupsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchLanes_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchLanes" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetBatchLanes_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetBatchLanesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ChangeBatch_InputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeBatch" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ChangeBatch_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeBatchResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ChangeBatchByLane_InputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeBatchByLane" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ChangeBatchByLane_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ChangeBatchByLaneResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SecondsToBallArrivingOnLastBatchChange_InputMessage">
+    <wsdl:part name="parameters" element="tns:SecondsToBallArrivingOnLastBatchChange" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SecondsToBallArrivingOnLastBatchChange_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SecondsToBallArrivingOnLastBatchChangeResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatchLanes_InputMessage">
+    <wsdl:part name="parameters" element="tns:AddBatchLanes" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddBatchLanes_OutputMessage">
+    <wsdl:part name="parameters" element="tns:AddBatchLanesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ClearBatches_InputMessage">
+    <wsdl:part name="parameters" element="tns:ClearBatches" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_ClearBatches_OutputMessage">
+    <wsdl:part name="parameters" element="tns:ClearBatchesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetBatchDetails_InputMessage">
+    <wsdl:part name="parameters" element="tns:SetBatchDetails" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetBatchDetails_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SetBatchDetailsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetBatchDetails_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q20="http://Compac.Services.Core" name="detail" element="q20:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_FlushTotals_InputMessage">
+    <wsdl:part name="parameters" element="tns:FlushTotals" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_FlushTotals_OutputMessage">
+    <wsdl:part name="parameters" element="tns:FlushTotalsResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetGrower_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetGrower" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetGrower_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetGrowerResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllGrowers_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllGrowers" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetAllGrowers_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetAllGrowersResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddGrower_InputMessage">
+    <wsdl:part name="parameters" element="tns:AddGrower" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddGrower_OutputMessage">
+    <wsdl:part name="parameters" element="tns:AddGrowerResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddGrower_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q21="http://Compac.Services.Core" name="detail" element="q21:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddGrowers_InputMessage">
+    <wsdl:part name="parameters" element="tns:AddGrowers" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddGrowers_OutputMessage">
+    <wsdl:part name="parameters" element="tns:AddGrowersResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_AddGrowers_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q22="http://Compac.Services.Core" name="detail" element="q22:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteGrower_InputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteGrower" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_DeleteGrower_OutputMessage">
+    <wsdl:part name="parameters" element="tns:DeleteGrowerResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateGrower_InputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateGrower" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateGrower_OutputMessage">
+    <wsdl:part name="parameters" element="tns:UpdateGrowerResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_UpdateGrower_ArgumentFaultFault_FaultMessage">
+    <wsdl:part xmlns:q23="http://Compac.Services.Core" name="detail" element="q23:ArgumentFault" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineTotalFPM_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineTotalFPM" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetMachineTotalFPM_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetMachineTotalFPMResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_MatchesCurrentBatch_InputMessage">
+    <wsdl:part name="parameters" element="tns:MatchesCurrentBatch" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_MatchesCurrentBatch_OutputMessage">
+    <wsdl:part name="parameters" element="tns:MatchesCurrentBatchResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSamplingConfiguration_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetSamplingConfiguration" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSamplingConfiguration_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetSamplingConfigurationResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetSamplingConfiguration_InputMessage">
+    <wsdl:part name="parameters" element="tns:SetSamplingConfiguration" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_SetSamplingConfiguration_OutputMessage">
+    <wsdl:part name="parameters" element="tns:SetSamplingConfigurationResponse" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSamplingProgress_InputMessage">
+    <wsdl:part name="parameters" element="tns:GetSamplingProgress" />
+  </wsdl:message>
+  <wsdl:message name="ISizerService_GetSamplingProgress_OutputMessage">
+    <wsdl:part name="parameters" element="tns:GetSamplingProgressResponse" />
+  </wsdl:message>
+  <wsdl:portType name="ISizerService">
+    <wsdl:operation name="GetVersion">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Core/ICompacService/GetVersion" message="tns:ISizerService_GetVersion_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Core/ICompacService/GetVersionResponse" message="tns:ISizerService_GetVersion_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetSerialNo">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSerialNo" message="tns:ISizerService_GetSerialNo_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSerialNoResponse" message="tns:ISizerService_GetSerialNo_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineName">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineName" message="tns:ISizerService_GetMachineName_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineNameResponse" message="tns:ISizerService_GetMachineName_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetPackhouseName">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetPackhouseName" message="tns:ISizerService_GetPackhouseName_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetPackhouseNameResponse" message="tns:ISizerService_GetPackhouseName_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetNumberOfPackersForOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutlet" message="tns:ISizerService_GetNumberOfPackersForOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutletResponse" message="tns:ISizerService_GetNumberOfPackersForOutlet_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetNumberOfPackersForOutlets">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutlets" message="tns:ISizerService_GetNumberOfPackersForOutlets_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutletsResponse" message="tns:ISizerService_GetNumberOfPackersForOutlets_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetExactNumberOfPackersForOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutlet" message="tns:ISizerService_GetExactNumberOfPackersForOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutletResponse" message="tns:ISizerService_GetExactNumberOfPackersForOutlet_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetExactNumberOfPackersForOutlets">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutlets" message="tns:ISizerService_GetExactNumberOfPackersForOutlets_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutletsResponse" message="tns:ISizerService_GetExactNumberOfPackersForOutlets_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetTotalNumberOfOutletPackers">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetTotalNumberOfOutletPackers" message="tns:ISizerService_GetTotalNumberOfOutletPackers_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetTotalNumberOfOutletPackersResponse" message="tns:ISizerService_GetTotalNumberOfOutletPackers_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SetTotalNumberOfOutletPackers">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetTotalNumberOfOutletPackers" message="tns:ISizerService_SetTotalNumberOfOutletPackers_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetTotalNumberOfOutletPackersResponse" message="tns:ISizerService_SetTotalNumberOfOutletPackers_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletGroup">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletGroup" message="tns:ISizerService_SetOutletGroup_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletGroupResponse" message="tns:ISizerService_SetOutletGroup_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetQueuedBatches">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetQueuedBatches" message="tns:ISizerService_GetQueuedBatches_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetQueuedBatchesResponse" message="tns:ISizerService_GetQueuedBatches_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatchInQueue">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchInQueue" message="tns:ISizerService_GetNextBatchInQueue_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchInQueueResponse" message="tns:ISizerService_GetNextBatchInQueue_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatches">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatches" message="tns:ISizerService_GetNextBatches_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchesResponse" message="tns:ISizerService_GetNextBatches_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatchByLaneGroup">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchByLaneGroup" message="tns:ISizerService_GetNextBatchByLaneGroup_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchByLaneGroupResponse" message="tns:ISizerService_GetNextBatchByLaneGroup_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="AddBatch">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatch" message="tns:ISizerService_AddBatch_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchResponse" message="tns:ISizerService_AddBatch_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_AddBatch_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="AddBatches">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatches" message="tns:ISizerService_AddBatches_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchesResponse" message="tns:ISizerService_AddBatches_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchesArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_AddBatches_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ClearBatchQueue">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatchQueue" message="tns:ISizerService_ClearBatchQueue_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatchQueueResponse" message="tns:ISizerService_ClearBatchQueue_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="RemoveNextBatchInQueue">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueue" message="tns:ISizerService_RemoveNextBatchInQueue_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueueResponse" message="tns:ISizerService_RemoveNextBatchInQueue_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="RemoveNextBatchInQueueForLaneGroup">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueueForLaneGroup" message="tns:ISizerService_RemoveNextBatchInQueueForLaneGroup_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueueForLaneGroupResponse" message="tns:ISizerService_RemoveNextBatchInQueueForLaneGroup_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="StartNextBatchInQueue">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueue" message="tns:ISizerService_StartNextBatchInQueue_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueueResponse" message="tns:ISizerService_StartNextBatchInQueue_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="StartNextBatchInQueueForLaneGroup">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueueForLaneGroup" message="tns:ISizerService_StartNextBatchInQueueForLaneGroup_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueueForLaneGroupResponse" message="tns:ISizerService_StartNextBatchInQueueForLaneGroup_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueueForLaneGroupArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_StartNextBatchInQueueForLaneGroup_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentCartonEquivalentWeight">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentCartonEquivalentWeight" message="tns:ISizerService_GetCurrentCartonEquivalentWeight_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentCartonEquivalentWeightResponse" message="tns:ISizerService_GetCurrentCartonEquivalentWeight_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SetCurrentCartonEquivalentWeight">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetCurrentCartonEquivalentWeight" message="tns:ISizerService_SetCurrentCartonEquivalentWeight_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetCurrentCartonEquivalentWeightResponse" message="tns:ISizerService_SetCurrentCartonEquivalentWeight_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneSizeFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneSizeFPM" message="tns:ISizerService_GetLaneSizeFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneSizeFPMResponse" message="tns:ISizerService_GetLaneSizeFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesSizeFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesSizeFPM" message="tns:ISizerService_GetLanesSizeFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesSizeFPMResponse" message="tns:ISizerService_GetLanesSizeFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneGradeFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGradeFPM" message="tns:ISizerService_GetLaneGradeFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGradeFPMResponse" message="tns:ISizerService_GetLaneGradeFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesGradeFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesGradeFPM" message="tns:ISizerService_GetLanesGradeFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesGradeFPMResponse" message="tns:ISizerService_GetLanesGradeFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ForceChangeOnStage">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ForceChangeOnStage" message="tns:ISizerService_ForceChangeOnStage_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ForceChangeOnStageResponse" message="tns:ISizerService_ForceChangeOnStage_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetSizingProfileNames">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSizingProfileNames" message="tns:ISizerService_GetSizingProfileNames_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSizingProfileNamesResponse" message="tns:ISizerService_GetSizingProfileNames_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyNames">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyNames" message="tns:ISizerService_GetVarietyNames_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyNamesResponse" message="tns:ISizerService_GetVarietyNames_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLayouts">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayouts" message="tns:ISizerService_GetLayouts_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayoutsResponse" message="tns:ISizerService_GetLayouts_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyByName">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyByName" message="tns:ISizerService_GetVarietyByName_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyByNameResponse" message="tns:ISizerService_GetVarietyByName_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyById">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyById" message="tns:ISizerService_GetVarietyById_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyByIdResponse" message="tns:ISizerService_GetVarietyById_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveVariety">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVariety" message="tns:ISizerService_GetActiveVariety_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVarietyResponse" message="tns:ISizerService_GetActiveVariety_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveVarieties">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVarieties" message="tns:ISizerService_GetActiveVarieties_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVarietiesResponse" message="tns:ISizerService_GetActiveVarieties_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetAllVarieties">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllVarieties" message="tns:ISizerService_GetAllVarieties_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllVarietiesResponse" message="tns:ISizerService_GetAllVarieties_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLayout">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayout" message="tns:ISizerService_GetLayout_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayoutResponse" message="tns:ISizerService_GetLayout_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveLayout">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLayout" message="tns:ISizerService_GetActiveLayout_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLayoutResponse" message="tns:ISizerService_GetActiveLayout_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetProduct">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProduct" message="tns:ISizerService_GetProduct_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductResponse" message="tns:ISizerService_GetProduct_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveProducts">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveProducts" message="tns:ISizerService_GetActiveProducts_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveProductsResponse" message="tns:ISizerService_GetActiveProducts_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetAllProducts">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllProducts" message="tns:ISizerService_GetAllProducts_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllProductsResponse" message="tns:ISizerService_GetAllProducts_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="RemoveProduct">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProduct" message="tns:ISizerService_RemoveProduct_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProductResponse" message="tns:ISizerService_RemoveProduct_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="CreateLayout">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/CreateLayout" message="tns:ISizerService_CreateLayout_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/CreateLayoutResponse" message="tns:ISizerService_CreateLayout_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="DeleteLayout">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteLayout" message="tns:ISizerService_DeleteLayout_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteLayoutResponse" message="tns:ISizerService_DeleteLayout_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteLayoutArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_DeleteLayout_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateLayout">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateLayout" message="tns:ISizerService_UpdateLayout_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateLayoutResponse" message="tns:ISizerService_UpdateLayout_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateLayoutArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_UpdateLayout_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ActivateLayout">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateLayout" message="tns:ISizerService_ActivateLayout_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateLayoutResponse" message="tns:ISizerService_ActivateLayout_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateLayoutArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_ActivateLayout_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetAllPacks">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllPacks" message="tns:ISizerService_GetAllPacks_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllPacksResponse" message="tns:ISizerService_GetAllPacks_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetAllLabels">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllLabels" message="tns:ISizerService_GetAllLabels_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllLabelsResponse" message="tns:ISizerService_GetAllLabels_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveLabels">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLabels" message="tns:ISizerService_GetActiveLabels_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLabelsResponse" message="tns:ISizerService_GetActiveLabels_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="AddProduct">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProduct" message="tns:ISizerService_AddProduct_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProductResponse" message="tns:ISizerService_AddProduct_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProductArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_AddProduct_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateProduct">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateProduct" message="tns:ISizerService_UpdateProduct_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateProductResponse" message="tns:ISizerService_UpdateProduct_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateProductArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_UpdateProduct_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="DeleteProduct">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteProduct" message="tns:ISizerService_DeleteProduct_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteProductResponse" message="tns:ISizerService_DeleteProduct_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteProductArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_DeleteProduct_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ActivateProducts">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateProducts" message="tns:ISizerService_ActivateProducts_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateProductsResponse" message="tns:ISizerService_ActivateProducts_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetOutlets">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutlets" message="tns:ISizerService_GetOutlets_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletsResponse" message="tns:ISizerService_GetOutlets_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetProductAtOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductAtOutlet" message="tns:ISizerService_GetProductAtOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductAtOutletResponse" message="tns:ISizerService_GetProductAtOutlet_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchAtOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchAtOutlet" message="tns:ISizerService_GetBatchAtOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchAtOutletResponse" message="tns:ISizerService_GetBatchAtOutlet_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchAtOutletArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_GetBatchAtOutlet_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchesAtOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesAtOutlet" message="tns:ISizerService_GetBatchesAtOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesAtOutletResponse" message="tns:ISizerService_GetBatchesAtOutlet_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesAtOutletArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_GetBatchesAtOutlet_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchesForProductAtOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesForProductAtOutlet" message="tns:ISizerService_GetBatchesForProductAtOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesForProductAtOutletResponse" message="tns:ISizerService_GetBatchesForProductAtOutlet_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesForProductAtOutletArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_GetBatchesForProductAtOutlet_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetProductUserData">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductUserData" message="tns:ISizerService_GetProductUserData_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductUserDataResponse" message="tns:ISizerService_GetProductUserData_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductUserDataArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_GetProductUserData_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ChangeProductAtOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeProductAtOutlet" message="tns:ISizerService_ChangeProductAtOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeProductAtOutletResponse" message="tns:ISizerService_ChangeProductAtOutlet_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeProductAtOutletArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_ChangeProductAtOutlet_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletEnabled">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletEnabled" message="tns:ISizerService_SetOutletEnabled_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletEnabledResponse" message="tns:ISizerService_SetOutletEnabled_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ResetOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ResetOutlet" message="tns:ISizerService_ResetOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ResetOutletResponse" message="tns:ISizerService_ResetOutlet_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="CycleOutlet">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/CycleOutlet" message="tns:ISizerService_CycleOutlet_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/CycleOutletResponse" message="tns:ISizerService_CycleOutlet_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetProductsInNextAvailableOutletStrategy">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductsInNextAvailableOutletStrategy" message="tns:ISizerService_GetProductsInNextAvailableOutletStrategy_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductsInNextAvailableOutletStrategyResponse" message="tns:ISizerService_GetProductsInNextAvailableOutletStrategy_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="AddProductToNextAvailableOutletStrategy">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProductToNextAvailableOutletStrategy" message="tns:ISizerService_AddProductToNextAvailableOutletStrategy_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProductToNextAvailableOutletStrategyResponse" message="tns:ISizerService_AddProductToNextAvailableOutletStrategy_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProductToNextAvailableOutletStrategyArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_AddProductToNextAvailableOutletStrategy_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="RemoveProductFromNextAvailableOutletStrategy">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProductFromNextAvailableOutletStrategy" message="tns:ISizerService_RemoveProductFromNextAvailableOutletStrategy_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProductFromNextAvailableOutletStrategyResponse" message="tns:ISizerService_RemoveProductFromNextAvailableOutletStrategy_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProductFromNextAvailableOutletStrategyArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_RemoveProductFromNextAvailableOutletStrategy_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetOutletFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletFPM" message="tns:ISizerService_GetOutletFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletFPMResponse" message="tns:ISizerService_GetOutletFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetOutletsFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletsFPM" message="tns:ISizerService_GetOutletsFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletsFPMResponse" message="tns:ISizerService_GetOutletsFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRodsPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRodsPM" message="tns:ISizerService_GetMachineRodsPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRodsPMResponse" message="tns:ISizerService_GetMachineRodsPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRecycleFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRecycleFPM" message="tns:ISizerService_GetMachineRecycleFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRecycleFPMResponse" message="tns:ISizerService_GetMachineRecycleFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRejectFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRejectFPM" message="tns:ISizerService_GetMachineRejectFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRejectFPMResponse" message="tns:ISizerService_GetMachineRejectFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineMissedFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineMissedFPM" message="tns:ISizerService_GetMachineMissedFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineMissedFPMResponse" message="tns:ISizerService_GetMachineMissedFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineDroppedFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineDroppedFPM" message="tns:ISizerService_GetMachineDroppedFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineDroppedFPMResponse" message="tns:ISizerService_GetMachineDroppedFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachinePackedFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePackedFPM" message="tns:ISizerService_GetMachinePackedFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePackedFPMResponse" message="tns:ISizerService_GetMachinePackedFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineAFW">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAFW" message="tns:ISizerService_GetMachineAFW_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAFWResponse" message="tns:ISizerService_GetMachineAFW_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetAFW">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAFW" message="tns:ISizerService_GetAFW_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAFWResponse" message="tns:ISizerService_GetAFW_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineAVC">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAVC" message="tns:ISizerService_GetMachineAVC_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAVCResponse" message="tns:ISizerService_GetMachineAVC_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachinePacksPH">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePacksPH" message="tns:ISizerService_GetMachinePacksPH_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePacksPHResponse" message="tns:ISizerService_GetMachinePacksPH_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineCupfill">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineCupfill" message="tns:ISizerService_GetMachineCupfill_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineCupfillResponse" message="tns:ISizerService_GetMachineCupfill_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesCupfill">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesCupfill" message="tns:ISizerService_GetLanesCupfill_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesCupfillResponse" message="tns:ISizerService_GetLanesCupfill_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetCupfillForAllLanes">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCupfillForAllLanes" message="tns:ISizerService_GetCupfillForAllLanes_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCupfillForAllLanesResponse" message="tns:ISizerService_GetCupfillForAllLanes_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletsMaxRateSquareCMPerMinute">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletsMaxRateSquareCMPerMinute" message="tns:ISizerService_SetOutletsMaxRateSquareCMPerMinute_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletsMaxRateSquareCMPerMinuteResponse" message="tns:ISizerService_SetOutletsMaxRateSquareCMPerMinute_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineTonnesPH">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTonnesPH" message="tns:ISizerService_GetMachineTonnesPH_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTonnesPHResponse" message="tns:ISizerService_GetMachineTonnesPH_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="RaiseAlarm">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarm" message="tns:ISizerService_RaiseAlarm_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarmResponse" message="tns:ISizerService_RaiseAlarm_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="RaiseAlarmWithPriority">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarmWithPriority" message="tns:ISizerService_RaiseAlarmWithPriority_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarmWithPriorityResponse" message="tns:ISizerService_RaiseAlarmWithPriority_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="RaiseEvent">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseEvent" message="tns:ISizerService_RaiseEvent_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseEventResponse" message="tns:ISizerService_RaiseEvent_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseEventArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_RaiseEvent_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneGroups">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGroups" message="tns:ISizerService_GetLaneGroups_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGroupsResponse" message="tns:ISizerService_GetLaneGroups_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetBatch">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatch" message="tns:ISizerService_GetBatch_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchResponse" message="tns:ISizerService_GetBatch_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatch">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatch" message="tns:ISizerService_GetCurrentBatch_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchResponse" message="tns:ISizerService_GetCurrentBatch_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatches">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatches" message="tns:ISizerService_GetCurrentBatches_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchesResponse" message="tns:ISizerService_GetCurrentBatches_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatchByLane">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLane" message="tns:ISizerService_GetCurrentBatchByLane_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLaneResponse" message="tns:ISizerService_GetCurrentBatchByLane_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatchByLaneGroup">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLaneGroup" message="tns:ISizerService_GetCurrentBatchByLaneGroup_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLaneGroupResponse" message="tns:ISizerService_GetCurrentBatchByLaneGroup_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="IsCurrentBatch">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/IsCurrentBatch" message="tns:ISizerService_IsCurrentBatch_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/IsCurrentBatchResponse" message="tns:ISizerService_IsCurrentBatch_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchLaneGroups">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLaneGroups" message="tns:ISizerService_GetBatchLaneGroups_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLaneGroupsResponse" message="tns:ISizerService_GetBatchLaneGroups_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchLanes">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLanes" message="tns:ISizerService_GetBatchLanes_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLanesResponse" message="tns:ISizerService_GetBatchLanes_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ChangeBatch">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatch" message="tns:ISizerService_ChangeBatch_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatchResponse" message="tns:ISizerService_ChangeBatch_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ChangeBatchByLane">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatchByLane" message="tns:ISizerService_ChangeBatchByLane_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatchByLaneResponse" message="tns:ISizerService_ChangeBatchByLane_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SecondsToBallArrivingOnLastBatchChange">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SecondsToBallArrivingOnLastBatchChange" message="tns:ISizerService_SecondsToBallArrivingOnLastBatchChange_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SecondsToBallArrivingOnLastBatchChangeResponse" message="tns:ISizerService_SecondsToBallArrivingOnLastBatchChange_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="AddBatchLanes">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchLanes" message="tns:ISizerService_AddBatchLanes_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchLanesResponse" message="tns:ISizerService_AddBatchLanes_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="ClearBatches">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatches" message="tns:ISizerService_ClearBatches_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatchesResponse" message="tns:ISizerService_ClearBatches_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SetBatchDetails">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetBatchDetails" message="tns:ISizerService_SetBatchDetails_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetBatchDetailsResponse" message="tns:ISizerService_SetBatchDetails_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetBatchDetailsArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_SetBatchDetails_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="FlushTotals">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/FlushTotals" message="tns:ISizerService_FlushTotals_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/FlushTotalsResponse" message="tns:ISizerService_FlushTotals_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetGrower">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetGrower" message="tns:ISizerService_GetGrower_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetGrowerResponse" message="tns:ISizerService_GetGrower_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetAllGrowers">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllGrowers" message="tns:ISizerService_GetAllGrowers_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllGrowersResponse" message="tns:ISizerService_GetAllGrowers_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="AddGrower">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrower" message="tns:ISizerService_AddGrower_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrowerResponse" message="tns:ISizerService_AddGrower_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrowerArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_AddGrower_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="AddGrowers">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrowers" message="tns:ISizerService_AddGrowers_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrowersResponse" message="tns:ISizerService_AddGrowers_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrowersArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_AddGrowers_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="DeleteGrower">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteGrower" message="tns:ISizerService_DeleteGrower_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteGrowerResponse" message="tns:ISizerService_DeleteGrower_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateGrower">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateGrower" message="tns:ISizerService_UpdateGrower_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateGrowerResponse" message="tns:ISizerService_UpdateGrower_OutputMessage" />
+      <wsdl:fault wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateGrowerArgumentFaultFault" name="ArgumentFaultFault" message="tns:ISizerService_UpdateGrower_ArgumentFaultFault_FaultMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineTotalFPM">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTotalFPM" message="tns:ISizerService_GetMachineTotalFPM_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTotalFPMResponse" message="tns:ISizerService_GetMachineTotalFPM_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="MatchesCurrentBatch">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/MatchesCurrentBatch" message="tns:ISizerService_MatchesCurrentBatch_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/MatchesCurrentBatchResponse" message="tns:ISizerService_MatchesCurrentBatch_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetSamplingConfiguration">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingConfiguration" message="tns:ISizerService_GetSamplingConfiguration_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingConfigurationResponse" message="tns:ISizerService_GetSamplingConfiguration_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="SetSamplingConfiguration">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetSamplingConfiguration" message="tns:ISizerService_SetSamplingConfiguration_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetSamplingConfigurationResponse" message="tns:ISizerService_SetSamplingConfiguration_OutputMessage" />
+    </wsdl:operation>
+    <wsdl:operation name="GetSamplingProgress">
+      <wsdl:input wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingProgress" message="tns:ISizerService_GetSamplingProgress_InputMessage" />
+      <wsdl:output wsaw:Action="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingProgressResponse" message="tns:ISizerService_GetSamplingProgress_OutputMessage" />
+    </wsdl:operation>
+  </wsdl:portType>
+</wsdl:definitions>

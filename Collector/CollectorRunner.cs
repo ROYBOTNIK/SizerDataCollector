@@ -48,12 +48,12 @@ namespace SizerDataCollector.Collector
 				catch (OperationCanceledException ex)
 				{
 					Logger.Log($"Ingestion cycle failed; will retry after {currentBackoff.TotalSeconds:F0}s.", ex);
-					await ApplyBackoffAsync(ref currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
+					currentBackoff = await ApplyBackoffAsync(currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
 				}
 				catch (Exception ex)
 				{
 					Logger.Log($"Ingestion cycle failed; will retry after {currentBackoff.TotalSeconds:F0}s.", ex);
-					await ApplyBackoffAsync(ref currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
+					currentBackoff = await ApplyBackoffAsync(currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
 				}
 			}
 		}
@@ -68,8 +68,8 @@ namespace SizerDataCollector.Collector
 			return Task.Delay(delay, cancellationToken);
 		}
 
-		private static async Task ApplyBackoffAsync(
-			ref TimeSpan currentBackoff,
+		private static async Task<TimeSpan> ApplyBackoffAsync(
+			TimeSpan currentBackoff,
 			TimeSpan initialBackoff,
 			TimeSpan maxBackoff,
 			CancellationToken cancellationToken)
@@ -77,7 +77,7 @@ namespace SizerDataCollector.Collector
 			await DelayAsync(currentBackoff, cancellationToken).ConfigureAwait(false);
 
 			var doubledSeconds = Math.Min(currentBackoff.TotalSeconds * 2, maxBackoff.TotalSeconds);
-			currentBackoff = TimeSpan.FromSeconds(Math.Max(doubledSeconds, initialBackoff.TotalSeconds));
+			return TimeSpan.FromSeconds(Math.Max(doubledSeconds, initialBackoff.TotalSeconds));
 		}
 	}
 }

@@ -29,6 +29,8 @@ namespace SizerDataCollector.Collector
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 
+			var runId = Guid.NewGuid().ToString("N");
+
 			string serialNo;
 			string machineName;
 
@@ -36,13 +38,13 @@ namespace SizerDataCollector.Collector
 			{
 				serialNo = await _sizerClient.GetSerialNoAsync(cancellationToken).ConfigureAwait(false);
 				machineName = await _sizerClient.GetMachineNameAsync(cancellationToken).ConfigureAwait(false);
-				Logger.Log($"Sizer identification: serial='{serialNo}', name='{machineName}'.");
+				Logger.Log($"RunId={runId} - Sizer identification: serial='{serialNo}', name='{machineName}'.");
 
 				await _repository.UpsertMachineAsync(serialNo, machineName, cancellationToken).ConfigureAwait(false);
 			}
 			catch (Exception ex)
 			{
-				Logger.Log("ERROR: Failed to resolve or upsert machine metadata.", ex);
+				Logger.Log($"RunId={runId} - ERROR: Failed to resolve or upsert machine metadata.", ex);
 				throw;
 			}
 
@@ -53,13 +55,13 @@ namespace SizerDataCollector.Collector
 			}
 			catch (Exception ex)
 			{
-				Logger.Log("ERROR: Failed to fetch current batch from Sizer.", ex);
+				Logger.Log($"RunId={runId} - ERROR: Failed to fetch current batch from Sizer.", ex);
 				throw;
 			}
 
 			if (batchInfo == null)
 			{
-				Logger.Log("WARN: No current batch – skipping metrics insert.");
+				Logger.Log($"RunId={runId} - WARN: No current batch for serial '{serialNo}' – skipping metrics insert.");
 				return;
 			}
 
@@ -76,14 +78,14 @@ namespace SizerDataCollector.Collector
 			}
 			catch (Exception ex)
 			{
-				Logger.Log("ERROR: Failed to persist batch metadata.", ex);
+				Logger.Log($"RunId={runId} - ERROR: Failed to persist batch metadata for serial '{serialNo}', batch_id '{batchInfo?.BatchId}'.", ex);
 				throw;
 			}
 
 			var enabledMetrics = _config.EnabledMetrics;
 			if (enabledMetrics == null || enabledMetrics.Count == 0)
 			{
-				Logger.Log("WARN: EnabledMetrics list is empty. No metrics will be collected this cycle.");
+				Logger.Log($"RunId={runId} - WARN: EnabledMetrics list is empty. No metrics will be collected this cycle.");
 				return;
 			}
 
@@ -112,25 +114,25 @@ namespace SizerDataCollector.Collector
 				}
 				catch (Exception ex)
 				{
-					Logger.Log($"ERROR: Failed to capture metric '{logicalName}'.", ex);
+					Logger.Log($"RunId={runId} - ERROR: Failed to capture metric '{logicalName}' for serial '{serialNo}'.", ex);
 					throw;
 				}
 			}
 
 			if (metricRows.Count == 0)
 			{
-				Logger.Log("WARN: No metric rows generated; skipping insert.");
+				Logger.Log($"RunId={runId} - WARN: No metric rows generated for serial '{serialNo}'; skipping insert.");
 				return;
 			}
 
 			try
 			{
 				await _repository.InsertMetricsAsync(metricRows, cancellationToken).ConfigureAwait(false);
-				Logger.Log($"Inserted {metricRows.Count} metric rows for batch_record_id={batchRecordId}.");
+				Logger.Log($"RunId={runId} - Inserted {metricRows.Count} metric rows for serial '{serialNo}', batch_record_id={batchRecordId}.");
 			}
 			catch (Exception ex)
 			{
-				Logger.Log("ERROR: Failed to insert metrics into TimescaleDB.", ex);
+				Logger.Log($"RunId={runId} - ERROR: Failed to insert metrics into TimescaleDB for serial '{serialNo}', batch_record_id={batchRecordId}.", ex);
 				throw;
 			}
 		}

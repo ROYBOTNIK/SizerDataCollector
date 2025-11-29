@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collector\CollectorEngine.cs" />
+    <Compile Include="Collector\CollectorRunner.cs" />
     <Compile Include="Config\CollectorConfig.cs" />
     <Compile Include="Connected Services\SizerServiceReference\Reference.cs">
       <AutoGen>True</AutoGen>

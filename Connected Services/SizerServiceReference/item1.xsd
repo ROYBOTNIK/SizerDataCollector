@@ -1,0 +1,1457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="urn:clr:Compac.Services.Sizer.Service" elementFormDefault="qualified" targetNamespace="urn:clr:Compac.Services.Sizer.Service" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd5" namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <xs:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd6" namespace="uri:Compac.Services.Sizer.Service" />
+  <xs:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd1" namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+  <xs:import schemaLocation="http://10.155.155.10:8001/SizerService/?xsd=xsd2" namespace="http://schemas.datacontract.org/2004/07/Compac.Services.Core" />
+  <xs:element name="GetSerialNo">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetSerialNoResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetSerialNoResult" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineName">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineNameResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineNameResult" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetPackhouseName">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetPackhouseNameResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetPackhouseNameResult" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNumberOfPackersForOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outlet" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNumberOfPackersForOutletResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetNumberOfPackersForOutletResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNumberOfPackersForOutlets">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNumberOfPackersForOutletsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetNumberOfPackersForOutletsResult" nillable="true" type="q1:ArrayOfint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetExactNumberOfPackersForOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outlet" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetExactNumberOfPackersForOutletResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetExactNumberOfPackersForOutletResult" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetExactNumberOfPackersForOutlets">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetExactNumberOfPackersForOutletsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetExactNumberOfPackersForOutletsResult" nillable="true" type="q2:ArrayOfdouble" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetTotalNumberOfOutletPackers">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetTotalNumberOfOutletPackersResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetTotalNumberOfOutletPackersResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetTotalNumberOfOutletPackers">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="number" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetTotalNumberOfOutletPackersResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetOutletGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q3="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="outlets" nillable="true" type="q3:ArrayOfint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetOutletGroupResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetQueuedBatches">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetQueuedBatchesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q4="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetQueuedBatchesResult" nillable="true" type="q4:ArrayOfBatch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNextBatchInQueue">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNextBatchInQueueResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q5="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetNextBatchInQueueResult" nillable="true" type="q5:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNextBatches">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNextBatchesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q6="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetNextBatchesResult" nillable="true" type="q6:ArrayOfBatch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNextBatchByLaneGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q7="uri:Compac.Services.Sizer.Service" minOccurs="0" name="laneGroup" nillable="true" type="q7:LaneGroup" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetNextBatchByLaneGroupResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q8="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetNextBatchByLaneGroupResult" nillable="true" type="q8:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddBatch">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q9="uri:Compac.Services.Sizer.Service" minOccurs="0" name="batch" nillable="true" type="q9:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddBatchResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddBatches">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q10="uri:Compac.Services.Sizer.Service" minOccurs="0" name="batches" nillable="true" type="q10:ArrayOfBatch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddBatchesResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ClearBatchQueue">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ClearBatchQueueResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveNextBatchInQueue">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveNextBatchInQueueResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveNextBatchInQueueForLaneGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q11="uri:Compac.Services.Sizer.Service" minOccurs="0" name="laneGroup" nillable="true" type="q11:LaneGroup" />
+        <xs:element minOccurs="0" name="removeWholeBatch" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveNextBatchInQueueForLaneGroupResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="StartNextBatchInQueue">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="StartNextBatchInQueueResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="StartNextBatchInQueueResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="StartNextBatchInQueueForLaneGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q12="uri:Compac.Services.Sizer.Service" minOccurs="0" name="laneGroup" nillable="true" type="q12:LaneGroup" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="StartNextBatchInQueueForLaneGroupResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="StartNextBatchInQueueForLaneGroupResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentCartonEquivalentWeight">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentCartonEquivalentWeightResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetCurrentCartonEquivalentWeightResult" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetCurrentCartonEquivalentWeight">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="cartonEquivalentWeight" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetCurrentCartonEquivalentWeightResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLaneSizeFPM">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="laneIndex" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLaneSizeFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q13="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetLaneSizeFPMResult" nillable="true" type="q13:ArrayOfKeyValueOfstringint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLanesSizeFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLanesSizeFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q14="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetLanesSizeFPMResult" nillable="true" type="q14:ArrayOfArrayOfKeyValueOfstringint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLaneGradeFPM">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="laneIndex" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLaneGradeFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q15="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetLaneGradeFPMResult" nillable="true" type="q15:ArrayOfKeyValueOfstringint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLanesGradeFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLanesGradeFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q16="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetLanesGradeFPMResult" nillable="true" type="q16:ArrayOfArrayOfKeyValueOfstringint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ForceChangeOnStage">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="stageName" nillable="true" type="xs:string" />
+        <xs:element minOccurs="0" name="toBatchId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ForceChangeOnStageResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="ForceChangeOnStageResult" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetSizingProfileNames">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetSizingProfileNamesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q17="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetSizingProfileNamesResult" nillable="true" type="q17:ArrayOfstring" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetVarietyNames">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetVarietyNamesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q18="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetVarietyNamesResult" nillable="true" type="q18:ArrayOfstring" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLayouts">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q19="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q19:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLayoutsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q20="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetLayoutsResult" nillable="true" type="q20:ArrayOfLayout" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetVarietyByName">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="varietyName" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetVarietyByNameResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q21="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetVarietyByNameResult" nillable="true" type="q21:Variety" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetVarietyById">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q22="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q22:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetVarietyByIdResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q23="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetVarietyByIdResult" nillable="true" type="q23:Variety" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveVariety">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveVarietyResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q24="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetActiveVarietyResult" nillable="true" type="q24:Variety" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveVarieties">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveVarietiesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q25="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetActiveVarietiesResult" nillable="true" type="q25:ArrayOfVariety" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllVarieties">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllVarietiesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q26="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetAllVarietiesResult" nillable="true" type="q26:ArrayOfVariety" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLayout">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q27="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q27:guid" />
+        <xs:element xmlns:q28="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="layoutID" type="q28:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLayoutResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q29="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetLayoutResult" nillable="true" type="q29:Layout" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveLayout">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q30="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q30:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveLayoutResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q31="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetActiveLayoutResult" nillable="true" type="q31:Layout" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProduct">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q32="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="productGuid" type="q32:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q33="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetProductResult" nillable="true" type="q33:Product" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveProducts">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q34="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q34:guid" />
+        <xs:element xmlns:q35="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="layoutID" type="q35:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveProductsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q36="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetActiveProductsResult" nillable="true" type="q36:ArrayOfProduct" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllProducts">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q37="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q37:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllProductsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q38="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetAllProductsResult" nillable="true" type="q38:ArrayOfProduct" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveProduct">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q39="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q39:guid" />
+        <xs:element xmlns:q40="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="layoutID" type="q40:guid" />
+        <xs:element xmlns:q41="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="productID" type="q41:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveProductResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CreateLayout">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q42="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q42:guid" />
+        <xs:element minOccurs="0" name="layoutName" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CreateLayoutResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q43="uri:Compac.Services.Sizer.Service" minOccurs="0" name="CreateLayoutResult" nillable="true" type="q43:Layout" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DeleteLayout">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q44="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q44:guid" />
+        <xs:element xmlns:q45="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="layoutID" type="q45:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DeleteLayoutResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="UpdateLayout">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q46="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q46:guid" />
+        <xs:element xmlns:q47="uri:Compac.Services.Sizer.Service" minOccurs="0" name="layout" nillable="true" type="q47:Layout" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="UpdateLayoutResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q48="uri:Compac.Services.Sizer.Service" minOccurs="0" name="UpdateLayoutResult" nillable="true" type="q48:Layout" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ActivateLayout">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q49="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q49:guid" />
+        <xs:element xmlns:q50="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="layoutID" type="q50:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ActivateLayoutResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q51="uri:Compac.Services.Sizer.Service" minOccurs="0" name="ActivateLayoutResult" nillable="true" type="q51:Layout" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllPacks">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllPacksResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q52="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetAllPacksResult" nillable="true" type="q52:ArrayOfPack" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllLabels">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllLabelsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q53="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetAllLabelsResult" nillable="true" type="q53:ArrayOfLabel" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveLabels">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetActiveLabelsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q54="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetActiveLabelsResult" nillable="true" type="q54:ArrayOfLabel" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddProduct">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q55="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q55:guid" />
+        <xs:element xmlns:q56="uri:Compac.Services.Sizer.Service" minOccurs="0" name="product" nillable="true" type="q56:Product" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddProductResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="UpdateProduct">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q57="uri:Compac.Services.Sizer.Service" minOccurs="0" name="product" nillable="true" type="q57:Product" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="UpdateProductResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DeleteProduct">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q58="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="productID" type="q58:guid" />
+        <xs:element minOccurs="0" name="force" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DeleteProductResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ActivateProducts">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q59="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="varietyID" type="q59:guid" />
+        <xs:element xmlns:q60="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="layoutID" type="q60:guid" />
+        <xs:element xmlns:q61="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="productGuids" nillable="true" type="q61:ArrayOfguid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ActivateProductsResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetOutlets">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetOutletsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q62="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetOutletsResult" nillable="true" type="q62:ArrayOfOutlet" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductAtOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductAtOutletResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q63="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetProductAtOutletResult" nillable="true" type="q63:Product" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchAtOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchAtOutletResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q64="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetBatchAtOutletResult" nillable="true" type="q64:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchesAtOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchesAtOutletResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q65="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetBatchesAtOutletResult" nillable="true" type="q65:ArrayOfBatch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchesForProductAtOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchesForProductAtOutletResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q66="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetBatchesForProductAtOutletResult" nillable="true" type="q66:ArrayOfBatch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductUserData">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q67="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="productId" type="q67:guid" />
+        <xs:element minOccurs="0" name="category" nillable="true" type="xs:string" />
+        <xs:element minOccurs="0" name="field" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductUserDataResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetProductUserDataResult" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeProductAtOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+        <xs:element xmlns:q68="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="productID" type="q68:guid" />
+        <xs:element minOccurs="0" name="force" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeProductAtOutletResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetOutletEnabled">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+        <xs:element minOccurs="0" name="enabled" type="xs:boolean" />
+        <xs:element minOccurs="0" name="disableOnPackBoundary" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetOutletEnabledResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ResetOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ResetOutletResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CycleOutlet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CycleOutletResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductsInNextAvailableOutletStrategy">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductsInNextAvailableOutletStrategyResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q69="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetProductsInNextAvailableOutletStrategyResult" nillable="true" type="q69:ArrayOfProduct" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddProductToNextAvailableOutletStrategy">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q70="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="productId" type="q70:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddProductToNextAvailableOutletStrategyResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveProductFromNextAvailableOutletStrategy">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q71="http://schemas.microsoft.com/2003/10/Serialization/" minOccurs="0" name="productId" type="q71:guid" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RemoveProductFromNextAvailableOutletStrategyResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetOutletFPM">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetOutletFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetOutletFPMResult" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetOutletsFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetOutletsFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q72="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetOutletsFPMResult" nillable="true" type="q72:ArrayOfdouble" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineRodsPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineRodsPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q73="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetMachineRodsPMResult" nillable="true" type="q73:ArrayOfint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineRecycleFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineRecycleFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineRecycleFPMResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineRejectFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineRejectFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineRejectFPMResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineMissedFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineMissedFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineMissedFPMResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineDroppedFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineDroppedFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineDroppedFPMResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachinePackedFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachinePackedFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachinePackedFPMResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineAFW">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineAFWResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineAFWResult" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAFW">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="batchId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAFWResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetAFWResult" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineAVC">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineAVCResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineAVCResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachinePacksPH">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachinePacksPHResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachinePacksPHResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineCupfill">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineCupfillResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineCupfillResult" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLanesCupfill">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="lane" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLanesCupfillResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetLanesCupfillResult" type="xs:double" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCupfillForAllLanes">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCupfillForAllLanesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q74="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetCupfillForAllLanesResult" nillable="true" type="q74:ArrayOfdouble" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetOutletsMaxRateSquareCMPerMinute">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q75="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="newRates" nillable="true" type="q75:ArrayOfKeyValueOfintint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetOutletsMaxRateSquareCMPerMinuteResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineTonnesPH">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineTonnesPHResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineTonnesPHResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RaiseAlarm">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="alarm" nillable="true" type="xs:string" />
+        <xs:element minOccurs="0" name="details" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RaiseAlarmResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RaiseAlarmWithPriority">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="alarm" nillable="true" type="xs:string" />
+        <xs:element minOccurs="0" name="details" nillable="true" type="xs:string" />
+        <xs:element xmlns:q76="uri:Compac.Services.Sizer.Service" minOccurs="0" name="priority" type="q76:AlarmPriority" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RaiseAlarmWithPriorityResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RaiseEvent">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q77="http://schemas.datacontract.org/2004/07/Compac.Services.Core" minOccurs="0" name="eventDetails" nillable="true" type="q77:ServiceEvent" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RaiseEventResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLaneGroups">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetLaneGroupsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q78="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetLaneGroupsResult" nillable="true" type="q78:ArrayOfLaneGroup" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatch">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="id" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q79="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetBatchResult" nillable="true" type="q79:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatch">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatchResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q80="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetCurrentBatchResult" nillable="true" type="q80:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatches">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatchesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q81="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetCurrentBatchesResult" nillable="true" type="q81:ArrayOfBatch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatchByLane">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="lane" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatchByLaneResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q82="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetCurrentBatchByLaneResult" nillable="true" type="q82:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatchByLaneGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q83="uri:Compac.Services.Sizer.Service" minOccurs="0" name="laneGroup" nillable="true" type="q83:LaneGroup" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetCurrentBatchByLaneGroupResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q84="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetCurrentBatchByLaneGroupResult" nillable="true" type="q84:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="IsCurrentBatch">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="id" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="IsCurrentBatchResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="IsCurrentBatchResult" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchLaneGroups">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="id" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchLaneGroupsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q85="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetBatchLaneGroupsResult" nillable="true" type="q85:ArrayOfLaneGroup" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchLanes">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="id" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetBatchLanesResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q86="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GetBatchLanesResult" nillable="true" type="q86:ArrayOfint" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeBatch">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q87="uri:Compac.Services.Sizer.Service" minOccurs="0" name="batch" nillable="true" type="q87:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeBatchResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="ChangeBatchResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeBatchByLane">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q88="uri:Compac.Services.Sizer.Service" minOccurs="0" name="batch" nillable="true" type="q88:Batch" />
+        <xs:element xmlns:q89="uri:Compac.Services.Sizer.Service" minOccurs="0" name="laneGroups" nillable="true" type="q89:ArrayOfLaneGroup" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ChangeBatchByLaneResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="ChangeBatchByLaneResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SecondsToBallArrivingOnLastBatchChange">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SecondsToBallArrivingOnLastBatchChangeResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="SecondsToBallArrivingOnLastBatchChangeResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddBatchLanes">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q90="uri:Compac.Services.Sizer.Service" minOccurs="0" name="batch" nillable="true" type="q90:Batch" />
+        <xs:element xmlns:q91="uri:Compac.Services.Sizer.Service" minOccurs="0" name="laneGroups" nillable="true" type="q91:ArrayOfLaneGroup" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddBatchLanesResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ClearBatches">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ClearBatchesResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetBatchDetails">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q92="uri:Compac.Services.Sizer.Service" minOccurs="0" name="batch" nillable="true" type="q92:Batch" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetBatchDetailsResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="FlushTotals">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="FlushTotalsResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetGrower">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="growerCode" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetGrowerResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q93="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetGrowerResult" nillable="true" type="q93:Grower" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllGrowers">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetAllGrowersResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q94="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetAllGrowersResult" nillable="true" type="q94:ArrayOfGrower" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddGrower">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q95="uri:Compac.Services.Sizer.Service" minOccurs="0" name="grower" nillable="true" type="q95:Grower" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddGrowerResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddGrowers">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q96="uri:Compac.Services.Sizer.Service" minOccurs="0" name="growers" nillable="true" type="q96:ArrayOfGrower" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AddGrowersResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DeleteGrower">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="growerCode" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DeleteGrowerResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="UpdateGrower">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q97="uri:Compac.Services.Sizer.Service" minOccurs="0" name="grower" nillable="true" type="q97:Grower" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="UpdateGrowerResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineTotalFPM">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetMachineTotalFPMResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="GetMachineTotalFPMResult" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="MatchesCurrentBatch">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="batchId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="MatchesCurrentBatchResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="MatchesCurrentBatchResult" type="xs:boolean" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetSamplingConfiguration">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetSamplingConfigurationResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q98="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetSamplingConfigurationResult" nillable="true" type="q98:AbstractSamplingConfiguration" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetSamplingConfiguration">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+        <xs:element xmlns:q99="uri:Compac.Services.Sizer.Service" minOccurs="0" name="config" nillable="true" type="q99:AbstractSamplingConfiguration" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SetSamplingConfigurationResponse">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetSamplingProgress">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="outletId" type="xs:int" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetSamplingProgressResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q100="uri:Compac.Services.Sizer.Service" minOccurs="0" name="GetSamplingProgressResult" nillable="true" type="q100:ArrayOfSamplingProgress" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -1,0 +1,2220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsx="http://schemas.xmlsoap.org/ws/2004/09/mex" xmlns:wsap="http://schemas.xmlsoap.org/ws/2004/08/addressing/policy" xmlns:msc="http://schemas.microsoft.com/ws/2005/12/wsdl/contract" xmlns:i0="urn:clr:Compac.Services.Sizer.Service" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns="http://tempuri.org/" xmlns:wsa10="http://www.w3.org/2005/08/addressing" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing" name="SizerService" targetNamespace="http://tempuri.org/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsp:Policy wsu:Id="WSHttpBinding_ISizerService_policy">
+    <wsp:ExactlyOne>
+      <wsp:All>
+        <wsaw:UsingAddressing />
+      </wsp:All>
+    </wsp:ExactlyOne>
+  </wsp:Policy>
+  <wsp:Policy wsu:Id="NetNamedPipeBinding_ISizerService_policy">
+    <wsp:ExactlyOne>
+      <wsp:All>
+        <msb:BinaryEncoding xmlns:msb="http://schemas.microsoft.com/ws/06/2004/mspolicy/netbinary1" />
+        <wsaw:UsingAddressing />
+      </wsp:All>
+    </wsp:ExactlyOne>
+  </wsp:Policy>
+  <wsdl:import namespace="urn:clr:Compac.Services.Sizer.Service" location="http://10.155.155.10:8001/SizerService/?wsdl=wsdl0" />
+  <wsdl:types />
+  <wsdl:binding name="WSHttpBinding_ISizerService" type="i0:ISizerService">
+    <wsp:PolicyReference URI="#WSHttpBinding_ISizerService_policy" />
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="GetVersion">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Core/ICompacService/GetVersion" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSerialNo">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSerialNo" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineName">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineName" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetPackhouseName">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetPackhouseName" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNumberOfPackersForOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNumberOfPackersForOutlets">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutlets" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetExactNumberOfPackersForOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetExactNumberOfPackersForOutlets">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutlets" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTotalNumberOfOutletPackers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetTotalNumberOfOutletPackers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetTotalNumberOfOutletPackers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetTotalNumberOfOutletPackers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetQueuedBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetQueuedBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatchInQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchInQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatchByLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchByLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="AddBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ClearBatchQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatchQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveNextBatchInQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveNextBatchInQueueForLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueueForLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="StartNextBatchInQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="StartNextBatchInQueueForLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueueForLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentCartonEquivalentWeight">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentCartonEquivalentWeight" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetCurrentCartonEquivalentWeight">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetCurrentCartonEquivalentWeight" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneSizeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneSizeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesSizeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesSizeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneGradeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGradeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesGradeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesGradeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ForceChangeOnStage">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ForceChangeOnStage" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSizingProfileNames">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSizingProfileNames" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyNames">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyNames" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLayouts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayouts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyByName">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyByName" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyById">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyById" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveVariety">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVariety" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveVarieties">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVarieties" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllVarieties">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllVarieties" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveProducts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveProducts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllProducts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllProducts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/CreateLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DeleteLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ActivateLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllPacks">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllPacks" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllLabels">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllLabels" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveLabels">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLabels" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="DeleteProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ActivateProducts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateProducts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetOutlets">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutlets" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProductAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchesAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchesForProductAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesForProductAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetProductUserData">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductUserData" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeProductAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeProductAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletEnabled">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletEnabled" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ResetOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ResetOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CycleOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/CycleOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProductsInNextAvailableOutletStrategy">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductsInNextAvailableOutletStrategy" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddProductToNextAvailableOutletStrategy">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProductToNextAvailableOutletStrategy" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveProductFromNextAvailableOutletStrategy">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProductFromNextAvailableOutletStrategy" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetOutletFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetOutletsFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletsFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRodsPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRodsPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRecycleFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRecycleFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRejectFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRejectFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineMissedFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineMissedFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineDroppedFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineDroppedFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachinePackedFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePackedFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineAFW">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAFW" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAFW">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAFW" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineAVC">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAVC" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachinePacksPH">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePacksPH" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineCupfill">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineCupfill" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesCupfill">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesCupfill" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCupfillForAllLanes">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCupfillForAllLanes" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletsMaxRateSquareCMPerMinute">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletsMaxRateSquareCMPerMinute" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineTonnesPH">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTonnesPH" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RaiseAlarm">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarm" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RaiseAlarmWithPriority">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarmWithPriority" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RaiseEvent">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseEvent" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneGroups">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGroups" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatchByLane">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLane" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatchByLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="IsCurrentBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/IsCurrentBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchLaneGroups">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLaneGroups" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchLanes">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLanes" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeBatchByLane">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatchByLane" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SecondsToBallArrivingOnLastBatchChange">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SecondsToBallArrivingOnLastBatchChange" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddBatchLanes">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchLanes" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ClearBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetBatchDetails">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetBatchDetails" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="FlushTotals">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/FlushTotals" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllGrowers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllGrowers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="AddGrowers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrowers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="DeleteGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineTotalFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTotalFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="MatchesCurrentBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/MatchesCurrentBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSamplingConfiguration">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingConfiguration" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetSamplingConfiguration">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetSamplingConfiguration" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSamplingProgress">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingProgress" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="NetNamedPipeBinding_ISizerService" type="i0:ISizerService">
+    <wsp:PolicyReference URI="#NetNamedPipeBinding_ISizerService_policy" />
+    <soap12:binding transport="http://schemas.microsoft.com/soap/named-pipe" />
+    <wsdl:operation name="GetVersion">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Core/ICompacService/GetVersion" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSerialNo">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSerialNo" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineName">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineName" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetPackhouseName">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetPackhouseName" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNumberOfPackersForOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNumberOfPackersForOutlets">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNumberOfPackersForOutlets" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetExactNumberOfPackersForOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetExactNumberOfPackersForOutlets">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetExactNumberOfPackersForOutlets" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTotalNumberOfOutletPackers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetTotalNumberOfOutletPackers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetTotalNumberOfOutletPackers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetTotalNumberOfOutletPackers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetQueuedBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetQueuedBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatchInQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchInQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetNextBatchByLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetNextBatchByLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="AddBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ClearBatchQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatchQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveNextBatchInQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveNextBatchInQueueForLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveNextBatchInQueueForLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="StartNextBatchInQueue">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="StartNextBatchInQueueForLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/StartNextBatchInQueueForLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentCartonEquivalentWeight">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentCartonEquivalentWeight" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetCurrentCartonEquivalentWeight">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetCurrentCartonEquivalentWeight" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneSizeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneSizeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesSizeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesSizeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneGradeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGradeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesGradeFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesGradeFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ForceChangeOnStage">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ForceChangeOnStage" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSizingProfileNames">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSizingProfileNames" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyNames">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyNames" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLayouts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayouts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyByName">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyByName" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVarietyById">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetVarietyById" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveVariety">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVariety" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveVarieties">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveVarieties" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllVarieties">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllVarieties" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveProducts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveProducts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllProducts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllProducts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/CreateLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DeleteLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ActivateLayout">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateLayout" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllPacks">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllPacks" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllLabels">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllLabels" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetActiveLabels">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetActiveLabels" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="DeleteProduct">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteProduct" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ActivateProducts">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ActivateProducts" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetOutlets">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutlets" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProductAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchesAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchesForProductAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchesForProductAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetProductUserData">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductUserData" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeProductAtOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeProductAtOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletEnabled">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletEnabled" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ResetOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ResetOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CycleOutlet">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/CycleOutlet" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProductsInNextAvailableOutletStrategy">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetProductsInNextAvailableOutletStrategy" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddProductToNextAvailableOutletStrategy">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddProductToNextAvailableOutletStrategy" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveProductFromNextAvailableOutletStrategy">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RemoveProductFromNextAvailableOutletStrategy" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetOutletFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetOutletsFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetOutletsFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRodsPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRodsPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRecycleFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRecycleFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineRejectFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineRejectFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineMissedFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineMissedFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineDroppedFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineDroppedFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachinePackedFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePackedFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineAFW">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAFW" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAFW">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAFW" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineAVC">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineAVC" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachinePacksPH">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachinePacksPH" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineCupfill">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineCupfill" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLanesCupfill">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLanesCupfill" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCupfillForAllLanes">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCupfillForAllLanes" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetOutletsMaxRateSquareCMPerMinute">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetOutletsMaxRateSquareCMPerMinute" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineTonnesPH">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTonnesPH" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RaiseAlarm">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarm" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RaiseAlarmWithPriority">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseAlarmWithPriority" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RaiseEvent">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/RaiseEvent" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetLaneGroups">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetLaneGroups" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatchByLane">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLane" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCurrentBatchByLaneGroup">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetCurrentBatchByLaneGroup" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="IsCurrentBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/IsCurrentBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchLaneGroups">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLaneGroups" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetBatchLanes">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetBatchLanes" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeBatchByLane">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ChangeBatchByLane" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SecondsToBallArrivingOnLastBatchChange">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SecondsToBallArrivingOnLastBatchChange" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddBatchLanes">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddBatchLanes" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ClearBatches">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/ClearBatches" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetBatchDetails">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetBatchDetails" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="FlushTotals">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/FlushTotals" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetAllGrowers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetAllGrowers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="AddGrowers">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/AddGrowers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="DeleteGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/DeleteGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateGrower">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/UpdateGrower" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+      <wsdl:fault name="ArgumentFaultFault">
+        <soap12:fault use="literal" name="ArgumentFaultFault" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="GetMachineTotalFPM">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetMachineTotalFPM" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="MatchesCurrentBatch">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/MatchesCurrentBatch" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSamplingConfiguration">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingConfiguration" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetSamplingConfiguration">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/SetSamplingConfiguration" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSamplingProgress">
+      <soap12:operation soapAction="urn:clr:Compac.Services.Sizer.Service/ISizerService/GetSamplingProgress" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="SizerService">
+    <wsdl:port name="WSHttpBinding_ISizerService" binding="tns:WSHttpBinding_ISizerService">
+      <soap12:address location="http://10.155.155.10:8001/SizerService/" />
+      <wsa10:EndpointReference>
+        <wsa10:Address>http://10.155.155.10:8001/SizerService/</wsa10:Address>
+      </wsa10:EndpointReference>
+    </wsdl:port>
+    <wsdl:port name="NetNamedPipeBinding_ISizerService" binding="tns:NetNamedPipeBinding_ISizerService">
+      <soap12:address location="net.pipe://localhost/Compac/8001/SizerService" />
+      <wsa10:EndpointReference>
+        <wsa10:Address>net.pipe://localhost/Compac/8001/SizerService</wsa10:Address>
+      </wsa10:EndpointReference>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

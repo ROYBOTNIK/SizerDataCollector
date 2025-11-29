@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ID="3e264eef-6ae1-4da0-b1da-b4992f857c4f" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://10.155.155.10:8001/SizerService/" Protocol="http" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="item.xsd" MetadataType="Schema" ID="23d2b24a-f82c-440b-b01b-59570228c0e4" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd1" />
+    <MetadataFile FileName="item1.xsd" MetadataType="Schema" ID="c73d5ceb-4fef-4c80-b705-bf71e451c957" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd4" />
+    <MetadataFile FileName="item2.xsd" MetadataType="Schema" ID="c5c53a30-af06-4231-afc9-e31297a6697b" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd6" />
+    <MetadataFile FileName="item3.xsd" MetadataType="Schema" ID="c09c1f3d-3c56-4bda-8b01-82288e9c2e64" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd0" />
+    <MetadataFile FileName="item.disco" MetadataType="Disco" ID="64a9b6e6-4d3b-44c4-bc76-bb7f3f4a3be5" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?disco" />
+    <MetadataFile FileName="item4.xsd" MetadataType="Schema" ID="a1973eec-c891-439c-8a0a-b2c9cda9971c" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd5" />
+    <MetadataFile FileName="item5.xsd" MetadataType="Schema" ID="d30807f8-9fd8-4568-a252-1653a4011801" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd3" />
+    <MetadataFile FileName="SizerService.wsdl" MetadataType="Wsdl" ID="f97eb497-0648-4869-ba7c-bd64e25d1146" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?wsdl" />
+    <MetadataFile FileName="item6.xsd" MetadataType="Schema" ID="7f9f1664-632b-4ef5-94a1-141eb55b8fb8" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd2" />
+    <MetadataFile FileName="item.wsdl" MetadataType="Wsdl" ID="f9940eb8-0b29-44ad-8925-531720fcd44c" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?wsdl=wsdl0" />
+    <MetadataFile FileName="item7.xsd" MetadataType="Schema" ID="f2a7e652-eeeb-40e4-b908-ea7bb423f4af" SourceId="1" SourceUrl="http://10.155.155.10:8001/SizerService/?xsd=xsd7" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

@@ -1,5 +1,6 @@
 using System;
 using System.ServiceModel;
+using SizerDataCollector.Config;
 using SizerDataCollector.SizerServiceReference;  // Adjust if your project name differs
 
 namespace SizerDataCollector

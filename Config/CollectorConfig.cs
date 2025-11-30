@@ -16,6 +16,9 @@ namespace SizerDataCollector.Config
 			"machine_cupfill",
 			"outlets_details"
 		});
+		private const string DefaultSizerHost = "10.155.155.10";
+		private const int DefaultSizerPort = 8001;
+		private const int DefaultTimeoutSeconds = 5;
 		private const int MinPollIntervalSeconds = 5;
 		private const int MinInitialBackoffSeconds = 1;
 		private const int DefaultPollIntervalSeconds = 60;
@@ -41,20 +44,30 @@ namespace SizerDataCollector.Config
 		public int MaxBackoffSeconds { get; }
 
 		public CollectorConfig()
+			: this(BuildRuntimeSettingsFromAppConfig())
 		{
-			SizerHost = GetString("SizerHost", "10.155.155.10");
-			SizerPort = GetInt("SizerPort", 8001);
-			OpenTimeoutSec = GetInt("OpenTimeoutSec", 5);
-			SendTimeoutSec = GetInt("SendTimeoutSec", 5);
-			ReceiveTimeoutSec = GetInt("ReceiveTimeoutSec", 5);
+		}
 
-			TimescaleConnectionString = GetConnectionString("TimescaleDb");
-			EnabledMetrics = GetEnabledMetrics();
-			EnableIngestion = GetBool("EnableIngestion", false);
+		public CollectorConfig(CollectorRuntimeSettings runtimeSettings)
+		{
+			if (runtimeSettings == null)
+			{
+				throw new ArgumentNullException(nameof(runtimeSettings));
+			}
 
-			var pollInterval = GetIntWithMinimum("PollIntervalSeconds", MinPollIntervalSeconds, DefaultPollIntervalSeconds);
-			var initialBackoff = GetIntWithMinimum("InitialBackoffSeconds", MinInitialBackoffSeconds, DefaultInitialBackoffSeconds);
-			var maxBackoff = GetIntWithMinimum("MaxBackoffSeconds", MinInitialBackoffSeconds, DefaultMaxBackoffSeconds);
+			SizerHost = string.IsNullOrWhiteSpace(runtimeSettings.SizerHost) ? DefaultSizerHost : runtimeSettings.SizerHost;
+			SizerPort = runtimeSettings.SizerPort;
+			OpenTimeoutSec = runtimeSettings.OpenTimeoutSec;
+			SendTimeoutSec = runtimeSettings.SendTimeoutSec;
+			ReceiveTimeoutSec = runtimeSettings.ReceiveTimeoutSec;
+
+			TimescaleConnectionString = runtimeSettings.TimescaleConnectionString ?? string.Empty;
+			EnabledMetrics = NormalizeEnabledMetrics(runtimeSettings.EnabledMetrics);
+			EnableIngestion = runtimeSettings.EnableIngestion;
+
+			var pollInterval = EnsureMinimum("PollIntervalSeconds", runtimeSettings.PollIntervalSeconds, MinPollIntervalSeconds, DefaultPollIntervalSeconds);
+			var initialBackoff = EnsureMinimum("InitialBackoffSeconds", runtimeSettings.InitialBackoffSeconds, MinInitialBackoffSeconds, DefaultInitialBackoffSeconds);
+			var maxBackoff = EnsureMinimum("MaxBackoffSeconds", runtimeSettings.MaxBackoffSeconds, MinInitialBackoffSeconds, DefaultMaxBackoffSeconds);
 
 			if (maxBackoff < initialBackoff)
 			{
@@ -66,6 +79,24 @@ namespace SizerDataCollector.Config
 			PollIntervalSeconds = pollInterval;
 			InitialBackoffSeconds = initialBackoff;
 			MaxBackoffSeconds = maxBackoff;
+		}
+
+		private static CollectorRuntimeSettings BuildRuntimeSettingsFromAppConfig()
+		{
+			return new CollectorRuntimeSettings
+			{
+				SizerHost = GetString("SizerHost", DefaultSizerHost),
+				SizerPort = GetInt("SizerPort", DefaultSizerPort),
+				OpenTimeoutSec = GetInt("OpenTimeoutSec", DefaultTimeoutSeconds),
+				SendTimeoutSec = GetInt("SendTimeoutSec", DefaultTimeoutSeconds),
+				ReceiveTimeoutSec = GetInt("ReceiveTimeoutSec", DefaultTimeoutSeconds),
+				TimescaleConnectionString = GetConnectionString("TimescaleDb"),
+				EnabledMetrics = GetEnabledMetrics().ToList(),
+				EnableIngestion = GetBool("EnableIngestion", false),
+				PollIntervalSeconds = GetIntWithMinimum("PollIntervalSeconds", MinPollIntervalSeconds, DefaultPollIntervalSeconds),
+				InitialBackoffSeconds = GetIntWithMinimum("InitialBackoffSeconds", MinInitialBackoffSeconds, DefaultInitialBackoffSeconds),
+				MaxBackoffSeconds = GetIntWithMinimum("MaxBackoffSeconds", MinInitialBackoffSeconds, DefaultMaxBackoffSeconds)
+			};
 		}
 
 		private static string GetString(string key, string defaultValue)
@@ -120,12 +151,9 @@ namespace SizerDataCollector.Config
 
 			var tokens = raw
 				.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-				.Select(token => token.Trim())
-				.Where(token => token.Length > 0)
-				.Distinct(StringComparer.OrdinalIgnoreCase)
-				.ToArray();
+				.Select(token => token.Trim());
 
-			return tokens.Length == 0 ? DefaultEnabledMetrics : Array.AsReadOnly(tokens);
+			return NormalizeEnabledMetrics(tokens);
 		}
 
 		private static int GetIntWithMinimum(string key, int minimum, int defaultValue)
@@ -142,6 +170,11 @@ namespace SizerDataCollector.Config
 				return defaultValue;
 			}
 
+			return EnsureMinimum(key, value, minimum, defaultValue);
+		}
+
+		private static int EnsureMinimum(string key, int value, int minimum, int defaultValue)
+		{
 			if (value < minimum)
 			{
 				Logger.Log($"CollectorConfig: {key} value {value} is below minimum {minimum}. Using default {defaultValue}.");
@@ -149,6 +182,22 @@ namespace SizerDataCollector.Config
 			}
 
 			return value;
+		}
+
+		private static IReadOnlyList<string> NormalizeEnabledMetrics(IEnumerable<string> metrics)
+		{
+			if (metrics == null)
+			{
+				return DefaultEnabledMetrics;
+			}
+
+			var tokens = metrics
+				.Where(token => !string.IsNullOrWhiteSpace(token))
+				.Select(token => token.Trim())
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+
+			return tokens.Length == 0 ? DefaultEnabledMetrics : Array.AsReadOnly(tokens);
 		}
 	}
 }

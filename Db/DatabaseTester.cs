@@ -4,7 +4,7 @@ using SizerDataCollector.Config;
 
 namespace SizerDataCollector
 {
-	internal static class DatabaseTester
+	public static class DatabaseTester
 	{
 		/// <summary>
 		/// Tests the connection to Timescale/Postgres and ensures required tables exist

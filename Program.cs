@@ -14,10 +14,16 @@ namespace SizerDataCollector
 		{
 			Logger.Log("SizerDataCollector starting up...");
 
+			CollectorRuntimeSettings settings;
 			CollectorConfig cfg;
+			CollectorStatus status;
 			try
 			{
-				cfg = new CollectorConfig();
+				var settingsProvider = new CollectorSettingsProvider();
+				settings = settingsProvider.Load();
+				cfg = new CollectorConfig(settings);
+				status = new CollectorStatus();
+				LogEffectiveSettings(cfg);
 			}
 			catch (Exception ex)
 			{
@@ -60,7 +66,7 @@ namespace SizerDataCollector
 						using (var sizerClient = new SizerClient(cfg))
 						{
 							var engine = new CollectorEngine(cfg, repository, sizerClient);
-							var runner = new CollectorRunner(cfg, engine);
+							var runner = new CollectorRunner(cfg, engine, status);
 							RunContinuousAsync(runner, cts.Token);
 						}
 					}
@@ -102,6 +108,16 @@ namespace SizerDataCollector
 			{
 				throw;
 			}
+		}
+
+		private static void LogEffectiveSettings(CollectorConfig cfg)
+		{
+			var timescaleStatus = string.IsNullOrWhiteSpace(cfg.TimescaleConnectionString)
+				? "Timescale connection string not provided."
+				: "Timescale connection string provided.";
+
+			Logger.Log($"Runtime settings: host={cfg.SizerHost}:{cfg.SizerPort}, pollInterval={cfg.PollIntervalSeconds}s, initialBackoff={cfg.InitialBackoffSeconds}s, maxBackoff={cfg.MaxBackoffSeconds}s, enableIngestion={cfg.EnableIngestion}.");
+			Logger.Log(timescaleStatus);
 		}
 	}
 }

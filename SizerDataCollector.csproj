@@ -94,7 +94,10 @@
   <ItemGroup>
     <Compile Include="Collector\CollectorEngine.cs" />
     <Compile Include="Collector\CollectorRunner.cs" />
+    <Compile Include="Collector\CollectorStatus.cs" />
     <Compile Include="Config\CollectorConfig.cs" />
+    <Compile Include="Config\CollectorRuntimeSettings.cs" />
+    <Compile Include="Config\CollectorSettingsProvider.cs" />
     <Compile Include="Connected Services\SizerServiceReference\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

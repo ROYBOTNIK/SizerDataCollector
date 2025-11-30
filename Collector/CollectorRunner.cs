@@ -10,13 +10,16 @@ namespace SizerDataCollector.Collector
 	{
 		private readonly CollectorConfig _config;
 		private readonly CollectorEngine _engine;
+		private readonly CollectorStatus _status;
 
 		public CollectorRunner(
 			CollectorConfig config,
-			CollectorEngine engine)
+			CollectorEngine engine,
+			CollectorStatus status)
 		{
 			_config = config ?? throw new ArgumentNullException(nameof(config));
 			_engine = engine ?? throw new ArgumentNullException(nameof(engine));
+			_status = status ?? throw new ArgumentNullException(nameof(status));
 		}
 
 		public async Task RunAsync(CancellationToken cancellationToken)
@@ -30,6 +33,7 @@ namespace SizerDataCollector.Collector
 			{
 				var cycleStart = DateTimeOffset.UtcNow;
 				Logger.Log($"Starting ingestion cycle at {cycleStart:O}...");
+				RecordPollStart(cycleStart.UtcDateTime);
 
 				try
 				{
@@ -37,6 +41,7 @@ namespace SizerDataCollector.Collector
 
 					var elapsed = DateTimeOffset.UtcNow - cycleStart;
 					Logger.Log($"Ingestion cycle succeeded in {elapsed.TotalMilliseconds:F0} ms.");
+					RecordPollSuccess(DateTime.UtcNow);
 
 					currentBackoff = initialBackoff;
 					await DelayAsync(pollInterval, cancellationToken).ConfigureAwait(false);
@@ -48,13 +53,45 @@ namespace SizerDataCollector.Collector
 				catch (OperationCanceledException ex)
 				{
 					Logger.Log($"Ingestion cycle failed; will retry after {currentBackoff.TotalSeconds:F0}s.", ex);
+					RecordPollFailure(DateTime.UtcNow, ex);
 					currentBackoff = await ApplyBackoffAsync(currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
 				}
 				catch (Exception ex)
 				{
 					Logger.Log($"Ingestion cycle failed; will retry after {currentBackoff.TotalSeconds:F0}s.", ex);
+					RecordPollFailure(DateTime.UtcNow, ex);
 					currentBackoff = await ApplyBackoffAsync(currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
 				}
+			}
+		}
+
+		private void RecordPollStart(DateTime startUtc)
+		{
+			lock (_status.SyncRoot)
+			{
+				_status.LastPollStartUtc = startUtc;
+			}
+		}
+
+		private void RecordPollSuccess(DateTime endUtc)
+		{
+			lock (_status.SyncRoot)
+			{
+				_status.LastPollEndUtc = endUtc;
+				_status.TotalPollsStarted++;
+				_status.TotalPollsSucceeded++;
+				_status.LastPollError = null;
+			}
+		}
+
+		private void RecordPollFailure(DateTime endUtc, Exception ex)
+		{
+			lock (_status.SyncRoot)
+			{
+				_status.LastPollEndUtc = endUtc;
+				_status.TotalPollsStarted++;
+				_status.TotalPollsFailed++;
+				_status.LastPollError = ex?.Message ?? "Unknown error";
 			}
 		}
 

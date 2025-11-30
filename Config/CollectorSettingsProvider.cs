@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using Logger = SizerDataCollector.Logger;
+using SizerDataCollector.Core.Logging;
 
-namespace SizerDataCollector.Config
+namespace SizerDataCollector.Core.Config
 {
 	public sealed class CollectorSettingsProvider
 	{

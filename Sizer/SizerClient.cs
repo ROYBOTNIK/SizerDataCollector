@@ -6,11 +6,11 @@ using System.ServiceModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using SizerDataCollector.Config;
+using SizerDataCollector.Core.Config;
+using SizerDataCollector.Core.Logging;
 using SizerDataCollector.SizerServiceReference;
-using Logger = SizerDataCollector.Logger;
 
-namespace SizerDataCollector.Sizer
+namespace SizerDataCollector.Core.Sizer
 {
 	public sealed class CurrentBatchInfo
 	{

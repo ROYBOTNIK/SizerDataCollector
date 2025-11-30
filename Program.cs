@@ -1,123 +1,126 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using SizerDataCollector.Collector;
-using SizerDataCollector.Config;
-using SizerDataCollector.Db;
-using SizerDataCollector.Sizer;
+using SizerDataCollector.Core.Collector;
+using SizerDataCollector.Core.Config;
+using SizerDataCollector.Core.Db;
+using SizerDataCollector.Core.Logging;
+using SizerDataCollector.Core.Sizer;
 
 namespace SizerDataCollector
 {
 	internal class Program
 	{
-		static void Main(string[] args)
+		static int Main(string[] args)
 		{
-			Logger.Log("SizerDataCollector starting up...");
-
-			CollectorRuntimeSettings settings;
-			CollectorConfig cfg;
-			CollectorStatus status;
 			try
 			{
+				var mode = ParseMode(args);
+				Logger.Log($"SizerDataCollector test harness starting in '{mode}' mode...");
+
 				var settingsProvider = new CollectorSettingsProvider();
-				settings = settingsProvider.Load();
-				cfg = new CollectorConfig(settings);
-				status = new CollectorStatus();
-				LogEffectiveSettings(cfg);
+				var runtimeSettings = settingsProvider.Load();
+				var config = new CollectorConfig(runtimeSettings);
+				LogEffectiveSettings(runtimeSettings);
+
+				switch (mode)
+				{
+					case HarnessMode.Probe:
+						RunProbe(config);
+						break;
+					case HarnessMode.SinglePoll:
+						RunSinglePoll(config).GetAwaiter().GetResult();
+						break;
+					default:
+						ShowUsage();
+						return 1;
+				}
+
+				Logger.Log("Operation completed successfully.");
+				return 0;
 			}
 			catch (Exception ex)
 			{
-				Logger.Log("Failed to load configuration.", ex);
-				Logger.Log("Press any key to exit...");
-				Console.ReadKey();
+				Logger.Log("SizerDataCollector test harness failed.", ex);
+				return 1;
+			}
+		}
+
+		private static HarnessMode ParseMode(string[] args)
+		{
+			if (args == null || args.Length == 0)
+			{
+				return HarnessMode.Unknown;
+			}
+
+			var mode = args[0]?.Trim().ToLowerInvariant();
+
+			if (mode == "probe")
+			{
+				return HarnessMode.Probe;
+			}
+
+			if (mode == "single-poll")
+			{
+				return HarnessMode.SinglePoll;
+			}
+
+			return HarnessMode.Unknown;
+		}
+
+		private static void ShowUsage()
+		{
+			Logger.Log("Usage: SizerDataCollector.exe [probe|single-poll]");
+		}
+
+		private static void RunProbe(CollectorConfig config)
+		{
+			Logger.Log("Running schema and Sizer API probe...");
+			DatabaseTester.TestAndInitialize(config);
+			SizerClientTester.TestSizerConnection(config);
+		}
+
+		private static async Task RunSinglePoll(CollectorConfig config)
+		{
+			Logger.Log("Running collector for a single poll...");
+
+			var status = new CollectorStatus();
+			var repository = new TimescaleRepository(config.TimescaleConnectionString);
+
+			using (var sizerClient = new SizerClient(config))
+			using (var cts = new CancellationTokenSource())
+			{
+				var engine = new CollectorEngine(config, repository, sizerClient);
+				await engine.RunSinglePollAsync(cts.Token).ConfigureAwait(false);
+			}
+		}
+
+		private enum HarnessMode
+		{
+			Unknown,
+			Probe,
+			SinglePoll
+		}
+
+		private static void LogEffectiveSettings(CollectorRuntimeSettings settings)
+		{
+			if (settings == null)
+			{
+				Logger.Log("Runtime settings: <null>");
 				return;
 			}
 
-			using (var cts = new CancellationTokenSource())
-			{
-				ConsoleCancelEventHandler cancelHandler = (sender, eventArgs) =>
-				{
-					Logger.Log("Ctrl+C detected. Requesting shutdown...");
-					eventArgs.Cancel = true;
-					cts.Cancel();
-				};
-
-				Console.CancelKeyPress += cancelHandler;
-
-				try
-				{
-					DatabaseTester.TestAndInitialize(cfg);
-
-					if (!cfg.EnableIngestion)
-					{
-						Logger.Log("Running in probe-only mode (EnableIngestion=false).");
-						SizerClientTester.TestSizerConnection(cfg);
-						Logger.Log("Probe-only mode completed. Press any key to exit...");
-						Console.ReadKey();
-						return;
-					}
-
-					Logger.Log($"EnableIngestion=true; starting continuous ingestion loop (poll interval = {cfg.PollIntervalSeconds}s).");
-
-					var repository = new TimescaleRepository(cfg.TimescaleConnectionString);
-
-					try
-					{
-						using (var sizerClient = new SizerClient(cfg))
-						{
-							var engine = new CollectorEngine(cfg, repository, sizerClient);
-							var runner = new CollectorRunner(cfg, engine, status);
-							RunContinuousAsync(runner, cts.Token);
-						}
-					}
-					catch (OperationCanceledException) when (cts.IsCancellationRequested)
-					{
-						// Graceful shutdown
-					}
-					catch (Exception ex)
-					{
-						Logger.Log("Continuous ingestion loop terminated due to an unexpected error.", ex);
-					}
-
-					if (cts.IsCancellationRequested)
-					{
-						Logger.Log("Cancellation requested; SizerDataCollector is shutting down.");
-					}
-					else
-					{
-						Logger.Log("Continuous ingestion loop completed.");
-					}
-				}
-				finally
-				{
-					Console.CancelKeyPress -= cancelHandler;
-					Logger.Log("Press any key to exit...");
-					Console.ReadKey();
-				}
-			}
-		}
-
-		private static void RunContinuousAsync(CollectorRunner runner, CancellationToken token)
-		{
-			var task = runner.RunAsync(token);
-			try
-			{
-				task.GetAwaiter().GetResult();
-			}
-			catch (OperationCanceledException) when (token.IsCancellationRequested)
-			{
-				throw;
-			}
-		}
-
-		private static void LogEffectiveSettings(CollectorConfig cfg)
-		{
-			var timescaleStatus = string.IsNullOrWhiteSpace(cfg.TimescaleConnectionString)
-				? "Timescale connection string not provided."
-				: "Timescale connection string provided.";
-
-			Logger.Log($"Runtime settings: host={cfg.SizerHost}:{cfg.SizerPort}, pollInterval={cfg.PollIntervalSeconds}s, initialBackoff={cfg.InitialBackoffSeconds}s, maxBackoff={cfg.MaxBackoffSeconds}s, enableIngestion={cfg.EnableIngestion}.");
-			Logger.Log(timescaleStatus);
+			Logger.Log($"Runtime settings:");
+			Logger.Log($"  Sizer host: {settings.SizerHost}:{settings.SizerPort}");
+			Logger.Log($"  Open timeout: {settings.OpenTimeoutSec}s");
+			Logger.Log($"  Send timeout: {settings.SendTimeoutSec}s");
+			Logger.Log($"  Receive timeout: {settings.ReceiveTimeoutSec}s");
+			Logger.Log($"  Timescale connection string configured: {!string.IsNullOrWhiteSpace(settings.TimescaleConnectionString)}");
+			Logger.Log($"  Poll interval: {settings.PollIntervalSeconds}s");
+			Logger.Log($"  Initial backoff: {settings.InitialBackoffSeconds}s");
+			Logger.Log($"  Max backoff: {settings.MaxBackoffSeconds}s");
+			Logger.Log($"  Enable ingestion: {settings.EnableIngestion}");
+			Logger.Log($"  Enabled metrics: {(settings.EnabledMetrics == null ? 0 : settings.EnabledMetrics.Count)}");
 		}
 	}
 }

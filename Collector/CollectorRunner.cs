@@ -1,10 +1,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using SizerDataCollector.Config;
-using Logger = SizerDataCollector.Logger;
+using SizerDataCollector.Core.Config;
+using SizerDataCollector.Core.Logging;
+using SizerDataCollector.Core.Monitoring;
 
-namespace SizerDataCollector.Collector
+namespace SizerDataCollector.Core.Collector
 {
 	public sealed class CollectorRunner
 	{
@@ -42,6 +43,7 @@ namespace SizerDataCollector.Collector
 					var elapsed = DateTimeOffset.UtcNow - cycleStart;
 					Logger.Log($"Ingestion cycle succeeded in {elapsed.TotalMilliseconds:F0} ms.");
 					RecordPollSuccess(DateTime.UtcNow);
+					HeartbeatWriter.Write(DateTime.UtcNow, null);
 
 					currentBackoff = initialBackoff;
 					await DelayAsync(pollInterval, cancellationToken).ConfigureAwait(false);
@@ -54,12 +56,14 @@ namespace SizerDataCollector.Collector
 				{
 					Logger.Log($"Ingestion cycle failed; will retry after {currentBackoff.TotalSeconds:F0}s.", ex);
 					RecordPollFailure(DateTime.UtcNow, ex);
+					HeartbeatWriter.Write(DateTime.UtcNow, ex.Message);
 					currentBackoff = await ApplyBackoffAsync(currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
 				}
 				catch (Exception ex)
 				{
 					Logger.Log($"Ingestion cycle failed; will retry after {currentBackoff.TotalSeconds:F0}s.", ex);
 					RecordPollFailure(DateTime.UtcNow, ex);
+					HeartbeatWriter.Write(DateTime.UtcNow, ex.Message);
 					currentBackoff = await ApplyBackoffAsync(currentBackoff, initialBackoff, maxBackoff, cancellationToken).ConfigureAwait(false);
 				}
 			}

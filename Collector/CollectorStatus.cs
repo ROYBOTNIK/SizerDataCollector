@@ -1,6 +1,6 @@
 using System;
 
-namespace SizerDataCollector.Collector
+namespace SizerDataCollector.Core.Collector
 {
 	public sealed class CollectorStatus
 	{

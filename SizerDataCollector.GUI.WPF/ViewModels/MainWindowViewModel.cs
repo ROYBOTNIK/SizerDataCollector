@@ -2,34 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
+using System.ServiceProcess;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
-using SizerDataCollector;
-using SizerDataCollector.Collector;
-using SizerDataCollector.Config;
-using SizerDataCollector.Db;
+using Newtonsoft.Json;
 using SizerDataCollector.GUI.WPF.Commands;
-using SizerDataCollector.Sizer;
-using Logger = SizerDataCollector.Logger;
+using SizerDataCollector.Core.Config;
+using SizerDataCollector.Core.Logging;
+using SizerDataCollector.GUI.WPF.Services;
 
 namespace SizerDataCollector.GUI.WPF.ViewModels
 {
 	public sealed class MainWindowViewModel : INotifyPropertyChanged
 	{
-		private readonly Dispatcher _dispatcher;
 		private readonly CollectorSettingsProvider _settingsProvider;
+		private readonly WindowsServiceManager _serviceManager;
 
-		private readonly object _statusLock = new object();
 		private CollectorRuntimeSettings _currentSettings;
-		private CancellationTokenSource _cts;
-		private Task _runnerTask;
-		private CollectorStatus _collectorStatus;
-		private CancellationTokenSource _statusLoopCts;
-		private Task _statusLoopTask;
+		private readonly string _heartbeatPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "heartbeat.json");
+		private DispatcherTimer _heartbeatTimer;
+		private bool _isServiceOperationInProgress;
+		private ServiceControllerStatus? _serviceStatus;
 
 		private string _sizerHost = string.Empty;
 		private string _sizerPort = "0";
@@ -46,15 +42,17 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private string _totalPollsSucceededDisplay = "0";
 		private string _totalPollsFailedDisplay = "0";
 
-		private bool _isCollectorRunning;
+		private string _serviceStatusDisplay = "Unknown";
+		private string _lastPollTimeDisplay = "--";
+		private string _lastErrorMessage = "--";
 		private readonly RelayCommand _startCommand;
 		private readonly RelayCommand _stopCommand;
 		private readonly RelayCommand _saveSettingsCommand;
 
 		public MainWindowViewModel(CollectorSettingsProvider settingsProvider)
 		{
-			_dispatcher = Application.Current != null ? Application.Current.Dispatcher : Dispatcher.CurrentDispatcher;
 			_settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
+			_serviceManager = new WindowsServiceManager();
 
 			_startCommand = new RelayCommand(_ => StartCollector(), _ => CanStartCollector());
 			_stopCommand = new RelayCommand(_ => StopCollector(), _ => CanStopCollector());
@@ -155,16 +153,22 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			private set => SetProperty(ref _totalPollsFailedDisplay, value);
 		}
 
-		public bool IsCollectorRunning
+		public string ServiceStatus
 		{
-			get => _isCollectorRunning;
-			private set
-			{
-				if (SetProperty(ref _isCollectorRunning, value))
-				{
-					UpdateRunnerCommandStates();
-				}
-			}
+			get => _serviceStatusDisplay;
+			private set => SetProperty(ref _serviceStatusDisplay, value);
+		}
+
+		public string LastPollTime
+		{
+			get => _lastPollTimeDisplay;
+			private set => SetProperty(ref _lastPollTimeDisplay, value);
+		}
+
+		public string LastErrorMessage
+		{
+			get => _lastErrorMessage;
+			private set => SetProperty(ref _lastErrorMessage, value);
 		}
 
 		public ICommand StartCommand => _startCommand;
@@ -179,7 +183,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				_currentSettings = _settingsProvider.Load();
 				LoadFromSettings(_currentSettings);
-				UpdateStatus(_collectorStatus?.CreateSnapshot());
+				RefreshServiceStatus();
+				StartHeartbeatMonitoring();
 				UpdateSaveCommandState();
 			}
 			catch (Exception ex)
@@ -192,6 +197,11 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public void SaveSettings()
 		{
 			SaveSettingsInternal(true);
+		}
+
+		public void Shutdown()
+		{
+			StopHeartbeatMonitoring();
 		}
 
 		private bool SaveSettingsInternal(bool showNotification)
@@ -239,27 +249,6 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			EnableIngestion = settings.EnableIngestion;
 		}
 
-		private void UpdateStatus(CollectorStatusSnapshot snapshot)
-		{
-			if (snapshot == null)
-			{
-				LastPollStartDisplay = "--";
-				LastPollEndDisplay = "--";
-				LastPollError = "--";
-				TotalPollsStartedDisplay = "0";
-				TotalPollsSucceededDisplay = "0";
-				TotalPollsFailedDisplay = "0";
-				return;
-			}
-
-			LastPollStartDisplay = FormatTimestamp(snapshot.LastPollStartUtc);
-			LastPollEndDisplay = FormatTimestamp(snapshot.LastPollEndUtc);
-			LastPollError = string.IsNullOrWhiteSpace(snapshot.LastPollError) ? "--" : snapshot.LastPollError;
-			TotalPollsStartedDisplay = snapshot.TotalPollsStarted.ToString(CultureInfo.InvariantCulture);
-			TotalPollsSucceededDisplay = snapshot.TotalPollsSucceeded.ToString(CultureInfo.InvariantCulture);
-			TotalPollsFailedDisplay = snapshot.TotalPollsFailed.ToString(CultureInfo.InvariantCulture);
-		}
-
 		private CollectorRuntimeSettings ToRuntimeSettings(CollectorRuntimeSettings baseline)
 		{
 			var source = baseline ?? new CollectorRuntimeSettings();
@@ -284,13 +273,13 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		{
 			if (!CanStartCollector())
 			{
-				ShowMessage?.Invoke("Collector is already running.", "Collector", MessageBoxImage.Information);
+				ShowMessage?.Invoke("Service is already running or busy.", "Collector", MessageBoxImage.Information);
 				return;
 			}
 
 			if (!EnableIngestion)
 			{
-				ShowMessage?.Invoke("Enable ingestion before starting the collector loop.", "Collector", MessageBoxImage.Information);
+				ShowMessage?.Invoke("Enable ingestion before starting the collector service.", "Collector", MessageBoxImage.Information);
 				return;
 			}
 
@@ -302,175 +291,85 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 			try
 			{
-				var runtimeSettings = _currentSettings ?? _settingsProvider.Load();
-				if (runtimeSettings == null)
-				{
-					runtimeSettings = new CollectorRuntimeSettings();
-				}
+				_isServiceOperationInProgress = true;
+				UpdateRunnerCommandStates();
 
-				var config = new CollectorConfig(runtimeSettings);
-
-				await Task.Run(() => DatabaseTester.TestAndInitialize(config));
-
-				_collectorStatus = new CollectorStatus();
-				UpdateStatus(_collectorStatus.CreateSnapshot());
-
-				_cts = new CancellationTokenSource();
-				var token = _cts.Token;
-				IsCollectorRunning = true;
-
-				_runnerTask = Task.Run(async () =>
-				{
-					try
-					{
-						using (var sizerClient = new SizerClient(config))
-						{
-							var repository = new TimescaleRepository(config.TimescaleConnectionString);
-							var engine = new CollectorEngine(config, repository, sizerClient);
-							var runner = new CollectorRunner(config, engine, _collectorStatus);
-							await runner.RunAsync(token).ConfigureAwait(false);
-						}
-					}
-					catch (OperationCanceledException) when (token.IsCancellationRequested)
-					{
-					}
-					catch (Exception ex)
-					{
-						Logger.Log("Collector loop terminated unexpectedly in WPF host.", ex);
-						if (_collectorStatus != null)
-						{
-							lock (_statusLock)
-							{
-								_collectorStatus.LastPollError = ex.Message;
-							}
-						}
-					}
-					finally
-					{
-						StopStatusRefreshLoop();
-						var _ = _dispatcher.BeginInvoke(new Action(() =>
-						{
-							UpdateStatus(_collectorStatus?.CreateSnapshot());
-							CleanupRunnerState();
-						}));
-					}
-				}, token);
-
-				StartStatusRefreshLoop();
-				Logger.Log("MainWindowViewModel: Collector started from GUI.");
+				await _serviceManager.StartAsync(TimeSpan.FromSeconds(30));
+				Logger.Log("MainWindowViewModel: Service start requested.");
 			}
 			catch (Exception ex)
 			{
-				Logger.Log("MainWindowViewModel: Failed to start collector.", ex);
-				StopStatusRefreshLoop();
-				CleanupRunnerState();
-				ShowMessage?.Invoke($"Failed to start collector: {ex.Message}", "Error", MessageBoxImage.Error);
+				Logger.Log("MainWindowViewModel: Failed to start service.", ex);
+				ShowMessage?.Invoke($"Failed to start service: {ex.Message}", "Error", MessageBoxImage.Error);
 			}
-
-			UpdateRunnerCommandStates();
+			finally
+			{
+				_isServiceOperationInProgress = false;
+				RefreshServiceStatus();
+				UpdateRunnerCommandStates();
+			}
 		}
 
 		private async void StopCollector()
 		{
 			if (!CanStopCollector())
 			{
-				ShowMessage?.Invoke("Collector is not currently running.", "Collector", MessageBoxImage.Information);
+				ShowMessage?.Invoke("Service is not currently running or is busy.", "Collector", MessageBoxImage.Information);
 				return;
 			}
 
 			try
 			{
-				_cts?.Cancel();
-				var task = _runnerTask;
-				if (task != null)
-				{
-					try
-					{
-						await task.ConfigureAwait(false);
-					}
-					catch (OperationCanceledException)
-					{
-					}
-				}
+				_isServiceOperationInProgress = true;
+				UpdateRunnerCommandStates();
+
+				await _serviceManager.StopAsync(TimeSpan.FromSeconds(30));
+				Logger.Log("MainWindowViewModel: Service stop requested.");
 			}
 			catch (Exception ex)
 			{
-				Logger.Log("MainWindowViewModel: Error while stopping collector.", ex);
+				Logger.Log("MainWindowViewModel: Failed to stop service.", ex);
+				ShowMessage?.Invoke($"Failed to stop service: {ex.Message}", "Error", MessageBoxImage.Error);
 			}
 			finally
 			{
-				StopStatusRefreshLoop();
-				CleanupRunnerState();
-				UpdateStatus(_collectorStatus?.CreateSnapshot());
-				Logger.Log("MainWindowViewModel: Collector stopped from GUI.");
+				_isServiceOperationInProgress = false;
+				RefreshServiceStatus();
+				UpdateRunnerCommandStates();
 			}
-
-			UpdateRunnerCommandStates();
-		}
-
-		private void StartStatusRefreshLoop()
-		{
-			StopStatusRefreshLoop();
-
-			if (_collectorStatus == null)
-			{
-				return;
-			}
-
-			_statusLoopCts = new CancellationTokenSource();
-			var loopToken = _statusLoopCts.Token;
-
-			_statusLoopTask = Task.Run(async () =>
-			{
-				while (!loopToken.IsCancellationRequested)
-				{
-					try
-					{
-						var snapshot = _collectorStatus?.CreateSnapshot();
-						var _ = _dispatcher.BeginInvoke(new Action(() => UpdateStatus(snapshot)));
-						await Task.Delay(TimeSpan.FromSeconds(1), loopToken).ConfigureAwait(false);
-					}
-					catch (OperationCanceledException)
-					{
-						break;
-					}
-					catch (Exception ex)
-					{
-						Logger.Log("MainWindowViewModel: Status refresh loop error.", ex);
-					}
-				}
-			}, loopToken);
-		}
-
-		private void StopStatusRefreshLoop()
-		{
-			if (_statusLoopCts != null)
-			{
-				_statusLoopCts.Cancel();
-				_statusLoopCts.Dispose();
-				_statusLoopCts = null;
-			}
-
-			_statusLoopTask = null;
-		}
-
-		private void CleanupRunnerState()
-		{
-			_cts?.Dispose();
-			_cts = null;
-			_runnerTask = null;
-			IsCollectorRunning = false;
-			UpdateRunnerCommandStates();
 		}
 
 		private bool CanStartCollector()
 		{
-			return _runnerTask == null || _runnerTask.IsCompleted;
+			if (!_serviceStatus.HasValue)
+			{
+				return false;
+			}
+
+			if (_isServiceOperationInProgress)
+			{
+				return false;
+			}
+
+			return _serviceStatus != ServiceControllerStatus.Running &&
+				   _serviceStatus != ServiceControllerStatus.StartPending;
 		}
 
 		private bool CanStopCollector()
 		{
-			return _runnerTask != null && !_runnerTask.IsCompleted;
+			if (!_serviceStatus.HasValue)
+			{
+				return false;
+			}
+
+			if (_isServiceOperationInProgress)
+			{
+				return false;
+			}
+
+			return _serviceStatus == ServiceControllerStatus.Running ||
+				   _serviceStatus == ServiceControllerStatus.StartPending ||
+				   _serviceStatus == ServiceControllerStatus.Paused;
 		}
 
 		private void UpdateRunnerCommandStates()
@@ -486,9 +385,114 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			}
 		}
 
-		private static string FormatTimestamp(DateTime? timestamp)
+		private void RefreshServiceStatus()
 		{
-			return timestamp.HasValue ? timestamp.Value.ToString("u", CultureInfo.InvariantCulture) : "--";
+			try
+			{
+				if (!_serviceManager.IsInstalled())
+				{
+					_serviceStatus = null;
+					ServiceStatus = "Not Installed";
+					return;
+				}
+
+				_serviceStatus = _serviceManager.GetStatus();
+				ServiceStatus = _serviceStatus?.ToString() ?? "Unknown";
+			}
+			catch (Exception ex)
+			{
+				_serviceStatus = null;
+				ServiceStatus = "Unknown";
+				Logger.Log("MainWindowViewModel: Failed to query service status.", ex);
+			}
+		}
+
+		private void StartHeartbeatMonitoring()
+		{
+			if (_heartbeatTimer != null)
+			{
+				return;
+			}
+
+			_heartbeatTimer = new DispatcherTimer
+			{
+				Interval = TimeSpan.FromSeconds(2)
+			};
+			_heartbeatTimer.Tick += HeartbeatTimerOnTick;
+			_heartbeatTimer.Start();
+
+			RefreshHeartbeat();
+		}
+
+		private void StopHeartbeatMonitoring()
+		{
+			if (_heartbeatTimer == null)
+			{
+				return;
+			}
+
+			_heartbeatTimer.Tick -= HeartbeatTimerOnTick;
+			_heartbeatTimer.Stop();
+			_heartbeatTimer = null;
+		}
+
+		private void HeartbeatTimerOnTick(object sender, EventArgs e)
+		{
+			RefreshHeartbeat();
+			RefreshServiceStatus();
+		}
+
+		private void RefreshHeartbeat()
+		{
+			try
+			{
+				if (!File.Exists(_heartbeatPath))
+				{
+					LastPollTime = "--";
+					LastErrorMessage = "--";
+					return;
+				}
+
+				var json = File.ReadAllText(_heartbeatPath);
+				var payload = JsonConvert.DeserializeObject<HeartbeatPayload>(json);
+
+				if (payload == null)
+				{
+					LastPollTime = "--";
+					LastErrorMessage = "--";
+					LastPollStartDisplay = "--";
+					LastPollEndDisplay = "--";
+					LastPollError = "--";
+					return;
+				}
+
+				LastPollTime = payload.LastPollUtc.HasValue
+					? FormatTimestamp(payload.LastPollUtc.Value)
+					: "--";
+
+				LastErrorMessage = string.IsNullOrWhiteSpace(payload.LastError) ? "--" : payload.LastError;
+				LastPollStartDisplay = LastPollTime;
+				LastPollEndDisplay = LastPollTime;
+				LastPollError = LastErrorMessage;
+			}
+			catch (Exception ex)
+			{
+				Logger.Log("MainWindowViewModel: Failed to read heartbeat.", ex);
+			}
+		}
+
+		private static string FormatTimestamp(DateTime timestamp)
+		{
+			return timestamp.ToString("u", CultureInfo.InvariantCulture);
+		}
+
+		private sealed class HeartbeatPayload
+		{
+			[JsonProperty("last_poll_utc")]
+			public DateTime? LastPollUtc { get; set; }
+
+			[JsonProperty("last_error")]
+			public string LastError { get; set; }
 		}
 
 		private static int ParseInt(string value, int fallback)

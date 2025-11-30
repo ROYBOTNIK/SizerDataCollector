@@ -3,7 +3,7 @@ using System.Configuration;
 using System.IO;
 using System.Text;
 
-namespace SizerDataCollector
+namespace SizerDataCollector.Core.Logging
 {
 	public static class Logger
 	{

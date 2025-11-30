@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using SizerDataCollector.GUI.WPF.ViewModels;
-using SizerDataCollector.Config;
+using SizerDataCollector.Core.Config;
 
 namespace SizerDataCollector.GUI.WPF
 {
@@ -18,6 +18,7 @@ namespace SizerDataCollector.GUI.WPF
 			};
 			DataContext = ViewModel;
 			Loaded += (_, __) => ViewModel.Initialize();
+			Closed += (_, __) => ViewModel.Shutdown();
 		}
 
 		private void ShowMessage(string message, string caption, MessageBoxImage image)

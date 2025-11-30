@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
-using Logger = SizerDataCollector.Logger;
+using SizerDataCollector.Core.Logging;
 
-namespace SizerDataCollector.Config
+namespace SizerDataCollector.Core.Config
 {
 	public sealed class CollectorConfig
 	{

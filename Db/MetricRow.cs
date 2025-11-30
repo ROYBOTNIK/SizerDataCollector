@@ -1,6 +1,6 @@
 using System;
 
-namespace SizerDataCollector.Db
+namespace SizerDataCollector.Core.Db
 {
 	public sealed class MetricRow
 	{

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SizerDataCollector.Config
+namespace SizerDataCollector.Core.Config
 {
 	public class CollectorRuntimeSettings
 	{

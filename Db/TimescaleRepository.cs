@@ -6,9 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
 using NpgsqlTypes;
-using Logger = SizerDataCollector.Logger;
+using SizerDataCollector.Core.Logging;
 
-namespace SizerDataCollector.Db
+namespace SizerDataCollector.Core.Db
 {
 	public interface ITimescaleRepository
 	{

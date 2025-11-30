@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using SizerDataCollector.Config;
-using SizerDataCollector.Db;
-using SizerDataCollector.Sizer;
-using Logger = SizerDataCollector.Logger;
+using SizerDataCollector.Core.Config;
+using SizerDataCollector.Core.Db;
+using SizerDataCollector.Core.Logging;
+using SizerDataCollector.Core.Sizer;
 
-namespace SizerDataCollector.Collector
+namespace SizerDataCollector.Core.Collector
 {
 	public sealed class CollectorEngine
 	{

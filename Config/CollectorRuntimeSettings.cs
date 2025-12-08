@@ -15,6 +15,7 @@ namespace SizerDataCollector.Core.Config
 		public int PollIntervalSeconds { get; set; }
 		public int InitialBackoffSeconds { get; set; }
 		public int MaxBackoffSeconds { get; set; }
+		public string SharedDataDirectory { get; set; } = string.Empty;
 	}
 }
 

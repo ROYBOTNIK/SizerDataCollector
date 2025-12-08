@@ -68,6 +68,7 @@
     </Compile>
     <Compile Include="Commands\RelayCommand.cs" />
     <Compile Include="Services\WindowsServiceManager.cs" />
+    <Compile Include="Services\HeartbeatReader.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

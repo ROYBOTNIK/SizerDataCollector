@@ -1,10 +1,12 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using SizerDataCollector.Core.Collector;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
 using SizerDataCollector.Core.Logging;
+using System.IO;
 using SizerDataCollector.Core.Sizer;
 
 namespace SizerDataCollector
@@ -29,7 +31,7 @@ namespace SizerDataCollector
 						RunProbe(config);
 						break;
 					case HarnessMode.SinglePoll:
-						RunSinglePoll(config).GetAwaiter().GetResult();
+						RunSinglePoll(config, runtimeSettings).GetAwaiter().GetResult();
 						break;
 					default:
 						ShowUsage();
@@ -80,18 +82,26 @@ namespace SizerDataCollector
 			SizerClientTester.TestSizerConnection(config);
 		}
 
-		private static async Task RunSinglePoll(CollectorConfig config)
+		private static async Task RunSinglePoll(CollectorConfig config, CollectorRuntimeSettings runtimeSettings)
 		{
 			Logger.Log("Running collector for a single poll...");
 
 			var status = new CollectorStatus();
+			var dataRoot = runtimeSettings?.SharedDataDirectory ?? string.Empty;
+			if (!string.IsNullOrWhiteSpace(dataRoot))
+			{
+				Directory.CreateDirectory(dataRoot);
+			}
+			var heartbeatPath = Path.Combine(dataRoot, "heartbeat.json");
+			var heartbeatWriter = new HeartbeatWriter(heartbeatPath);
 			var repository = new TimescaleRepository(config.TimescaleConnectionString);
 
 			using (var sizerClient = new SizerClient(config))
 			using (var cts = new CancellationTokenSource())
 			{
 				var engine = new CollectorEngine(config, repository, sizerClient);
-				await engine.RunSinglePollAsync(cts.Token).ConfigureAwait(false);
+				var runner = new CollectorRunner(config, engine, status, heartbeatWriter);
+				await runner.RunAsync(cts.Token).ConfigureAwait(false);
 			}
 		}
 

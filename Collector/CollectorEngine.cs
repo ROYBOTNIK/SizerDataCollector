@@ -25,7 +25,7 @@ namespace SizerDataCollector.Core.Collector
 			_sizerClient = sizerClient ?? throw new ArgumentNullException(nameof(sizerClient));
 		}
 
-		public async Task RunSinglePollAsync(CancellationToken cancellationToken)
+		public async Task RunSinglePollAsync(CollectorStatus status, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 
@@ -34,17 +34,35 @@ namespace SizerDataCollector.Core.Collector
 			string serialNo;
 			string machineName;
 
+			lock (status.SyncRoot)
+			{
+				status.LastRunId = runId;
+				status.LastPollStartedUtc = DateTime.UtcNow;
+			}
+
 			try
 			{
 				serialNo = await _sizerClient.GetSerialNoAsync(cancellationToken).ConfigureAwait(false);
 				machineName = await _sizerClient.GetMachineNameAsync(cancellationToken).ConfigureAwait(false);
 				Logger.Log($"RunId={runId} - Sizer identification: serial='{serialNo}', name='{machineName}'.");
 
+				lock (status.SyncRoot)
+				{
+					status.MachineSerial = serialNo;
+					status.MachineName = machineName;
+				}
+
 				await _repository.UpsertMachineAsync(serialNo, machineName, cancellationToken).ConfigureAwait(false);
 			}
 			catch (Exception ex)
 			{
 				Logger.Log($"RunId={runId} - ERROR: Failed to resolve or upsert machine metadata.", ex);
+				lock (status.SyncRoot)
+				{
+					status.LastErrorUtc = DateTime.UtcNow;
+					status.LastErrorMessage = ex.Message;
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+				}
 				throw;
 			}
 
@@ -56,12 +74,22 @@ namespace SizerDataCollector.Core.Collector
 			catch (Exception ex)
 			{
 				Logger.Log($"RunId={runId} - ERROR: Failed to fetch current batch from Sizer.", ex);
+				lock (status.SyncRoot)
+				{
+					status.LastErrorUtc = DateTime.UtcNow;
+					status.LastErrorMessage = ex.Message;
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+				}
 				throw;
 			}
 
 			if (batchInfo == null)
 			{
 				Logger.Log($"RunId={runId} - WARN: No current batch for serial '{serialNo}' – skipping metrics insert.");
+				lock (status.SyncRoot)
+				{
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+				}
 				return;
 			}
 
@@ -79,6 +107,12 @@ namespace SizerDataCollector.Core.Collector
 			catch (Exception ex)
 			{
 				Logger.Log($"RunId={runId} - ERROR: Failed to persist batch metadata for serial '{serialNo}', batch_id '{batchInfo?.BatchId}'.", ex);
+				lock (status.SyncRoot)
+				{
+					status.LastErrorUtc = DateTime.UtcNow;
+					status.LastErrorMessage = ex.Message;
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+				}
 				throw;
 			}
 
@@ -86,6 +120,10 @@ namespace SizerDataCollector.Core.Collector
 			if (enabledMetrics == null || enabledMetrics.Count == 0)
 			{
 				Logger.Log($"RunId={runId} - WARN: EnabledMetrics list is empty. No metrics will be collected this cycle.");
+				lock (status.SyncRoot)
+				{
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+				}
 				return;
 			}
 
@@ -115,6 +153,12 @@ namespace SizerDataCollector.Core.Collector
 				catch (Exception ex)
 				{
 					Logger.Log($"RunId={runId} - ERROR: Failed to capture metric '{logicalName}' for serial '{serialNo}'.", ex);
+					lock (status.SyncRoot)
+					{
+						status.LastErrorUtc = DateTime.UtcNow;
+						status.LastErrorMessage = ex.Message;
+						status.LastPollCompletedUtc = DateTime.UtcNow;
+					}
 					throw;
 				}
 			}
@@ -133,7 +177,20 @@ namespace SizerDataCollector.Core.Collector
 			catch (Exception ex)
 			{
 				Logger.Log($"RunId={runId} - ERROR: Failed to insert metrics into TimescaleDB for serial '{serialNo}', batch_record_id={batchRecordId}.", ex);
+				lock (status.SyncRoot)
+				{
+					status.LastErrorUtc = DateTime.UtcNow;
+					status.LastErrorMessage = ex.Message;
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+				}
 				throw;
+			}
+
+			lock (status.SyncRoot)
+			{
+				status.LastSuccessUtc = DateTime.UtcNow;
+				status.LastPollCompletedUtc = DateTime.UtcNow;
+				status.LastErrorMessage = null;
 			}
 		}
 	}

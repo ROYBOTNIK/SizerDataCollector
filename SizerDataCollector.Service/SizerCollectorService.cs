@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using SizerDataCollector.Core.Collector;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
 using SizerDataCollector.Core.Logging;
+using System.IO;
 using SizerDataCollector.Core.Sizer;
 
 namespace SizerDataCollector.Service
@@ -15,6 +17,7 @@ namespace SizerDataCollector.Service
 		private CancellationTokenSource _cts;
 		private Task _runnerTask;
 		private CollectorStatus _status;
+		private HeartbeatWriter _heartbeatWriter;
 
 		public SizerCollectorService()
 		{
@@ -32,6 +35,13 @@ namespace SizerDataCollector.Service
 				var config = new CollectorConfig(runtimeSettings);
 
 				_status = new CollectorStatus();
+				var dataRoot = runtimeSettings.SharedDataDirectory;
+				if (!string.IsNullOrWhiteSpace(dataRoot))
+				{
+					Directory.CreateDirectory(dataRoot);
+				}
+				var heartbeatPath = Path.Combine(dataRoot, "heartbeat.json");
+				_heartbeatWriter = new HeartbeatWriter(heartbeatPath);
 				_cts = new CancellationTokenSource();
 
 				_runnerTask = Task.Run(async () =>
@@ -44,7 +54,7 @@ namespace SizerDataCollector.Service
 						using (var sizerClient = new SizerClient(config))
 						{
 							var engine = new CollectorEngine(config, repository, sizerClient);
-							var runner = new CollectorRunner(config, engine, _status);
+							var runner = new CollectorRunner(config, engine, _status, _heartbeatWriter);
 							await runner.RunAsync(_cts.Token).ConfigureAwait(false);
 						}
 					}

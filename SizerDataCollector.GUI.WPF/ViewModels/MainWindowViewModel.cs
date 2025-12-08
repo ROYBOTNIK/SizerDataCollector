@@ -5,10 +5,12 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.ServiceProcess;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Newtonsoft.Json;
+using SizerDataCollector.Core.Collector;
 using SizerDataCollector.GUI.WPF.Commands;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Logging;
@@ -20,12 +22,13 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 	{
 		private readonly CollectorSettingsProvider _settingsProvider;
 		private readonly WindowsServiceManager _serviceManager;
+		private readonly HeartbeatReader _heartbeatReader;
 
 		private CollectorRuntimeSettings _currentSettings;
-		private readonly string _heartbeatPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "heartbeat.json");
 		private DispatcherTimer _heartbeatTimer;
 		private bool _isServiceOperationInProgress;
 		private ServiceControllerStatus? _serviceStatus;
+		private bool _isServiceInstalled;
 
 		private string _sizerHost = string.Empty;
 		private string _sizerPort = "0";
@@ -45,6 +48,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private string _serviceStatusDisplay = "Unknown";
 		private string _lastPollTimeDisplay = "--";
 		private string _lastErrorMessage = "--";
+		private string _lastPollDisplay = "—";
+		private string _lastSuccessDisplay = "—";
+		private string _lastErrorDisplay = "—";
 		private readonly RelayCommand _startCommand;
 		private readonly RelayCommand _stopCommand;
 		private readonly RelayCommand _saveSettingsCommand;
@@ -54,9 +60,49 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			_settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
 			_serviceManager = new WindowsServiceManager();
 
-			_startCommand = new RelayCommand(_ => StartCollector(), _ => CanStartCollector());
-			_stopCommand = new RelayCommand(_ => StopCollector(), _ => CanStopCollector());
+			var runtimeSettings = _settingsProvider.Load();
+			_currentSettings = runtimeSettings;
+			var dataRoot = runtimeSettings?.SharedDataDirectory;
+			if (!string.IsNullOrWhiteSpace(dataRoot))
+			{
+				Directory.CreateDirectory(dataRoot);
+			}
+			var heartbeatPath = string.IsNullOrWhiteSpace(dataRoot)
+				? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "heartbeat.json")
+				: Path.Combine(dataRoot, "heartbeat.json");
+			_heartbeatReader = new HeartbeatReader(heartbeatPath);
+
+			Logger.Log("MainWindowViewModel created. Checking service installation status...");
+			try
+			{
+				var installed = _serviceManager.IsInstalled();
+				var status = installed ? _serviceManager.GetStatus() : (ServiceControllerStatus?)null;
+				Logger.Log($"MainWindowViewModel: Service installed = {installed}, status = {status?.ToString() ?? "Unknown"}");
+				IsServiceInstalled = installed;
+				ServiceStatus = status?.ToString() ?? "Unknown";
+			}
+			catch (Exception ex)
+			{
+				Logger.Log("MainWindowViewModel: Failed to query Windows service status during construction.", ex);
+			}
+
+			_startCommand = new RelayCommand(
+				async _ => await StartServiceAsync(),
+				_ =>
+				{
+					Logger.Log($"[StartCommand.CanExecute] IsServiceInstalled={IsServiceInstalled}, ServiceStatus={ServiceStatus}, IsBusy={IsBusy}");
+					return IsServiceInstalled && !IsBusy;
+				});
+			_stopCommand = new RelayCommand(
+				async _ => await StopServiceAsync(),
+				_ =>
+				{
+					Logger.Log($"[StopCommand.CanExecute] IsServiceInstalled={IsServiceInstalled}, ServiceStatus={ServiceStatus}, IsBusy={IsBusy}");
+					return IsServiceInstalled && !IsBusy;
+				});
 			_saveSettingsCommand = new RelayCommand(_ => SaveSettings(), _ => CanSaveSettings());
+
+			UpdateRunnerCommandStates();
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -153,10 +199,40 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			private set => SetProperty(ref _totalPollsFailedDisplay, value);
 		}
 
+		public bool IsServiceInstalled
+		{
+			get => _isServiceInstalled;
+			private set
+			{
+				if (SetProperty(ref _isServiceInstalled, value))
+				{
+					UpdateRunnerCommandStates();
+				}
+			}
+		}
+
+		public bool IsBusy
+		{
+			get => _isServiceOperationInProgress;
+			private set
+			{
+				if (SetProperty(ref _isServiceOperationInProgress, value))
+				{
+					UpdateRunnerCommandStates();
+				}
+			}
+		}
+
 		public string ServiceStatus
 		{
 			get => _serviceStatusDisplay;
-			private set => SetProperty(ref _serviceStatusDisplay, value);
+			private set
+			{
+				if (SetProperty(ref _serviceStatusDisplay, value))
+				{
+					UpdateRunnerCommandStates();
+				}
+			}
 		}
 
 		public string LastPollTime
@@ -169,6 +245,24 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		{
 			get => _lastErrorMessage;
 			private set => SetProperty(ref _lastErrorMessage, value);
+		}
+
+		public string LastPollDisplay
+		{
+			get => _lastPollDisplay;
+			private set => SetProperty(ref _lastPollDisplay, value);
+		}
+
+		public string LastSuccessDisplay
+		{
+			get => _lastSuccessDisplay;
+			private set => SetProperty(ref _lastSuccessDisplay, value);
+		}
+
+		public string LastErrorDisplay
+		{
+			get => _lastErrorDisplay;
+			private set => SetProperty(ref _lastErrorDisplay, value);
 		}
 
 		public ICommand StartCommand => _startCommand;
@@ -269,14 +363,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			};
 		}
 
-		private async void StartCollector()
+		private async Task StartServiceAsync()
 		{
-			if (!CanStartCollector())
-			{
-				ShowMessage?.Invoke("Service is already running or busy.", "Collector", MessageBoxImage.Information);
-				return;
-			}
-
 			if (!EnableIngestion)
 			{
 				ShowMessage?.Invoke("Enable ingestion before starting the collector service.", "Collector", MessageBoxImage.Information);
@@ -289,13 +377,22 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				return;
 			}
 
+			IsBusy = true;
+
 			try
 			{
-				_isServiceOperationInProgress = true;
-				UpdateRunnerCommandStates();
-
+				Logger.Log("MainWindowViewModel: Starting service via WindowsServiceManager...");
 				await _serviceManager.StartAsync(TimeSpan.FromSeconds(30));
-				Logger.Log("MainWindowViewModel: Service start requested.");
+				Logger.Log("MainWindowViewModel: Service start request completed.");
+			}
+			catch (InvalidOperationException ex)
+			{
+				Logger.Log("MainWindowViewModel: Failed to start service.", ex);
+				MessageBox.Show(
+					"Could not start the service. This usually means you need to run this tool as Administrator.",
+					"Service Start Failed",
+					MessageBoxButton.OK,
+					MessageBoxImage.Warning);
 			}
 			catch (Exception ex)
 			{
@@ -304,27 +401,40 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			}
 			finally
 			{
-				_isServiceOperationInProgress = false;
-				RefreshServiceStatus();
-				UpdateRunnerCommandStates();
+				try
+				{
+					IsServiceInstalled = _serviceManager.IsInstalled();
+					var status = IsServiceInstalled ? _serviceManager.GetStatus() : (ServiceControllerStatus?)null;
+					ServiceStatus = status?.ToString() ?? "Unknown";
+					Logger.Log($"MainWindowViewModel: After Start, installed = {IsServiceInstalled}, status = {ServiceStatus}");
+				}
+				catch (Exception statusEx)
+				{
+					Logger.Log("MainWindowViewModel: Failed to refresh service status after Start.", statusEx);
+				}
+
+				IsBusy = false;
 			}
 		}
 
-		private async void StopCollector()
+		private async Task StopServiceAsync()
 		{
-			if (!CanStopCollector())
-			{
-				ShowMessage?.Invoke("Service is not currently running or is busy.", "Collector", MessageBoxImage.Information);
-				return;
-			}
+			IsBusy = true;
 
 			try
 			{
-				_isServiceOperationInProgress = true;
-				UpdateRunnerCommandStates();
-
+				Logger.Log("MainWindowViewModel: Stopping service via WindowsServiceManager...");
 				await _serviceManager.StopAsync(TimeSpan.FromSeconds(30));
-				Logger.Log("MainWindowViewModel: Service stop requested.");
+				Logger.Log("MainWindowViewModel: Service stop request completed.");
+			}
+			catch (InvalidOperationException ex)
+			{
+				Logger.Log("MainWindowViewModel: Failed to stop service.", ex);
+				MessageBox.Show(
+					"Could not stop the service. This usually means you need to run this tool as Administrator.",
+					"Service Stop Failed",
+					MessageBoxButton.OK,
+					MessageBoxImage.Warning);
 			}
 			catch (Exception ex)
 			{
@@ -333,43 +443,20 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			}
 			finally
 			{
-				_isServiceOperationInProgress = false;
-				RefreshServiceStatus();
-				UpdateRunnerCommandStates();
+				try
+				{
+					IsServiceInstalled = _serviceManager.IsInstalled();
+					var status = IsServiceInstalled ? _serviceManager.GetStatus() : (ServiceControllerStatus?)null;
+					ServiceStatus = status?.ToString() ?? "Unknown";
+					Logger.Log($"MainWindowViewModel: After Stop, installed = {IsServiceInstalled}, status = {ServiceStatus}");
+				}
+				catch (Exception statusEx)
+				{
+					Logger.Log("MainWindowViewModel: Failed to refresh service status after Stop.", statusEx);
+				}
+
+				IsBusy = false;
 			}
-		}
-
-		private bool CanStartCollector()
-		{
-			if (!_serviceStatus.HasValue)
-			{
-				return false;
-			}
-
-			if (_isServiceOperationInProgress)
-			{
-				return false;
-			}
-
-			return _serviceStatus != ServiceControllerStatus.Running &&
-				   _serviceStatus != ServiceControllerStatus.StartPending;
-		}
-
-		private bool CanStopCollector()
-		{
-			if (!_serviceStatus.HasValue)
-			{
-				return false;
-			}
-
-			if (_isServiceOperationInProgress)
-			{
-				return false;
-			}
-
-			return _serviceStatus == ServiceControllerStatus.Running ||
-				   _serviceStatus == ServiceControllerStatus.StartPending ||
-				   _serviceStatus == ServiceControllerStatus.Paused;
 		}
 
 		private void UpdateRunnerCommandStates()
@@ -391,11 +478,13 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				if (!_serviceManager.IsInstalled())
 				{
+					IsServiceInstalled = false;
 					_serviceStatus = null;
 					ServiceStatus = "Not Installed";
 					return;
 				}
 
+				IsServiceInstalled = true;
 				_serviceStatus = _serviceManager.GetStatus();
 				ServiceStatus = _serviceStatus?.ToString() ?? "Unknown";
 			}
@@ -416,7 +505,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 			_heartbeatTimer = new DispatcherTimer
 			{
-				Interval = TimeSpan.FromSeconds(2)
+				Interval = TimeSpan.FromSeconds(5)
 			};
 			_heartbeatTimer.Tick += HeartbeatTimerOnTick;
 			_heartbeatTimer.Start();
@@ -446,53 +535,46 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		{
 			try
 			{
-				if (!File.Exists(_heartbeatPath))
-				{
-					LastPollTime = "--";
-					LastErrorMessage = "--";
-					return;
-				}
-
-				var json = File.ReadAllText(_heartbeatPath);
-				var payload = JsonConvert.DeserializeObject<HeartbeatPayload>(json);
-
+				var payload = _heartbeatReader.ReadOrNull();
 				if (payload == null)
 				{
+					LastPollDisplay = "—";
+					LastSuccessDisplay = "—";
+					LastErrorDisplay = "—";
 					LastPollTime = "--";
 					LastErrorMessage = "--";
-					LastPollStartDisplay = "--";
-					LastPollEndDisplay = "--";
-					LastPollError = "--";
 					return;
 				}
 
-				LastPollTime = payload.LastPollUtc.HasValue
-					? FormatTimestamp(payload.LastPollUtc.Value)
-					: "--";
+				var localZone = TimeZoneInfo.Local;
 
-				LastErrorMessage = string.IsNullOrWhiteSpace(payload.LastError) ? "--" : payload.LastError;
-				LastPollStartDisplay = LastPollTime;
-				LastPollEndDisplay = LastPollTime;
-				LastPollError = LastErrorMessage;
+				string FormatLocal(DateTime? utc)
+				{
+					if (!utc.HasValue)
+					{
+						return null;
+					}
+
+					var utcValue = DateTime.SpecifyKind(utc.Value, DateTimeKind.Utc);
+					var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcValue, localZone);
+					return localTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+				}
+
+				LastPollDisplay = FormatLocal(payload.LastPollUtc) ?? "—";
+				LastSuccessDisplay = FormatLocal(payload.LastSuccessUtc) ?? "—";
+
+				var errorTime = FormatLocal(payload.LastErrorUtc);
+				LastErrorDisplay = errorTime != null
+					? $"{errorTime} – {payload.LastErrorMessage}"
+					: "—";
+
+				LastPollTime = LastPollDisplay;
+				LastErrorMessage = string.IsNullOrWhiteSpace(payload.LastErrorMessage) ? "--" : payload.LastErrorMessage;
 			}
 			catch (Exception ex)
 			{
 				Logger.Log("MainWindowViewModel: Failed to read heartbeat.", ex);
 			}
-		}
-
-		private static string FormatTimestamp(DateTime timestamp)
-		{
-			return timestamp.ToString("u", CultureInfo.InvariantCulture);
-		}
-
-		private sealed class HeartbeatPayload
-		{
-			[JsonProperty("last_poll_utc")]
-			public DateTime? LastPollUtc { get; set; }
-
-			[JsonProperty("last_error")]
-			public string LastError { get; set; }
 		}
 
 		private static int ParseInt(string value, int fallback)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System;
 using Newtonsoft.Json;
 using SizerDataCollector.Core.Logging;
 
@@ -82,8 +83,15 @@ namespace SizerDataCollector.Core.Config
 				EnableIngestion = config.EnableIngestion,
 				PollIntervalSeconds = config.PollIntervalSeconds,
 				InitialBackoffSeconds = config.InitialBackoffSeconds,
-				MaxBackoffSeconds = config.MaxBackoffSeconds
+				MaxBackoffSeconds = config.MaxBackoffSeconds,
+				SharedDataDirectory = GetDefaultSharedDataDirectory()
 			};
+		}
+
+		private static string GetDefaultSharedDataDirectory()
+		{
+			var commonAppData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+			return Path.Combine(commonAppData, "Opti-Fresh", "SizerCollector");
 		}
 	}
 }

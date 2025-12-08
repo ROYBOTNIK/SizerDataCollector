@@ -12,6 +12,14 @@ namespace SizerDataCollector.Core.Collector
 		public long TotalPollsStarted { get; set; }
 		public long TotalPollsSucceeded { get; set; }
 		public long TotalPollsFailed { get; set; }
+		public DateTime? LastPollStartedUtc { get; set; }
+		public DateTime? LastPollCompletedUtc { get; set; }
+		public DateTime? LastSuccessUtc { get; set; }
+		public DateTime? LastErrorUtc { get; set; }
+		public string LastErrorMessage { get; set; }
+		public string LastRunId { get; set; }
+		public string MachineSerial { get; set; }
+		public string MachineName { get; set; }
 
 		internal object SyncRoot => _syncRoot;
 
@@ -26,7 +34,15 @@ namespace SizerDataCollector.Core.Collector
 					LastPollError = LastPollError,
 					TotalPollsStarted = TotalPollsStarted,
 					TotalPollsSucceeded = TotalPollsSucceeded,
-					TotalPollsFailed = TotalPollsFailed
+					TotalPollsFailed = TotalPollsFailed,
+					LastPollStartedUtc = LastPollStartedUtc,
+					LastPollCompletedUtc = LastPollCompletedUtc,
+					LastSuccessUtc = LastSuccessUtc,
+					LastErrorUtc = LastErrorUtc,
+					LastErrorMessage = LastErrorMessage,
+					LastRunId = LastRunId,
+					MachineSerial = MachineSerial,
+					MachineName = MachineName
 				};
 			}
 		}
@@ -40,6 +56,14 @@ namespace SizerDataCollector.Core.Collector
 		public long TotalPollsStarted { get; set; }
 		public long TotalPollsSucceeded { get; set; }
 		public long TotalPollsFailed { get; set; }
+		public DateTime? LastPollStartedUtc { get; set; }
+		public DateTime? LastPollCompletedUtc { get; set; }
+		public DateTime? LastSuccessUtc { get; set; }
+		public DateTime? LastErrorUtc { get; set; }
+		public string LastErrorMessage { get; set; }
+		public string LastRunId { get; set; }
+		public string MachineSerial { get; set; }
+		public string MachineName { get; set; }
 	}
 }
 

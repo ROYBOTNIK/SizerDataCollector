@@ -72,6 +72,8 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <TextBlock Text="Last Poll Start (UTC)" Margin="0 0 8 8"/>
@@ -91,6 +93,15 @@
 
                 <TextBlock Grid.Row="5" Text="Total Polls Failed" Margin="0 0 8 0"/>
                 <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TotalPollsFailedDisplay}"/>
+
+                <TextBlock Grid.Row="6" Text="Last Poll (local)" Margin="0 8 8 0"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding LastPollDisplay}" Margin="0 8 0 0"/>
+
+                <TextBlock Grid.Row="7" Text="Last Success (local)" Margin="0 0 8 0"/>
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding LastSuccessDisplay}" Margin="0 0 0 0"/>
+
+                <TextBlock Grid.Row="8" Text="Last Error (local)" Margin="0 8 8 0"/>
+                <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding LastErrorDisplay}" Margin="0 8 0 0" TextWrapping="Wrap"/>
             </Grid>
         </GroupBox>
 

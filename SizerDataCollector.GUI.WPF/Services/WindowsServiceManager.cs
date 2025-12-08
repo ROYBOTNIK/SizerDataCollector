@@ -6,23 +6,17 @@ namespace SizerDataCollector.GUI.WPF.Services
 {
 	public sealed class WindowsServiceManager
 	{
-		private readonly string _serviceName;
+		private const string ServiceName = "SizerDataCollector.Service";
 
-		public WindowsServiceManager(string serviceName = "SizerDataCollectorService")
+		public WindowsServiceManager()
 		{
-			if (string.IsNullOrWhiteSpace(serviceName))
-			{
-				throw new ArgumentException("Service name must be provided.", nameof(serviceName));
-			}
-
-			_serviceName = serviceName;
 		}
 
 		public bool IsInstalled()
 		{
 			try
 			{
-				using (var controller = new ServiceController(_serviceName))
+				using (var controller = new ServiceController(ServiceName))
 				{
 					var _ = controller.Status;
 					return true;
@@ -38,7 +32,7 @@ namespace SizerDataCollector.GUI.WPF.Services
 		{
 			try
 			{
-				using (var controller = new ServiceController(_serviceName))
+				using (var controller = new ServiceController(ServiceName))
 				{
 					return controller.Status;
 				}
@@ -91,11 +85,11 @@ namespace SizerDataCollector.GUI.WPF.Services
 		{
 			try
 			{
-				return new ServiceController(_serviceName);
+				return new ServiceController(ServiceName);
 			}
 			catch (InvalidOperationException ex)
 			{
-				throw new InvalidOperationException($"Service '{_serviceName}' is not installed.", ex);
+				throw new InvalidOperationException($"Service '{ServiceName}' is not installed.", ex);
 			}
 		}
 	}

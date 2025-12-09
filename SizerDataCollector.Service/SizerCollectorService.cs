@@ -35,12 +35,14 @@ namespace SizerDataCollector.Service
 				var config = new CollectorConfig(runtimeSettings);
 
 				_status = new CollectorStatus();
-				var dataRoot = runtimeSettings.SharedDataDirectory;
+				var dataRoot = NormalizeDataRoot(runtimeSettings.SharedDataDirectory);
 				if (!string.IsNullOrWhiteSpace(dataRoot))
 				{
 					Directory.CreateDirectory(dataRoot);
 				}
-				var heartbeatPath = Path.Combine(dataRoot, "heartbeat.json");
+				var heartbeatPath = string.IsNullOrWhiteSpace(dataRoot)
+					? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "heartbeat.json")
+					: Path.Combine(dataRoot, "heartbeat.json");
 				_heartbeatWriter = new HeartbeatWriter(heartbeatPath);
 				_cts = new CancellationTokenSource();
 
@@ -112,6 +114,28 @@ namespace SizerDataCollector.Service
 
 				Logger.Log("Service stopped.");
 			}
+		}
+
+		private static string NormalizeDataRoot(string candidate)
+		{
+			if (string.IsNullOrWhiteSpace(candidate))
+			{
+				return string.Empty;
+			}
+
+			// If a file path was stored by mistake (e.g., ends with .json), use its directory
+			if (candidate.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+			{
+				return Path.GetDirectoryName(candidate);
+			}
+
+			// If a file already exists at that path, fall back to its directory
+			if (File.Exists(candidate))
+			{
+				return Path.GetDirectoryName(candidate);
+			}
+
+			return candidate;
 		}
 	}
 }

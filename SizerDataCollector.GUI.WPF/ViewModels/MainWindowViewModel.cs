@@ -51,6 +51,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private string _lastPollDisplay = "—";
 		private string _lastSuccessDisplay = "—";
 		private string _lastErrorDisplay = "—";
+		private string _sharedDataDirectory = string.Empty;
 		private readonly RelayCommand _startCommand;
 		private readonly RelayCommand _stopCommand;
 		private readonly RelayCommand _saveSettingsCommand;
@@ -62,7 +63,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 			var runtimeSettings = _settingsProvider.Load();
 			_currentSettings = runtimeSettings;
-			var dataRoot = runtimeSettings?.SharedDataDirectory;
+			SharedDataDirectory = runtimeSettings?.SharedDataDirectory ?? string.Empty;
+
+			var dataRoot = NormalizeDataRoot(SharedDataDirectory);
 			if (!string.IsNullOrWhiteSpace(dataRoot))
 			{
 				Directory.CreateDirectory(dataRoot);
@@ -265,6 +268,12 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			private set => SetProperty(ref _lastErrorDisplay, value);
 		}
 
+		public string SharedDataDirectory
+		{
+			get => _sharedDataDirectory;
+			set => SetProperty(ref _sharedDataDirectory, value);
+		}
+
 		public ICommand StartCommand => _startCommand;
 
 		public ICommand StopCommand => _stopCommand;
@@ -341,6 +350,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			MaxBackoffSeconds = settings.MaxBackoffSeconds.ToString(CultureInfo.InvariantCulture);
 			TimescaleConnectionString = settings.TimescaleConnectionString ?? string.Empty;
 			EnableIngestion = settings.EnableIngestion;
+			SharedDataDirectory = settings.SharedDataDirectory ?? string.Empty;
 		}
 
 		private CollectorRuntimeSettings ToRuntimeSettings(CollectorRuntimeSettings baseline)
@@ -359,7 +369,10 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				OpenTimeoutSec = source.OpenTimeoutSec,
 				SendTimeoutSec = source.SendTimeoutSec,
 				ReceiveTimeoutSec = source.ReceiveTimeoutSec,
-				EnabledMetrics = source.EnabledMetrics != null ? new List<string>(source.EnabledMetrics) : new List<string>()
+				SharedDataDirectory = string.IsNullOrWhiteSpace(SharedDataDirectory) ? source.SharedDataDirectory : SharedDataDirectory,
+				EnabledMetrics = source.EnabledMetrics != null
+					? new List<string>(new HashSet<string>(source.EnabledMetrics, StringComparer.OrdinalIgnoreCase))
+					: new List<string>()
 			};
 		}
 
@@ -543,6 +556,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					LastErrorDisplay = "—";
 					LastPollTime = "--";
 					LastErrorMessage = "--";
+					LastPollStartDisplay = "—";
+					LastPollEndDisplay = "—";
+					LastPollError = "—";
 					return;
 				}
 
@@ -570,6 +586,18 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 				LastPollTime = LastPollDisplay;
 				LastErrorMessage = string.IsNullOrWhiteSpace(payload.LastErrorMessage) ? "--" : payload.LastErrorMessage;
+
+				// Fill the UTC-oriented fields with what we have
+				LastPollStartDisplay = payload.LastPollUtc.HasValue
+					? DateTime.SpecifyKind(payload.LastPollUtc.Value, DateTimeKind.Utc).ToString("u", CultureInfo.InvariantCulture)
+					: "—";
+
+				var endUtc = payload.LastSuccessUtc ?? payload.LastErrorUtc;
+				LastPollEndDisplay = endUtc.HasValue
+					? DateTime.SpecifyKind(endUtc.Value, DateTimeKind.Utc).ToString("u", CultureInfo.InvariantCulture)
+					: "—";
+
+				LastPollError = string.IsNullOrWhiteSpace(payload.LastErrorMessage) ? "—" : payload.LastErrorMessage;
 			}
 			catch (Exception ex)
 			{
@@ -599,6 +627,28 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			return true;
 		}
 		
+		private static string NormalizeDataRoot(string candidate)
+		{
+			if (string.IsNullOrWhiteSpace(candidate))
+			{
+				return string.Empty;
+			}
+
+			// If a file path was stored by mistake (e.g. ends with .json), use its directory
+			if (candidate.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+			{
+				return Path.GetDirectoryName(candidate);
+			}
+
+			// If a file already exists at that path, fall back to its directory
+			if (File.Exists(candidate))
+			{
+				return Path.GetDirectoryName(candidate);
+			}
+
+			return candidate;
+		}
+
 		private bool CanSaveSettings()
 		{
 			if (string.IsNullOrWhiteSpace(SizerHost))

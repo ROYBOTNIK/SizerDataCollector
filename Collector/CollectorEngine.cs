@@ -122,7 +122,10 @@ namespace SizerDataCollector.Core.Collector
 				Logger.Log($"RunId={runId} - WARN: EnabledMetrics list is empty. No metrics will be collected this cycle.");
 				lock (status.SyncRoot)
 				{
+					status.LastSuccessUtc = DateTime.UtcNow;
 					status.LastPollCompletedUtc = DateTime.UtcNow;
+					status.LastErrorUtc = null;
+					status.LastErrorMessage = null;
 				}
 				return;
 			}
@@ -166,6 +169,13 @@ namespace SizerDataCollector.Core.Collector
 			if (metricRows.Count == 0)
 			{
 				Logger.Log($"RunId={runId} - WARN: No metric rows generated for serial '{serialNo}'; skipping insert.");
+				lock (status.SyncRoot)
+				{
+					status.LastSuccessUtc = DateTime.UtcNow;
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+					status.LastErrorUtc = null;
+					status.LastErrorMessage = null;
+				}
 				return;
 			}
 
@@ -173,6 +183,13 @@ namespace SizerDataCollector.Core.Collector
 			{
 				await _repository.InsertMetricsAsync(metricRows, cancellationToken).ConfigureAwait(false);
 				Logger.Log($"RunId={runId} - Inserted {metricRows.Count} metric rows for serial '{serialNo}', batch_record_id={batchRecordId}.");
+				lock (status.SyncRoot)
+				{
+					status.LastSuccessUtc = DateTime.UtcNow;
+					status.LastPollCompletedUtc = DateTime.UtcNow;
+					status.LastErrorUtc = null;
+					status.LastErrorMessage = null;
+				}
 			}
 			catch (Exception ex)
 			{

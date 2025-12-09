@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System;
 using Newtonsoft.Json;
 using SizerDataCollector.Core.Logging;
 
@@ -22,12 +21,15 @@ namespace SizerDataCollector.Core.Config
 				try
 				{
 					var defaults = BuildFromCollectorConfig();
+					var fallbackMetrics = defaults.EnabledMetrics?.ToList() ?? new List<string>();
+					defaults.EnabledMetrics = null;
+
 					var json = File.ReadAllText(path);
 					JsonConvert.PopulateObject(json, defaults);
-					if (defaults.EnabledMetrics == null)
-					{
-						defaults.EnabledMetrics = new List<string>();
-					}
+
+					defaults.EnabledMetrics = NormalizeMetrics(defaults.EnabledMetrics ?? fallbackMetrics);
+					defaults.SharedDataDirectory = NormalizeSharedDirectory(defaults.SharedDataDirectory);
+
 					return defaults;
 				}
 				catch (Exception ex)
@@ -50,10 +52,8 @@ namespace SizerDataCollector.Core.Config
 				throw new ArgumentNullException(nameof(settings));
 			}
 
-			if (settings.EnabledMetrics == null)
-			{
-				settings.EnabledMetrics = new List<string>();
-			}
+			settings.EnabledMetrics = NormalizeMetrics(settings.EnabledMetrics);
+			settings.SharedDataDirectory = NormalizeSharedDirectory(settings.SharedDataDirectory);
 
 			var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
 			var path = GetRuntimeSettingsPath();
@@ -79,13 +79,37 @@ namespace SizerDataCollector.Core.Config
 				SendTimeoutSec = config.SendTimeoutSec,
 				ReceiveTimeoutSec = config.ReceiveTimeoutSec,
 				TimescaleConnectionString = config.TimescaleConnectionString,
-				EnabledMetrics = config.EnabledMetrics?.ToList() ?? new List<string>(),
+				EnabledMetrics = NormalizeMetrics(config.EnabledMetrics),
 				EnableIngestion = config.EnableIngestion,
 				PollIntervalSeconds = config.PollIntervalSeconds,
 				InitialBackoffSeconds = config.InitialBackoffSeconds,
 				MaxBackoffSeconds = config.MaxBackoffSeconds,
 				SharedDataDirectory = GetDefaultSharedDataDirectory()
 			};
+		}
+
+		private static List<string> NormalizeMetrics(IEnumerable<string> metrics)
+		{
+			if (metrics == null)
+			{
+				return new List<string>();
+			}
+
+			return new HashSet<string>(metrics.Where(m => !string.IsNullOrWhiteSpace(m)), StringComparer.OrdinalIgnoreCase)
+				.ToList();
+		}
+
+		private static string NormalizeSharedDirectory(string value)
+		{
+			if (string.IsNullOrWhiteSpace(value))
+			{
+				return GetDefaultSharedDataDirectory();
+			}
+
+			// Expand any environment variables (e.g. %ProgramData%) so hosts and tools
+			// use the same concrete path on disk.
+			var expanded = Environment.ExpandEnvironmentVariables(value);
+			return string.IsNullOrWhiteSpace(expanded) ? GetDefaultSharedDataDirectory() : expanded;
 		}
 
 		private static string GetDefaultSharedDataDirectory()

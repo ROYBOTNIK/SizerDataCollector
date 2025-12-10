@@ -10,6 +10,11 @@ namespace SizerDataCollector.GUI.WPF.Commands
 		private readonly Action<object> _execute;
 		private readonly Func<object, bool> _canExecute;
 
+		public RelayCommand(Action<object> execute)
+			: this(execute, _ => true)
+		{
+		}
+
 		public RelayCommand(Action<object> execute, Func<object, bool> canExecute)
 		{
 			_execute = execute ?? throw new ArgumentNullException(nameof(execute));

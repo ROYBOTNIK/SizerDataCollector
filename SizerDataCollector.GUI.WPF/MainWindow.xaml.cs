@@ -1,6 +1,6 @@
 ﻿using System.Windows;
-using SizerDataCollector.GUI.WPF.ViewModels;
 using SizerDataCollector.Core.Config;
+using SizerDataCollector.GUI.WPF.ViewModels;
 
 namespace SizerDataCollector.GUI.WPF
 {
@@ -12,11 +12,26 @@ namespace SizerDataCollector.GUI.WPF
 		{
 			InitializeComponent();
 			var settingsProvider = new CollectorSettingsProvider();
-			ViewModel = new MainWindowViewModel(settingsProvider)
+			var collectorStatusViewModel = new CollectorStatusViewModel(settingsProvider)
 			{
 				ShowMessage = ShowMessage
 			};
+
+			var dashboardViewModel = new DashboardViewModel(collectorStatusViewModel);
+			var settingsViewModel = new SettingsViewModel();
+			var laneToolsHomeViewModel = new LaneToolsHomeViewModel();
+			var laneConsistencyViewModel = new LaneConsistencyViewModel();
+			var gradeComparisonViewModel = new GradeComparisonViewModel();
+
+			ViewModel = new MainWindowViewModel(
+				collectorStatusViewModel,
+				dashboardViewModel,
+				settingsViewModel,
+				laneToolsHomeViewModel,
+				laneConsistencyViewModel,
+				gradeComparisonViewModel);
 			DataContext = ViewModel;
+
 			Loaded += (_, __) => ViewModel.Initialize();
 			Closed += (_, __) => ViewModel.Shutdown();
 		}

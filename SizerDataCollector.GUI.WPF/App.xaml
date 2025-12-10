@@ -1,9 +1,29 @@
 ﻿<Application x:Class="SizerDataCollector.GUI.WPF.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:SizerDataCollector.GUI.WPF"
+             xmlns:vm="clr-namespace:SizerDataCollector.GUI.WPF.ViewModels"
+             xmlns:views="clr-namespace:SizerDataCollector.GUI.WPF.Views"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                <views:DashboardView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CollectorStatusViewModel}">
+                <views:CollectorStatusView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                <views:SettingsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LaneToolsHomeViewModel}">
+                <views:LaneToolsHomeView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LaneConsistencyViewModel}">
+                <views:LaneConsistencyView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:GradeComparisonViewModel}">
+                <views:GradeComparisonView />
+            </DataTemplate>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,0 +1,15 @@
+-- Continuous aggregate refresh policies (job IDs are dynamic; use if_not_exists)
+
+SELECT public.add_continuous_aggregate_policy('oee.cagg_availability_daily'::regclass,       start_offset => '14 days', end_offset => '01:00:00', schedule_interval => '01:00:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('oee.cagg_availability_daily_batch'::regclass, start_offset => '14 days', end_offset => '01:00:00', schedule_interval => '01:00:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('oee.cagg_availability_minute'::regclass,      start_offset => '02:00:00', end_offset => '00:01:00', schedule_interval => '00:01:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('oee.cagg_availability_minute_batch'::regclass,start_offset => '02:00:00', end_offset => '00:01:00', schedule_interval => '00:01:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('oee.cagg_grade_daily_batch'::regclass,        start_offset => '14 days', end_offset => '01:00:00', schedule_interval => '01:00:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('oee.cagg_grade_minute_batch'::regclass,       start_offset => '02:00:00', end_offset => '00:01:00', schedule_interval => '00:01:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('oee.cagg_throughput_daily_batch'::regclass,   start_offset => '14 days', end_offset => '01:00:00', schedule_interval => '01:00:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('oee.cagg_throughput_minute_batch'::regclass,  start_offset => '02:00:00', end_offset => '00:01:00', schedule_interval => '00:01:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('public.cagg_lane_grade_minute'::regclass,     start_offset => '00:02:00', end_offset => '00:00:00', schedule_interval => '00:01:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('public.cagg_lane_size_minute'::regclass,      start_offset => '00:02:00', end_offset => '00:00:00', schedule_interval => '00:01:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('public.cagg_throughput_daily'::regclass,      start_offset => '2 days',  end_offset => '00:00:00', schedule_interval => '01:00:00'::interval, if_not_exists => true);
+SELECT public.add_continuous_aggregate_policy('public.cagg_throughput_minute'::regclass,     start_offset => '00:02:00', end_offset => '00:00:00', schedule_interval => '00:01:00'::interval, if_not_exists => true);
+

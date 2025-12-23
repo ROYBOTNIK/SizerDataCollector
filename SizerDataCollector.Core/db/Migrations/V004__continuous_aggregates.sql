@@ -1,5 +1,8 @@
 -- Continuous aggregate definitions (authoritative from reference)
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_daily') THEN
 CREATE MATERIALIZED VIEW oee.cagg_availability_daily
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('1 day'::interval, minute_ts) AS day,
@@ -11,7 +14,12 @@ SELECT time_bucket('1 day'::interval, minute_ts) AS day,
 FROM oee.cagg_availability_minute
 GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_daily_batch') THEN
 CREATE MATERIALIZED VIEW oee.cagg_availability_daily_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('1 day'::interval, minute_ts) AS day,
@@ -26,7 +34,12 @@ SELECT time_bucket('1 day'::interval, minute_ts) AS day,
 FROM oee.cagg_availability_minute_batch
 GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_minute') THEN
 CREATE MATERIALIZED VIEW oee.cagg_availability_minute
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
@@ -54,7 +67,12 @@ JOIN oee.machine_thresholds mt USING (serial_no)
 WHERE m.metric = ANY (ARRAY['machine_rods_pm', 'machine_total_fpm'])
 GROUP BY time_bucket('00:01:00'::interval, m.ts), m.serial_no
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_minute_batch') THEN
 CREATE MATERIALIZED VIEW oee.cagg_availability_minute_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
@@ -86,7 +104,12 @@ LEFT JOIN batches b ON b.id = m.batch_record_id
 WHERE m.metric = ANY (ARRAY['machine_rods_pm', 'machine_total_fpm'])
 GROUP BY time_bucket('00:01:00'::interval, m.ts), m.serial_no, m.batch_record_id
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_grade_daily_batch') THEN
 CREATE MATERIALIZED VIEW oee.cagg_grade_daily_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('1 day'::interval, minute_ts) AS day,
@@ -102,7 +125,12 @@ SELECT time_bucket('1 day'::interval, minute_ts) AS day,
 FROM oee.cagg_grade_minute_batch
 GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_grade_minute_batch') THEN
 CREATE MATERIALIZED VIEW oee.cagg_grade_minute_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
@@ -125,7 +153,12 @@ LEFT JOIN batches b ON b.id = m.batch_record_id
 WHERE m.metric = 'lanes_grade_fpm'
 GROUP BY time_bucket('00:01:00'::interval, m.ts), m.serial_no, m.batch_record_id
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_throughput_daily_batch') THEN
 CREATE MATERIALIZED VIEW oee.cagg_throughput_daily_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('1 day'::interval, minute_ts) AS day,
@@ -143,7 +176,12 @@ SELECT time_bucket('1 day'::interval, minute_ts) AS day,
 FROM oee.cagg_throughput_minute_batch
 GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_throughput_minute_batch') THEN
 CREATE MATERIALIZED VIEW oee.cagg_throughput_minute_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
@@ -164,7 +202,12 @@ LEFT JOIN batches b ON b.id = m.batch_record_id
 WHERE m.metric = ANY (ARRAY['machine_total_fpm', 'machine_missed_fpm', 'machine_recycle_fpm', 'outlets_details', 'machine_cupfill', 'machine_tph'])
 GROUP BY time_bucket('00:01:00'::interval, m.ts), m.serial_no, m.batch_record_id
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='public' AND view_name='cagg_lane_grade_minute') THEN
 CREATE MATERIALIZED VIEW public.cagg_lane_grade_minute
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
@@ -184,7 +227,12 @@ CROSS JOIN LATERAL jsonb_each_text(lane.lane_json) g(key, value)
 WHERE m.metric = 'lanes_grade_fpm'
 GROUP BY time_bucket('00:01:00'::interval, m.ts)
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='public' AND view_name='cagg_lane_size_minute') THEN
 CREATE MATERIALIZED VIEW public.cagg_lane_size_minute
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
@@ -197,7 +245,12 @@ CROSS JOIN LATERAL jsonb_each_text(lane.lane_json) v(key, value)
 WHERE m.metric = 'lanes_size_fpm'
 GROUP BY time_bucket('00:01:00'::interval, m.ts), (lane.ord - 1)
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='public' AND view_name='cagg_throughput_daily') THEN
 CREATE MATERIALIZED VIEW public.cagg_throughput_daily
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('1 day'::interval, minute_ts) AS day,
@@ -211,7 +264,12 @@ SELECT time_bucket('1 day'::interval, minute_ts) AS day,
 FROM public.cagg_throughput_minute
 GROUP BY time_bucket('1 day'::interval, minute_ts)
 WITH NO DATA;
+END IF;
+END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='public' AND view_name='cagg_throughput_minute') THEN
 CREATE MATERIALIZED VIEW public.cagg_throughput_minute
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('00:01:00'::interval, ts) AS minute_ts,
@@ -227,4 +285,6 @@ FROM metrics m
 WHERE metric = ANY (ARRAY['machine_total_fpm', 'machine_missed_fpm', 'machine_recycle_fpm', 'machine_cupfill', 'machine_tph', 'outlets_details'])
 GROUP BY time_bucket('00:01:00'::interval, ts)
 WITH NO DATA;
+END IF;
+END$$;
 

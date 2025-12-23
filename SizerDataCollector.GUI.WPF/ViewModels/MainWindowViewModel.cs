@@ -89,6 +89,10 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		{
 			CollectorStatusPage?.Initialize();
 			DashboardPage?.Refresh();
+			if (SettingsPage != null)
+			{
+				_ = SettingsPage.InitializeAsync();
+			}
 		}
 
 		public void Shutdown()

@@ -18,7 +18,7 @@ namespace SizerDataCollector.GUI.WPF
 			};
 
 			var dashboardViewModel = new DashboardViewModel(collectorStatusViewModel);
-			var settingsViewModel = new SettingsViewModel();
+			var settingsViewModel = new SettingsViewModel(settingsProvider);
 			var laneToolsHomeViewModel = new LaneToolsHomeViewModel();
 			var laneConsistencyViewModel = new LaneConsistencyViewModel();
 			var gradeComparisonViewModel = new GradeComparisonViewModel();

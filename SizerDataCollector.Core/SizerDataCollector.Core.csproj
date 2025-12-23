@@ -96,11 +96,13 @@
     <Compile Include="Collector\HeartbeatPayload.cs" />
     <Compile Include="Collector\HeartbeatWriter.cs" />
     <Compile Include="..\Collector\CollectorStatus.cs" />
+    <Compile Include="..\Db\DbBootstrapper.cs" />
     <Compile Include="..\Config\CollectorConfig.cs" />
     <Compile Include="..\Config\CollectorRuntimeSettings.cs" />
     <Compile Include="..\Config\CollectorSettingsProvider.cs" />
     <Compile Include="..\Db\DatabaseTester.cs" />
     <Compile Include="..\Db\MetricRow.cs" />
+    <Compile Include="..\Db\DbIntrospector.cs" />
     <Compile Include="..\Db\TimescaleRepository.cs" />
     <Compile Include="Monitoring\HeartbeatWriter.cs" />
     <Compile Include="..\Logging\Logging.cs" />
@@ -188,6 +190,9 @@
       <Generator>WCF Proxy Generator</Generator>
       <LastGenOutput>Reference.cs</LastGenOutput>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Db\Migrations\*.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

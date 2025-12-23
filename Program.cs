@@ -1,12 +1,11 @@
 ﻿using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 using SizerDataCollector.Core.Collector;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
 using SizerDataCollector.Core.Logging;
-using System.IO;
 using SizerDataCollector.Core.Sizer;
 
 namespace SizerDataCollector

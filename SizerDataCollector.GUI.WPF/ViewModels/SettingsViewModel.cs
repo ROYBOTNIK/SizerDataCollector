@@ -140,7 +140,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 		public ObservableCollection<string> MissingObjects => _missingObjects;
 
-		public bool HasMissingObjects => _missingObjects.Count > 0;
+		private bool _hasMissingObjects;
+		public bool HasMissingObjects => _hasMissingObjects;
 
 		public bool SeedPresent => BandDefinitionsCount > 0 && MachineThresholdsCount > 0 && ShiftCalendarCount > 0;
 
@@ -226,8 +227,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					ShiftCalendarCount = report.ShiftCalendarCount;
 					LastCheckedAt = report.CheckedAt;
 
-					var missingItems = BuildMissingList(report);
-					UpdateMissingCollection(missingItems);
+					var missingItems = BuildMissingList(report, out bool hasMissing);
+					UpdateMissingCollection(missingItems, hasMissing);
 
 					if (report.Exception != null)
 					{
@@ -249,39 +250,74 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			}
 		}
 
-		private static System.Collections.Generic.List<string> BuildMissingList(DbHealthReport report)
+		private static System.Collections.Generic.List<string> BuildMissingList(DbHealthReport report, out bool hasMissing)
 		{
 			var list = new System.Collections.Generic.List<string>();
-			void add(System.Collections.Generic.IEnumerable<string> items, string prefix)
+			bool missing = false;
+
+			if (report.MissingTables != null)
 			{
-				if (items == null) return;
-				foreach (var item in items)
+				foreach (var item in report.MissingTables)
 				{
-					list.Add($"{prefix}: {item}");
+					list.Add($"Table: {item}");
+					missing = true;
 				}
 			}
 
-			add(report.MissingTables, "Table");
-			add(report.MissingFunctions, "Function");
-			add(report.MissingContinuousAggregates, "Continuous Aggregate");
-			add(report.MissingPolicies, "Refresh Policy");
+			if (report.MissingFunctions != null)
+			{
+				foreach (var item in report.MissingFunctions)
+				{
+					list.Add($"Function: {item}");
+					missing = true;
+				}
+			}
+
+			if (report.MissingContinuousAggregates != null)
+			{
+				foreach (var item in report.MissingContinuousAggregates)
+				{
+					list.Add($"Continuous Aggregate: {item}");
+					missing = true;
+				}
+			}
+
+			if (!string.IsNullOrWhiteSpace(report.PolicyCheckError))
+			{
+				list.Add($"Refresh policy check failed: {report.PolicyCheckError}");
+				missing = true;
+			}
+			else if (report.ExpectedPolicies > 0)
+			{
+				if (report.MissingPolicies != null && report.MissingPolicies.Count == 0)
+				{
+					list.Add($"Refresh policies: OK ({report.FoundPolicies}/{report.ExpectedPolicies})");
+				}
+				else
+				{
+					list.Add("Refresh policies missing for: " + string.Join(", ", report.MissingPolicies ?? new System.Collections.Generic.List<string>()));
+					missing = true;
+				}
+			}
+
+			hasMissing = missing;
 			return list;
 		}
 
-		private void UpdateMissingCollection(System.Collections.Generic.IEnumerable<string> items)
+		private void UpdateMissingCollection(System.Collections.Generic.IEnumerable<string> items, bool hasMissing)
 		{
 			var dispatcher = Application.Current?.Dispatcher;
 			if (dispatcher != null && !dispatcher.CheckAccess())
 			{
-				dispatcher.Invoke(() => ApplyMissing(items));
+				dispatcher.Invoke(() => ApplyMissing(items, hasMissing));
 			}
 			else
 			{
-				ApplyMissing(items);
+				ApplyMissing(items, hasMissing);
 			}
 		}
 
-		private void ApplyMissing(System.Collections.Generic.IEnumerable<string> items)
+		private void ApplyMissing(System.Collections.Generic.IEnumerable<string> items, bool hasMissing)
 		{
 			_missingObjects.Clear();
 			if (items != null)
@@ -291,6 +327,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					_missingObjects.Add(item);
 				}
 			}
+			_hasMissingObjects = hasMissing;
 			OnPropertyChanged(nameof(HasMissingObjects));
 		}
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
+using System.Diagnostics;
 
 namespace SizerDataCollector.Core.Db
 {
@@ -218,14 +219,29 @@ FROM timescaledb_information.continuous_aggregates;";
 			if (!report.TimescaleInstalled)
 			{
 				report.MissingPolicies.AddRange(RequiredCaggs.Select(c => c.QualifiedName));
+				report.ExpectedPolicies = RequiredCaggs.Length;
+				report.FoundPolicies = 0;
 				return;
 			}
 
-			const string sql = @"SELECT hypertable_schema, hypertable_name
-FROM timescaledb_information.policy_stats
-WHERE proc_name = 'policy_refresh_continuous_aggregate';";
+			const string sql = @"
+SELECT
+  ca.view_schema,
+  ca.view_name,
+  j.job_id,
+  j.schedule_interval,
+  j.config
+FROM timescaledb_information.continuous_aggregates ca
+JOIN timescaledb_information.jobs j
+  ON j.proc_name = 'policy_refresh_continuous_aggregate'
+ AND (j.config->>'mat_hypertable_id')::int =
+     (SELECT h.id
+      FROM _timescaledb_catalog.hypertable h
+      WHERE h.schema_name = ca.materialization_hypertable_schema
+        AND h.table_name  = ca.materialization_hypertable_name)
+ORDER BY ca.view_schema, ca.view_name;";
 
-			var policyTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var policyMap = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 			try
 			{
@@ -234,31 +250,34 @@ WHERE proc_name = 'policy_refresh_continuous_aggregate';";
 				{
 					while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
 					{
-						var htSchema = reader.GetString(0);
-						var htName = reader.GetString(1);
-						policyTargets.Add($"{htSchema}.{htName}");
+						var viewSchema = reader.GetString(0);
+						var viewName = reader.GetString(1);
+						var key = $"{viewSchema}.{viewName}";
+						policyMap.Add(key);
 					}
 				}
 			}
-			catch (Npgsql.PostgresException pgex) when (pgex.SqlState == "42P01")
+			catch (Exception ex)
 			{
-				// timescaledb_information.policy_stats not available (older Timescale version); treat as missing policies.
-				report.MissingPolicies.AddRange(RequiredCaggs.Select(c => c.QualifiedName));
+				report.PolicyCheckError = $"Policy detection failed: {ex.Message}";
 				return;
 			}
 
+			report.ExpectedPolicies = RequiredCaggs.Length;
+			report.FoundPolicies = policyMap.Count;
+
 			foreach (var cagg in RequiredCaggs)
 			{
-				if (!report.MaterializationHypertables.TryGetValue(cagg.QualifiedName, out var matTable))
+				if (!policyMap.Contains(cagg.QualifiedName))
 				{
 					report.MissingPolicies.Add(cagg.QualifiedName);
-					continue;
 				}
+			}
 
-				if (!policyTargets.Contains(matTable))
-				{
-					report.MissingPolicies.Add(cagg.QualifiedName);
-				}
+			Trace.WriteLine($"DbHealth: CAGGs detected={report.ContinuousAggregateCount}, policies detected={report.FoundPolicies}, missing policies={report.MissingPolicies.Count}");
+			if (report.MissingPolicies.Count > 0)
+			{
+				Trace.TraceWarning("DbHealth: Missing policy targets -> " + string.Join(", ", report.MissingPolicies));
 			}
 		}
 
@@ -307,6 +326,10 @@ WHERE proc_name = 'policy_refresh_continuous_aggregate';";
 		public List<string> MissingFunctions { get; } = new List<string>();
 		public List<string> MissingContinuousAggregates { get; } = new List<string>();
 		public List<string> MissingPolicies { get; } = new List<string>();
+
+		public string PolicyCheckError { get; set; }
+		public int ExpectedPolicies { get; set; }
+		public int FoundPolicies { get; set; }
 
 		public int AppliedMigrationsCount { get; set; }
 		public int ContinuousAggregateCount { get; set; }

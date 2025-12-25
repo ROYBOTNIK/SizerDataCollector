@@ -73,14 +73,14 @@ namespace SizerDataCollector.Core.Commissioning
 			status.ThresholdsSet = await CheckThresholdsAsync(serialNo, cancellationToken).ConfigureAwait(false);
 			if (!status.ThresholdsSet)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "THRESHOLDS_MISSING", Message = "Machine thresholds not set for this serial number." });
+				status.BlockingReasons.Add(new CommissioningReason("THRESHOLDS_MISSING", "Machine thresholds not set for this serial number."));
 			}
 
 			// Gating rule for ingestion.
 			status.CanEnableIngestion = status.DbBootstrapped && status.SizerConnected && status.ThresholdsSet;
 			if (!status.CanEnableIngestion && status.BlockingReasons.Count == 0)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "INGESTION_DISABLED", Message = "Ingestion cannot be enabled until prerequisites are satisfied." });
+				status.BlockingReasons.Add(new CommissioningReason("INGESTION_DISABLED", "Ingestion cannot be enabled until prerequisites are satisfied."));
 			}
 
 			return status;
@@ -103,13 +103,13 @@ namespace SizerDataCollector.Core.Commissioning
 				if (string.IsNullOrWhiteSpace(reportedSerial) ||
 				    !string.Equals(reportedSerial, expectedSerial, StringComparison.OrdinalIgnoreCase))
 				{
-					status.BlockingReasons.Add(new CommissioningReason { Code = "SIZER_SERIAL_MISMATCH", Message = "Sizer connection succeeded but serial number did not match expected." });
+					status.BlockingReasons.Add(new CommissioningReason("SIZER_SERIAL_MISMATCH", "Sizer connection succeeded but serial number did not match expected."));
 					return false;
 				}
 
 				if (string.IsNullOrWhiteSpace(machineName))
 				{
-					status.BlockingReasons.Add(new CommissioningReason { Code = "SIZER_NO_NAME", Message = "Sizer connection succeeded but machine name was empty." });
+					status.BlockingReasons.Add(new CommissioningReason("SIZER_NO_NAME", "Sizer connection succeeded but machine name was empty."));
 					return false;
 				}
 
@@ -118,7 +118,7 @@ namespace SizerDataCollector.Core.Commissioning
 			catch (Exception ex)
 			{
 				Logger.Log("CommissioningService: Sizer probe failed.", ex);
-				status.BlockingReasons.Add(new CommissioningReason { Code = "SIZER_TIMEOUT", Message = "Sizer connection failed (see logs for details)." });
+				status.BlockingReasons.Add(new CommissioningReason("SIZER_TIMEOUT", "Sizer connection failed (see logs for details)."));
 				return false;
 			}
 			finally
@@ -145,34 +145,34 @@ namespace SizerDataCollector.Core.Commissioning
 		{
 			if (health == null)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "DB_UNREACHABLE", Message = "Database health unknown." });
+				status.BlockingReasons.Add(new CommissioningReason("DB_UNREACHABLE", "Database health unknown."));
 				return;
 			}
 
 			if (!health.CanConnect || health.Exception != null)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "DB_UNREACHABLE", Message = "Cannot connect to database." });
+				status.BlockingReasons.Add(new CommissioningReason("DB_UNREACHABLE", "Cannot connect to database."));
 			}
 			else if (!health.TimescaleInstalled)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "DB_NOT_HEALTHY", Message = "TimescaleDB extension not installed." });
+				status.BlockingReasons.Add(new CommissioningReason("DB_NOT_HEALTHY", "TimescaleDB extension not installed."));
 			}
 			else if (!health.HasAllTables || !health.HasAllFunctions)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "MIGRATIONS_NOT_APPLIED", Message = "Required tables/functions are missing." });
+				status.BlockingReasons.Add(new CommissioningReason("MIGRATIONS_NOT_APPLIED", "Required tables/functions are missing."));
 			}
 			else if (!health.HasAllContinuousAggregates)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "CAGGS_MISSING", Message = "Continuous aggregates are missing." });
+				status.BlockingReasons.Add(new CommissioningReason("CAGGS_MISSING", "Continuous aggregates are missing."));
 			}
 			else if (!health.HasAllPolicies)
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "POLICIES_MISSING", Message = "Refresh policies are missing." });
+				status.BlockingReasons.Add(new CommissioningReason("POLICIES_MISSING", "Refresh policies are missing."));
 			}
 
 			if (!string.IsNullOrWhiteSpace(health.PolicyCheckError))
 			{
-				status.BlockingReasons.Add(new CommissioningReason { Code = "POLICY_CHECK_ERROR", Message = $"Policy check error: {health.PolicyCheckError}" });
+				status.BlockingReasons.Add(new CommissioningReason("POLICY_CHECK_ERROR", $"Policy check error: {health.PolicyCheckError}"));
 			}
 		}
 	}

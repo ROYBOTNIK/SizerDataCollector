@@ -3,12 +3,6 @@ using SizerDataCollector.Core.Db;
 
 namespace SizerDataCollector.Core.Commissioning
 {
-	public sealed class CommissioningReason
-	{
-		public string Code { get; set; }
-		public string Message { get; set; }
-	}
-
 	public sealed class CommissioningStatus
 	{
 		public string SerialNo { get; set; }

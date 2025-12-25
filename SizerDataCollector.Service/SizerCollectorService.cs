@@ -130,7 +130,7 @@ namespace SizerDataCollector.Service
 			if (runtimeSettings?.EnableIngestion != true)
 			{
 				status.CommissioningIngestionEnabled = false;
-				status.CommissioningBlockingReasons.Add(new CommissioningReason { Code = "INGESTION_DISABLED", Message = "Runtime setting EnableIngestion is false." });
+				status.CommissioningBlockingReasons.Add(new CommissioningReason("INGESTION_DISABLED", "Runtime setting EnableIngestion is false."));
 				WriteHeartbeat(status, heartbeatWriter);
 				return false;
 			}
@@ -143,7 +143,7 @@ namespace SizerDataCollector.Service
 					if (string.IsNullOrWhiteSpace(serial))
 					{
 						Logger.Log("Commissioning check: Sizer serial number unavailable; disabling ingestion.");
-						status.CommissioningBlockingReasons.Add(new CommissioningReason { Code = "SIZER_UNAVAILABLE", Message = "Sizer serial number unavailable." });
+						status.CommissioningBlockingReasons.Add(new CommissioningReason("SIZER_UNAVAILABLE", "Sizer serial number unavailable."));
 						status.CommissioningIngestionEnabled = false;
 						WriteHeartbeat(status, heartbeatWriter);
 						return false;
@@ -154,7 +154,7 @@ namespace SizerDataCollector.Service
 					if (row?.IngestionEnabledAt == null)
 					{
 						Logger.Log($"Commissioning check: ingestion not enabled for serial '{serial}'.");
-						status.CommissioningBlockingReasons.Add(new CommissioningReason { Code = "INGESTION_DISABLED", Message = "Ingestion not enabled in commissioning status." });
+						status.CommissioningBlockingReasons.Add(new CommissioningReason("INGESTION_DISABLED", "Ingestion not enabled in commissioning status."));
 						status.CommissioningSerial = serial;
 						status.CommissioningIngestionEnabled = false;
 						WriteHeartbeat(status, heartbeatWriter);
@@ -171,7 +171,7 @@ namespace SizerDataCollector.Service
 			{
 				Logger.Log("Commissioning check failed; disabling ingestion.", ex);
 				status.CommissioningIngestionEnabled = false;
-				status.CommissioningBlockingReasons.Add(new CommissioningReason { Code = "COMMISSIONING_CHECK_FAILED", Message = "Commissioning check failed (see logs)." });
+				status.CommissioningBlockingReasons.Add(new CommissioningReason("COMMISSIONING_CHECK_FAILED", "Commissioning check failed (see logs)."));
 				WriteHeartbeat(status, heartbeatWriter);
 				return false;
 			}

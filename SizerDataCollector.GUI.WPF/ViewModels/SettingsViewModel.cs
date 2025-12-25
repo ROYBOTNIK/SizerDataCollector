@@ -688,10 +688,23 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			CommissioningIngestionEnabled = false;
 			CommissioningNotes = string.Empty;
 			CommissioningStatusMessage = message;
-			UpdateCommissioningBlockingReasons(new[] { new CommissioningReason { Code = "UNKNOWN", Message = message } });
+			UpdateCommissioningBlockingReasons(new[] { new CommissioningReason("UNKNOWN", message) });
 		}
 
 		private void UpdateCommissioningBlockingReasons(System.Collections.Generic.IEnumerable<CommissioningReason> reasons)
+		{
+			var dispatcher = Application.Current?.Dispatcher;
+			if (dispatcher != null && !dispatcher.CheckAccess())
+			{
+				dispatcher.Invoke(() => ApplyBlockingReasons(reasons));
+			}
+			else
+			{
+				ApplyBlockingReasons(reasons);
+			}
+		}
+
+		private void ApplyBlockingReasons(System.Collections.Generic.IEnumerable<CommissioningReason> reasons)
 		{
 			_commissioningBlockingReasons.Clear();
 			if (reasons != null)

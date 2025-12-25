@@ -26,6 +26,16 @@
                     <Style TargetType="StackPanel">
                         <Setter Property="Margin" Value="0,0,0,12"/>
                     </Style>
+                    <Style x:Key="ActionButtonStyle" TargetType="Button">
+                        <Setter Property="FontSize" Value="13"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="MinWidth" Value="160"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    </Style>
+                    <Style x:Key="ActionTextBlockStyle" TargetType="TextBlock">
+                        <Setter Property="TextWrapping" Value="Wrap"/>
+                        <Setter Property="TextAlignment" Value="Center"/>
+                    </Style>
                 </StackPanel.Resources>
                 <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
                     <StackPanel Margin="0">
@@ -41,27 +51,24 @@
                     <StackPanel Margin="0">
                         <TextBlock Text="Actions"
                                    FontWeight="SemiBold"/>
-                        <WrapPanel Orientation="Horizontal" ItemHeight="32" ItemWidth="140" Margin="0,4,0,0">
+                        <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <Button Command="{Binding InitializeSqlFolderCommand}"
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Initialize SQL Folder" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Initialize SQL Folder"/>
                             </Button>
                             <Button Command="{Binding BootstrapDatabaseCommand}"
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Bootstrap Database" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Bootstrap Database"/>
                             </Button>
                             <Button Command="{Binding RefreshStatusCommand}"
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Refresh Status" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Refresh Status"/>
                             </Button>
                         </WrapPanel>
                         <TextBlock Text="{Binding StatusMessage}"
@@ -175,41 +182,36 @@
                             <TextBlock Text="{Binding CommissioningIngestionEnabledText}" Grid.Row="6" Grid.Column="1"/>
                         </Grid>
 
-                        <WrapPanel Orientation="Horizontal" ItemHeight="32" ItemWidth="140" Margin="0,0,0,8">
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
                             <Button Command="{Binding TestSizerConnectionCommand}"
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Test Sizer Connection" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Test Sizer Connection"/>
                             </Button>
                             <Button Command="{Binding RefreshCommissioningCommand}"
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Refresh Commissioning" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Refresh Commissioning"/>
                             </Button>
                             <Button Command="{Binding EnableIngestionCommand}"
                                     IsEnabled="{Binding CommissioningCanEnableIngestion}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Enable Ingestion" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Enable Ingestion"/>
                             </Button>
                             <Button Command="{Binding DiscoverMachineCommand}"
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Discover Machine" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Discover Machine"/>
                             </Button>
                             <Button Command="{Binding ResetCommissioningCommand}"
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
-                                    Padding="12,8"
-                                    MinWidth="160">
-                                <TextBlock Text="Reset Commissioning" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Reset Commissioning"/>
                             </Button>
                         </WrapPanel>
 

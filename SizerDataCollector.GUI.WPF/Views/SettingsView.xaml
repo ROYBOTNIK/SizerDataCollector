@@ -93,6 +93,8 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <TextBlock Text="Postgres reachable" Grid.Row="0" Grid.Column="0"/>
@@ -120,6 +122,12 @@
                                     </MultiBinding>
                                 </TextBlock.Text>
                             </TextBlock>
+
+                            <TextBlock Text="Discovery snapshots (count)" Grid.Row="6" Grid.Column="0"/>
+                            <TextBlock Text="{Binding DiscoverySnapshotCount}" Grid.Row="6" Grid.Column="1" />
+
+                            <TextBlock Text="Latest discovery" Grid.Row="7" Grid.Column="0"/>
+                            <TextBlock Text="{Binding LatestDiscoveryAt, StringFormat={}{0:G}}" Grid.Row="7" Grid.Column="1" />
                         </Grid>
 
                         <Expander Header="Missing objects" IsExpanded="False" Margin="0,4,0,0">
@@ -205,7 +213,13 @@
                                     IsEnabled="{Binding CanRunActions}"
                                     Margin="0,0,8,8"
                                     Style="{StaticResource ActionButtonStyle}">
-                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Discover Machine"/>
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Run Discovery"/>
+                            </Button>
+                            <Button Command="{Binding CancelDiscoveryCommand}"
+                                    IsEnabled="{Binding IsBusy}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Cancel Discovery"/>
                             </Button>
                             <Button Command="{Binding ResetCommissioningCommand}"
                                     IsEnabled="{Binding CanRunActions}"
@@ -219,6 +233,122 @@
                                    Foreground="Gray"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,4"/>
+
+                        <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Discovery (Stage 5.1)" FontWeight="SemiBold"/>
+                                <ProgressBar Height="6" Margin="0,4,0,4"
+                                             IsIndeterminate="True"
+                                             Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <Grid Margin="0,2,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Serial" Grid.Row="0" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoverySerial}" Grid.Row="0" Grid.Column="1"/>
+
+                                    <TextBlock Text="Machine Name" Grid.Row="1" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryMachineName}" Grid.Row="1" Grid.Column="1"/>
+
+                                    <TextBlock Text="Snapshot Id" Grid.Row="2" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoverySnapshotId}" Grid.Row="2" Grid.Column="1"/>
+
+                                    <TextBlock Text="Discovered At" Grid.Row="3" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryDiscoveredAt, StringFormat={}{0:u}}" Grid.Row="3" Grid.Column="1"/>
+
+                                    <TextBlock Text="Outlets" Grid.Row="4" Grid.Column="0"/>
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0} ({1})">
+                                                <Binding Path="DiscoveryOutletCount"/>
+                                                <Binding Path="DiscoveryOutletNames"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+
+                                    <TextBlock Text="Lanes (non-null entries)" Grid.Row="5" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryLaneViewCount}" Grid.Row="5" Grid.Column="1"/>
+                                </Grid>
+
+                                <Grid Margin="0,2,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Distinct Grade Keys" Grid.Row="0" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryGradeKeyCount}" Grid.Row="0" Grid.Column="1"/>
+
+                                    <TextBlock Text="Distinct Size Keys" Grid.Row="1" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoverySizeKeyCount}" Grid.Row="1" Grid.Column="1"/>
+                                </Grid>
+
+                                <TextBlock Text="{Binding DiscoveryStatusMessage}"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"
+                                           Margin="0,4,0,4"/>
+
+                                <Expander Header="Raw Snapshot JSON" IsExpanded="False" Margin="0,4,0,0">
+                                    <StackPanel>
+                                        <TextBox Text="{Binding DiscoveryRawJson, Mode=OneWay, TargetNullValue=''}"
+                                                 IsReadOnly="True"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 MinHeight="120"/>
+                                        <TextBlock Text="Summary JSON" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                        <TextBox Text="{Binding DiscoverySummaryJson, Mode=OneWay, TargetNullValue=''}"
+                                                 IsReadOnly="True"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 MinHeight="80"/>
+                                        <Button Command="{Binding CopyDiscoveryJsonCommand}" Margin="0,4,0,0"
+                                                IsEnabled="{Binding HasDiscoveryRawJson}"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="Copy JSON"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8" Margin="0,8,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Discovery History (last 10)" FontWeight="SemiBold"/>
+                                <ListBox ItemsSource="{Binding DiscoveryHistory}"
+                                         SelectedItem="{Binding SelectedDiscoverySnapshot, Mode=TwoWay}"
+                                         MinHeight="160"
+                                         Margin="0,4,0,0">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Vertical" Margin="0,4,0,4">
+                                                <TextBlock Text="{Binding DiscoveredAt, StringFormat={}{0:u}}"/>
+                                                <TextBlock>
+                                                    <Run Text="Success: "/>
+                                                    <Run Text="{Binding Success}"/>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding ErrorText}" TextTrimming="CharacterEllipsis" Foreground="Gray"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </Border>
 
                         <Expander Header="Blocking reasons" IsExpanded="False" Margin="0,0,0,8">
                             <ItemsControl ItemsSource="{Binding CommissioningBlockingReasons}">

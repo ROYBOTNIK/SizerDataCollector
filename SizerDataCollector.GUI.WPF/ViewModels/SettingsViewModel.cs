@@ -7,11 +7,13 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows;
 using System.Windows.Threading;
+using Newtonsoft.Json;
 using SizerDataCollector.Core.Commissioning;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
 using SizerDataCollector.Core.Logging;
 using SizerDataCollector.Core.Sizer;
+using SizerDataCollector.Core.Sizer.Discovery;
 using SizerDataCollector.GUI.WPF.Commands;
 
 namespace SizerDataCollector.GUI.WPF.ViewModels
@@ -28,6 +30,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private readonly RelayCommand _saveCommissioningNotesCommand;
 		private readonly RelayCommand _resetCommissioningCommand;
 		private readonly RelayCommand _discoverMachineCommand;
+		private readonly RelayCommand _copyDiscoveryJsonCommand;
+		private readonly RelayCommand _cancelDiscoveryCommand;
 
 		private string _connectionString = string.Empty;
 		private string _statusMessage = "Ready.";
@@ -42,6 +46,10 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private long _machineThresholdsCount;
 		private long _shiftCalendarCount;
 		private DateTimeOffset _lastCheckedAt;
+		private long _discoverySnapshotCount;
+		private DateTimeOffset? _latestDiscoveryAt;
+		private readonly ObservableCollection<DiscoverySnapshotRecord> _discoveryHistory = new ObservableCollection<DiscoverySnapshotRecord>();
+		private DiscoverySnapshotRecord _selectedDiscoverySnapshot;
 
 		private readonly ObservableCollection<string> _missingObjects = new ObservableCollection<string>();
 		private readonly ObservableCollection<string> _commissioningBlockingReasons = new ObservableCollection<string>();
@@ -59,6 +67,20 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private bool _commissioningCanEnableIngestion;
 		private bool _commissioningIngestionEnabled;
 
+		private long? _discoverySnapshotId;
+		private DateTimeOffset? _discoveryDiscoveredAt;
+		private string _discoverySerial = string.Empty;
+		private string _discoveryMachineName = string.Empty;
+		private int? _discoveryOutletCount;
+		private string _discoveryOutletNames = string.Empty;
+		private int? _discoveryLaneViewCount;
+		private int? _discoveryGradeKeyCount;
+		private int? _discoverySizeKeyCount;
+		private string _discoveryStatusMessage = "Discovery not run yet.";
+		private string _discoveryRawJson = string.Empty;
+		private string _discoverySummaryJson = string.Empty;
+		private CancellationTokenSource _discoveryCts;
+
 		public SettingsViewModel(CollectorSettingsProvider settingsProvider)
 		{
 			_settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
@@ -72,7 +94,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			_enableIngestionCommand = new RelayCommand(async _ => await EnableIngestionAsync(), _ => CommissioningCanEnableIngestion && CanRunActions);
 			_saveCommissioningNotesCommand = new RelayCommand(async _ => await SaveCommissioningNotesAsync(), _ => CanRunActions);
 			_resetCommissioningCommand = new RelayCommand(async _ => await ResetCommissioningAsync(), _ => CanRunActions);
-			_discoverMachineCommand = new RelayCommand(async _ => await DiscoverMachineAsync(), _ => CanRunActions);
+			_discoverMachineCommand = new RelayCommand(async _ => await RunDiscoveryAsync(), _ => CanRunActions);
+			_copyDiscoveryJsonCommand = new RelayCommand(_ => CopyDiscoveryJson(), _ => HasDiscoveryRawJson);
+			_cancelDiscoveryCommand = new RelayCommand(_ => CancelDiscovery(), _ => _discoveryCts != null && !_discoveryCts.IsCancellationRequested);
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -86,6 +110,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public ICommand SaveCommissioningNotesCommand => _saveCommissioningNotesCommand;
 		public ICommand ResetCommissioningCommand => _resetCommissioningCommand;
 		public ICommand DiscoverMachineCommand => _discoverMachineCommand;
+		public ICommand CopyDiscoveryJsonCommand => _copyDiscoveryJsonCommand;
+		public ICommand CancelDiscoveryCommand => _cancelDiscoveryCommand;
 
 		public string ConnectionString
 		{
@@ -167,6 +193,18 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			private set => SetProperty(ref _shiftCalendarCount, value);
 		}
 
+		public long DiscoverySnapshotCount
+		{
+			get => _discoverySnapshotCount;
+			private set => SetProperty(ref _discoverySnapshotCount, value);
+		}
+
+		public DateTimeOffset? LatestDiscoveryAt
+		{
+			get => _latestDiscoveryAt;
+			private set => SetProperty(ref _latestDiscoveryAt, value);
+		}
+
 		public DateTimeOffset LastCheckedAt
 		{
 			get => _lastCheckedAt;
@@ -177,6 +215,20 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 		private bool _hasMissingObjects;
 		public bool HasMissingObjects => _hasMissingObjects;
+
+		public ObservableCollection<DiscoverySnapshotRecord> DiscoveryHistory => _discoveryHistory;
+
+		public DiscoverySnapshotRecord SelectedDiscoverySnapshot
+		{
+			get => _selectedDiscoverySnapshot;
+			set
+			{
+				if (SetProperty(ref _selectedDiscoverySnapshot, value))
+				{
+					ApplyDiscoveryRecord(value);
+				}
+			}
+		}
 
 		// band_definitions may be empty without failing health; keep count visible.
 		public bool SeedPresent => MachineThresholdsCount > 0 && ShiftCalendarCount > 0;
@@ -312,12 +364,94 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public string CommissioningThresholdsSetAtText => FormatTimestamp(CommissioningStoredRow?.ThresholdsSetAt);
 		public string CommissioningIngestionEnabledAtText => FormatTimestamp(CommissioningStoredRow?.IngestionEnabledAt);
 
+		public long? DiscoverySnapshotId
+		{
+			get => _discoverySnapshotId;
+			private set => SetProperty(ref _discoverySnapshotId, value);
+		}
+
+		public DateTimeOffset? DiscoveryDiscoveredAt
+		{
+			get => _discoveryDiscoveredAt;
+			private set => SetProperty(ref _discoveryDiscoveredAt, value);
+		}
+
+		public string DiscoverySerial
+		{
+			get => _discoverySerial;
+			private set => SetProperty(ref _discoverySerial, value ?? string.Empty);
+		}
+
+		public string DiscoveryMachineName
+		{
+			get => _discoveryMachineName;
+			private set => SetProperty(ref _discoveryMachineName, value ?? string.Empty);
+		}
+
+		public int? DiscoveryOutletCount
+		{
+			get => _discoveryOutletCount;
+			private set => SetProperty(ref _discoveryOutletCount, value);
+		}
+
+		public string DiscoveryOutletNames
+		{
+			get => _discoveryOutletNames;
+			private set => SetProperty(ref _discoveryOutletNames, value ?? string.Empty);
+		}
+
+		public int? DiscoveryLaneViewCount
+		{
+			get => _discoveryLaneViewCount;
+			private set => SetProperty(ref _discoveryLaneViewCount, value);
+		}
+
+		public int? DiscoveryGradeKeyCount
+		{
+			get => _discoveryGradeKeyCount;
+			private set => SetProperty(ref _discoveryGradeKeyCount, value);
+		}
+
+		public int? DiscoverySizeKeyCount
+		{
+			get => _discoverySizeKeyCount;
+			private set => SetProperty(ref _discoverySizeKeyCount, value);
+		}
+
+		public string DiscoveryStatusMessage
+		{
+			get => _discoveryStatusMessage;
+			private set => SetProperty(ref _discoveryStatusMessage, value);
+		}
+
+		public string DiscoveryRawJson
+		{
+			get => _discoveryRawJson;
+			private set
+			{
+				if (SetProperty(ref _discoveryRawJson, value ?? string.Empty))
+				{
+					_copyDiscoveryJsonCommand?.RaiseCanExecuteChanged();
+					OnPropertyChanged(nameof(HasDiscoveryRawJson));
+				}
+			}
+		}
+
+		public string DiscoverySummaryJson
+		{
+			get => _discoverySummaryJson;
+			private set => SetProperty(ref _discoverySummaryJson, value ?? string.Empty);
+		}
+
+		public bool HasDiscoveryRawJson => !string.IsNullOrWhiteSpace(DiscoveryRawJson);
+
 		public ObservableCollection<string> CommissioningBlockingReasons => _commissioningBlockingReasons;
 
 		public async Task InitializeAsync()
 		{
-			await RefreshStatusAsync().ConfigureAwait(false);
-			await RefreshCommissioningAsync().ConfigureAwait(false);
+			await RefreshStatusAsync();
+			await RefreshCommissioningAsync();
+			await RefreshDiscoveryHistoryAsync();
 		}
 
 		private async Task InitializeSqlFolderAsync()
@@ -393,6 +527,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					BandDefinitionsCount = report.BandDefinitionsCount;
 					MachineThresholdsCount = report.MachineThresholdsCount;
 					ShiftCalendarCount = report.ShiftCalendarCount;
+					DiscoverySnapshotCount = report.DiscoverySnapshotCount;
+					LatestDiscoveryAt = report.LatestDiscoveryAt;
 					LastCheckedAt = report.CheckedAt;
 
 					var missingItems = BuildMissingList(report, out bool hasMissing);
@@ -479,6 +615,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					var service = new CommissioningService(ConnectionString, repository, introspector, sizerClientFactory);
 					var status = await service.BuildStatusAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
 					ApplyCommissioningStatus(status);
+
+					await RefreshDiscoveryHistoryAsync(serialNo);
 				}
 				catch (Exception ex)
 				{
@@ -613,7 +751,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			}
 		}
 
-		private async Task DiscoverMachineAsync()
+		private async Task RunDiscoveryAsync()
 		{
 			if (!EnsureConnectionStringPresent()) return;
 
@@ -623,26 +761,41 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				{
 					var runtimeSettings = _settingsProvider.Load();
 					var config = new CollectorConfig(runtimeSettings);
-					using (var client = new SizerClient(config))
-					{
-						var serial = await client.GetSerialNoAsync(CancellationToken.None).ConfigureAwait(false);
-						if (string.IsNullOrWhiteSpace(serial))
-						{
-							ApplyCommissioningFailure("Discovery failed: Sizer returned an empty serial number.");
-							return;
-						}
 
-						var repository = new CommissioningRepository(ConnectionString);
-						await repository.EnsureRowAsync(serial).ConfigureAwait(false);
-						CommissioningSerial = serial;
+					_discoveryCts = new CancellationTokenSource();
+					_cancelDiscoveryCommand.RaiseCanExecuteChanged();
+
+					var runner = new DiscoveryRunner();
+					var snapshot = await runner.RunAsync(config, _discoveryCts.Token);
+
+					if (snapshot == null || string.IsNullOrWhiteSpace(snapshot.SerialNo))
+					{
+						DiscoveryStatusMessage = "Discovery failed: serial number unavailable; snapshot not stored.";
+						_discoveryCts = null;
+						_cancelDiscoveryCommand.RaiseCanExecuteChanged();
+						return;
 					}
 
-					await RefreshCommissioningAsync().ConfigureAwait(false);
+					var discoveryRepo = new MachineDiscoveryRepository(ConnectionString);
+					var insertResult = await discoveryRepo.InsertSnapshotAsync(snapshot, _discoveryCts.Token);
+
+					var commissioningRepo = new CommissioningRepository(ConnectionString);
+					await commissioningRepo.MarkDiscoveredAsync(snapshot.SerialNo, insertResult.DiscoveredAt, _discoveryCts.Token);
+
+					ApplyDiscoveryResult(snapshot, insertResult);
+
+					await RefreshDiscoveryHistoryAsync(snapshot.SerialNo);
+					await RefreshCommissioningAsync();
+
+					_discoveryCts = null;
+					_cancelDiscoveryCommand.RaiseCanExecuteChanged();
 				}
 				catch (Exception ex)
 				{
-					Logger.Log("Commissioning: machine discovery failed.", ex);
-					ApplyCommissioningFailure($"Machine discovery failed: {ex.Message}");
+					Logger.Log("Discovery run failed.", ex);
+					DiscoveryStatusMessage = $"Discovery failed: {ex.Message}";
+					_discoveryCts = null;
+					_cancelDiscoveryCommand.RaiseCanExecuteChanged();
 				}
 			}
 		}
@@ -689,6 +842,161 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			CommissioningNotes = string.Empty;
 			CommissioningStatusMessage = message;
 			UpdateCommissioningBlockingReasons(new[] { new CommissioningReason("UNKNOWN", message) });
+			DiscoveryStatusMessage = "Discovery not run yet.";
+		}
+
+		private void ApplyDiscoveryResult(MachineDiscoverySnapshot snapshot, InsertSnapshotResult insertResult)
+		{
+			DiscoverySnapshotId = insertResult?.Id;
+			DiscoveryDiscoveredAt = insertResult?.DiscoveredAt;
+			DiscoverySerial = snapshot?.SerialNo ?? string.Empty;
+			DiscoveryMachineName = snapshot?.MachineName ?? string.Empty;
+
+			var summary = snapshot?.Summary;
+			DiscoveryOutletCount = summary?.OutletCount;
+			DiscoveryOutletNames = summary?.OutletNames != null
+				? string.Join(", ", LimitList(summary.OutletNames, 8))
+				: string.Empty;
+			DiscoveryLaneViewCount = summary?.LaneViewCount;
+			DiscoveryGradeKeyCount = summary?.DistinctGradeKeys?.Count;
+			DiscoverySizeKeyCount = summary?.DistinctSizeKeys?.Count;
+
+			var tsText = DiscoveryDiscoveredAt.HasValue ? DiscoveryDiscoveredAt.Value.ToString("u") : "n/a";
+			DiscoveryStatusMessage = snapshot?.Success == true
+				? $"Discovery stored (ID {insertResult?.Id}) at {tsText}"
+				: $"Discovery stored with errors (ID {insertResult?.Id}) at {tsText}";
+
+			DiscoveryRawJson = snapshot != null
+				? JsonConvert.SerializeObject(snapshot, Formatting.Indented)
+				: string.Empty;
+			DiscoverySummaryJson = snapshot?.Summary != null
+				? JsonConvert.SerializeObject(snapshot.Summary, Formatting.Indented)
+				: string.Empty;
+		}
+
+		private static System.Collections.Generic.IEnumerable<string> LimitList(System.Collections.Generic.IEnumerable<string> source, int max)
+		{
+			if (source == null) yield break;
+			int count = 0;
+			foreach (var item in source)
+			{
+				yield return item;
+				count++;
+				if (count >= max) yield break;
+			}
+		}
+
+		private void CopyDiscoveryJson()
+		{
+			if (string.IsNullOrWhiteSpace(DiscoveryRawJson))
+			{
+				return;
+			}
+
+			try
+			{
+				Clipboard.SetText(DiscoveryRawJson);
+				StatusMessage = "Raw discovery JSON copied to clipboard.";
+			}
+			catch (Exception ex)
+			{
+				StatusMessage = $"Failed to copy JSON: {ex.Message}";
+			}
+		}
+
+		private void CancelDiscovery()
+		{
+			try
+			{
+				_discoveryCts?.Cancel();
+			}
+			finally
+			{
+				_cancelDiscoveryCommand.RaiseCanExecuteChanged();
+			}
+		}
+
+		private async Task RefreshDiscoveryHistoryAsync(string serialOverride = null)
+		{
+			if (!EnsureConnectionStringPresent()) return;
+
+			try
+			{
+				var repo = new MachineDiscoveryRepository(ConnectionString);
+				var serial = !string.IsNullOrWhiteSpace(serialOverride)
+					? serialOverride
+					: (!string.IsNullOrWhiteSpace(CommissioningSerial) ? CommissioningSerial : null);
+
+				var items = await repo.GetRecentSnapshotsAsync(serial, 10, CancellationToken.None);
+				UpdateDiscoveryHistory(items);
+
+				if (SelectedDiscoverySnapshot == null && _discoveryHistory.Count > 0)
+				{
+					SelectedDiscoverySnapshot = _discoveryHistory[0];
+				}
+			}
+			catch (Exception ex)
+			{
+				StatusMessage = $"Discovery history refresh failed: {ex.Message}";
+			}
+		}
+
+		private void UpdateDiscoveryHistory(System.Collections.Generic.IEnumerable<DiscoverySnapshotRecord> items)
+		{
+			var dispatcher = Application.Current?.Dispatcher;
+			if (dispatcher != null && !dispatcher.CheckAccess())
+			{
+				dispatcher.Invoke(() => ApplyHistory(items));
+			}
+			else
+			{
+				ApplyHistory(items);
+			}
+		}
+
+		private void ApplyHistory(System.Collections.Generic.IEnumerable<DiscoverySnapshotRecord> items)
+		{
+			_discoveryHistory.Clear();
+			if (items != null)
+			{
+				foreach (var item in items)
+				{
+					_discoveryHistory.Add(item);
+				}
+			}
+			OnPropertyChanged(nameof(DiscoveryHistory));
+		}
+
+		private void ApplyDiscoveryRecord(DiscoverySnapshotRecord record)
+		{
+			if (record == null)
+			{
+				return;
+			}
+
+			DiscoverySnapshotId = record.Id;
+			DiscoveryDiscoveredAt = record.DiscoveredAt;
+			DiscoverySerial = record.SerialNo ?? string.Empty;
+			DiscoveryMachineName = record.MachineName ?? string.Empty;
+			DiscoveryOutletCount = record.Summary?.OutletCount;
+			DiscoveryOutletNames = record.Summary?.OutletNames != null
+				? string.Join(", ", LimitList(record.Summary.OutletNames, 8))
+				: string.Empty;
+			DiscoveryLaneViewCount = record.Summary?.LaneViewCount;
+			DiscoveryGradeKeyCount = record.Summary?.DistinctGradeKeys?.Count;
+			DiscoverySizeKeyCount = record.Summary?.DistinctSizeKeys?.Count;
+
+			DiscoveryStatusMessage = record.Success
+				? $"Snapshot {record.Id} at {record.DiscoveredAt:u} (success)"
+				: $"Snapshot {record.Id} at {record.DiscoveredAt:u} (failed): {record.ErrorText}";
+
+			DiscoveryRawJson = string.IsNullOrWhiteSpace(record.RawPayloadJson)
+				? string.Empty
+				: record.RawPayloadJson;
+
+			DiscoverySummaryJson = record.Summary != null
+				? JsonConvert.SerializeObject(record.Summary, Formatting.Indented)
+				: (string.IsNullOrWhiteSpace(record.RawSummaryJson) ? string.Empty : record.RawSummaryJson);
 		}
 
 		private void UpdateCommissioningBlockingReasons(System.Collections.Generic.IEnumerable<CommissioningReason> reasons)
@@ -835,6 +1143,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			_saveCommissioningNotesCommand.RaiseCanExecuteChanged();
 			_resetCommissioningCommand.RaiseCanExecuteChanged();
 			_discoverMachineCommand.RaiseCanExecuteChanged();
+			_copyDiscoveryJsonCommand.RaiseCanExecuteChanged();
 		}
 
 		private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")

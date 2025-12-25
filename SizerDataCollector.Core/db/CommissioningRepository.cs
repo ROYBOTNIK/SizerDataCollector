@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
 using NpgsqlTypes;
@@ -26,6 +27,43 @@ namespace SizerDataCollector.Core.Db
 		public CommissioningRepository(string connectionString)
 		{
 			_connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+		}
+
+		public async Task MarkDiscoveredAsync(string serialNo, DateTimeOffset discoveredAt, CancellationToken cancellationToken)
+		{
+			if (string.IsNullOrWhiteSpace(serialNo))
+			{
+				throw new ArgumentException("Serial number must be provided.", nameof(serialNo));
+			}
+
+			const string sql = @"
+INSERT INTO oee.commissioning_status (serial_no, machine_discovered_at, updated_at)
+VALUES (@serial_no, @discovered_at, now())
+ON CONFLICT (serial_no) DO UPDATE
+SET machine_discovered_at = CASE
+	WHEN oee.commissioning_status.machine_discovered_at IS NULL THEN EXCLUDED.machine_discovered_at
+	WHEN EXCLUDED.machine_discovered_at > oee.commissioning_status.machine_discovered_at THEN EXCLUDED.machine_discovered_at
+	ELSE oee.commissioning_status.machine_discovered_at
+END,
+    updated_at = CASE
+	    WHEN oee.commissioning_status.machine_discovered_at IS NULL
+	         OR EXCLUDED.machine_discovered_at > oee.commissioning_status.machine_discovered_at
+	    THEN now()
+	    ELSE oee.commissioning_status.updated_at
+    END;";
+
+			using (var connection = new NpgsqlConnection(_connectionString))
+			{
+				await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+				using (var command = new NpgsqlCommand(sql, connection))
+				{
+					command.Parameters.AddWithValue("serial_no", serialNo);
+					var tsParam = command.Parameters.Add("discovered_at", NpgsqlDbType.TimestampTz);
+					tsParam.Value = discoveredAt.UtcDateTime;
+
+					await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+				}
+			}
 		}
 
 		public async Task EnsureRowAsync(string serialNo)

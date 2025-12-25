@@ -6,6 +6,7 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
                 <views:DashboardView />
             </DataTemplate>

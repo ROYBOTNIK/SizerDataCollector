@@ -93,10 +93,14 @@
   <ItemGroup>
     <Compile Include="..\Collector\CollectorEngine.cs" />
     <Compile Include="..\Collector\CollectorRunner.cs" />
+    <Compile Include="Sizer\Discovery\MachineDiscoverySnapshot.cs" />
+    <Compile Include="Sizer\Discovery\MachineDiscoverySummary.cs" />
+    <Compile Include="Sizer\Discovery\DiscoveryRunner.cs" />
     <Compile Include="Collector\HeartbeatPayload.cs" />
     <Compile Include="Collector\HeartbeatWriter.cs" />
     <Compile Include="..\Collector\CollectorStatus.cs" />
     <Compile Include="..\Db\DbBootstrapper.cs" />
+    <Compile Include="..\Db\MachineDiscoveryRepository.cs" />
     <Compile Include="..\Config\CollectorConfig.cs" />
     <Compile Include="..\Config\CollectorRuntimeSettings.cs" />
     <Compile Include="..\Config\CollectorSettingsProvider.cs" />

@@ -20,7 +20,8 @@ namespace SizerDataCollector.Core.Db
 			"oee.band_statistics",
 			"oee.machine_thresholds",
 			"oee.shift_calendar",
-			"oee.grade_lane_anomalies"
+			"oee.grade_lane_anomalies",
+			"oee.machine_discovery_snapshots"
 		};
 
 		private static readonly string[] RequiredFunctions =
@@ -74,13 +75,14 @@ namespace SizerDataCollector.Core.Db
 					report.CanConnect = true;
 					report.DatabaseName = connection.Database;
 
-			await CheckTimescaleAsync(connection, report, cancellationToken).ConfigureAwait(false);
+					await CheckTimescaleAsync(connection, report, cancellationToken).ConfigureAwait(false);
 					await CheckSchemaVersionAsync(connection, report, cancellationToken).ConfigureAwait(false);
 					await CheckTablesAsync(connection, report, cancellationToken).ConfigureAwait(false);
 					await CheckFunctionsAsync(connection, report, cancellationToken).ConfigureAwait(false);
 					await CheckContinuousAggregatesAsync(connection, report, cancellationToken).ConfigureAwait(false);
 					await CheckRefreshPoliciesAsync(connection, report, cancellationToken).ConfigureAwait(false);
 					await CheckSeedCountsAsync(connection, report, cancellationToken).ConfigureAwait(false);
+					await CheckDiscoveryAsync(connection, report, cancellationToken).ConfigureAwait(false);
 				}
 			}
 			catch (Exception ex)
@@ -288,6 +290,45 @@ ORDER BY ca.view_schema, ca.view_name;";
 			report.ShiftCalendarCount = await CountAsync(connection, "oee.shift_calendar", cancellationToken).ConfigureAwait(false);
 		}
 
+		private static async Task CheckDiscoveryAsync(NpgsqlConnection connection, DbHealthReport report, CancellationToken cancellationToken)
+		{
+			const string tableExistsSql = @"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='oee' AND table_name='machine_discovery_snapshots';";
+			using (var command = new NpgsqlCommand(tableExistsSql, connection))
+			{
+				var exists = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)) > 0;
+				if (!exists)
+				{
+					report.MissingTables.Add("oee.machine_discovery_snapshots");
+					return;
+				}
+			}
+
+			const string columnExistsSql = @"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='oee' AND table_name='commissioning_status' AND column_name='machine_discovered_at';";
+			using (var command = new NpgsqlCommand(columnExistsSql, connection))
+			{
+				var exists = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)) > 0;
+				if (!exists)
+				{
+					report.MissingTables.Add("oee.commissioning_status.machine_discovered_at");
+				}
+			}
+
+			const string statsSql = @"SELECT COUNT(*) AS cnt, max(discovered_at) AS latest FROM oee.machine_discovery_snapshots;";
+			using (var command = new NpgsqlCommand(statsSql, connection))
+			using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
+			{
+				if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+				{
+					report.DiscoverySnapshotCount = reader.IsDBNull(0) ? 0 : reader.GetInt64(0);
+					if (!reader.IsDBNull(1))
+					{
+						var ts = reader.GetFieldValue<DateTime>(1);
+						report.LatestDiscoveryAt = new DateTimeOffset(DateTime.SpecifyKind(ts, DateTimeKind.Utc));
+					}
+				}
+			}
+		}
+
 		private static async Task<long> CountAsync(NpgsqlConnection connection, string tableName, CancellationToken cancellationToken)
 		{
 			var sql = $"SELECT COUNT(*) FROM {tableName};";
@@ -337,6 +378,9 @@ ORDER BY ca.view_schema, ca.view_name;";
 		public long BandDefinitionsCount { get; set; }
 		public long MachineThresholdsCount { get; set; }
 		public long ShiftCalendarCount { get; set; }
+
+		public long DiscoverySnapshotCount { get; set; }
+		public DateTimeOffset? LatestDiscoveryAt { get; set; }
 
 		public Dictionary<string, string> MaterializationHypertables { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 

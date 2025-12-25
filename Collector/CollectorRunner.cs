@@ -134,7 +134,10 @@ namespace SizerDataCollector.Core.Collector
 				LastSuccessUtc = snapshot.LastSuccessUtc,
 				LastErrorUtc = snapshot.LastErrorUtc,
 				LastErrorMessage = snapshot.LastErrorMessage,
-				LastRunId = snapshot.LastRunId
+				LastRunId = snapshot.LastRunId,
+				CommissioningIngestionEnabled = snapshot.CommissioningIngestionEnabled,
+				CommissioningSerial = snapshot.CommissioningSerial,
+				CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons
 			};
 
 			_heartbeatWriter.Write(payload);

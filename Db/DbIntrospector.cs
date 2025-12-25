@@ -347,7 +347,9 @@ ORDER BY ca.view_schema, ca.view_name;";
 		public bool HasAllFunctions => MissingFunctions.Count == 0;
 		public bool HasAllContinuousAggregates => MissingContinuousAggregates.Count == 0;
 		public bool HasAllPolicies => MissingPolicies.Count == 0;
-		public bool SeedPresent => BandDefinitionsCount > 0 && MachineThresholdsCount > 0 && ShiftCalendarCount > 0;
+		// SeedPresent now reflects only the required seed tables for health gating.
+		// band_definitions remains counted and displayed but does not block Healthy when empty.
+		public bool SeedPresent => MachineThresholdsCount > 0 && ShiftCalendarCount > 0;
 		public bool Healthy =>
 			CanConnect &&
 			TimescaleInstalled &&

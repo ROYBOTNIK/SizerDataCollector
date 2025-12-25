@@ -129,6 +129,123 @@
                                    Foreground="Gray"/>
                     </StackPanel>
                 </Border>
+
+                <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
+                    <StackPanel Margin="0">
+                        <TextBlock Text="Commissioning"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="Evaluate commissioning readiness and ingestion gating."
+                                   Foreground="Gray"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Serial" Grid.Row="0" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningSerial}" Grid.Row="0" Grid.Column="1"/>
+
+                            <TextBlock Text="DB Bootstrapped" Grid.Row="1" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningDbBootstrappedText}" Grid.Row="1" Grid.Column="1"/>
+
+                            <TextBlock Text="Sizer Connected" Grid.Row="2" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningSizerConnectedText}" Grid.Row="2" Grid.Column="1"/>
+
+                            <TextBlock Text="Thresholds Set" Grid.Row="3" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningThresholdsSetText}" Grid.Row="3" Grid.Column="1"/>
+
+                            <TextBlock Text="Machine Discovered" Grid.Row="4" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningMachineDiscoveredText}" Grid.Row="4" Grid.Column="1"/>
+
+                            <TextBlock Text="Grade Mapping Completed" Grid.Row="5" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningGradeMappingCompletedText}" Grid.Row="5" Grid.Column="1"/>
+
+                            <TextBlock Text="Ingestion Enabled" Grid.Row="6" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningIngestionEnabledText}" Grid.Row="6" Grid.Column="1"/>
+                        </Grid>
+
+                        <WrapPanel Orientation="Horizontal" ItemHeight="32" ItemWidth="140" Margin="0,0,0,8">
+                            <Button Command="{Binding TestSizerConnectionCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Padding="12,8"
+                                    MinWidth="160">
+                                <TextBlock Text="Test Sizer Connection" TextWrapping="Wrap" TextAlignment="Center"/>
+                            </Button>
+                            <Button Command="{Binding RefreshCommissioningCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Padding="12,8"
+                                    MinWidth="160">
+                                <TextBlock Text="Refresh Commissioning" TextWrapping="Wrap" TextAlignment="Center"/>
+                            </Button>
+                            <Button Command="{Binding EnableIngestionCommand}"
+                                    IsEnabled="{Binding CommissioningCanEnableIngestion}"
+                                    Margin="0,0,8,8"
+                                    Padding="12,8"
+                                    MinWidth="160">
+                                <TextBlock Text="Enable Ingestion" TextWrapping="Wrap" TextAlignment="Center"/>
+                            </Button>
+                            <Button Command="{Binding DiscoverMachineCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Padding="12,8"
+                                    MinWidth="160">
+                                <TextBlock Text="Discover Machine" TextWrapping="Wrap" TextAlignment="Center"/>
+                            </Button>
+                            <Button Command="{Binding ResetCommissioningCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Padding="12,8"
+                                    MinWidth="160">
+                                <TextBlock Text="Reset Commissioning" TextWrapping="Wrap" TextAlignment="Center"/>
+                            </Button>
+                        </WrapPanel>
+
+                        <TextBlock Text="{Binding CommissioningStatusMessage}"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,4"/>
+
+                        <Expander Header="Blocking reasons" IsExpanded="False" Margin="0,0,0,8">
+                            <ItemsControl ItemsSource="{Binding CommissioningBlockingReasons}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+
+                        <TextBlock Text="Notes" FontWeight="SemiBold"/>
+                        <DockPanel Margin="0,4,0,0">
+                            <TextBox Text="{Binding CommissioningNotes, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="True"
+                                     Height="80"
+                                     VerticalScrollBarVisibility="Auto"
+                                     DockPanel.Dock="Top"
+                                     TextWrapping="Wrap"/>
+                        </DockPanel>
+                        <Button Command="{Binding SaveCommissioningNotesCommand}"
+                                IsEnabled="{Binding CanRunActions}"
+                                Padding="12,8"
+                                Margin="0,4,0,0"
+                                HorizontalAlignment="Left">
+                            <TextBlock Text="Save Notes"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </Grid>
     </ScrollViewer>

@@ -103,7 +103,10 @@
     <Compile Include="..\Db\DatabaseTester.cs" />
     <Compile Include="..\Db\MetricRow.cs" />
     <Compile Include="..\Db\DbIntrospector.cs" />
+    <Compile Include="Commissioning\CommissioningService.cs" />
+    <Compile Include="Commissioning\CommissioningStatus.cs" />
     <Compile Include="..\Db\TimescaleRepository.cs" />
+    <Compile Include="Db\ThresholdsRepository.cs" />
     <Compile Include="Monitoring\HeartbeatWriter.cs" />
     <Compile Include="..\Logging\Logging.cs" />
     <Compile Include="..\Sizer\SizerClient.cs" />

@@ -20,6 +20,9 @@ namespace SizerDataCollector.Core.Collector
 		public string LastRunId { get; set; }
 		public string MachineSerial { get; set; }
 		public string MachineName { get; set; }
+		public bool CommissioningIngestionEnabled { get; set; }
+		public string CommissioningSerial { get; set; }
+		public System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason> CommissioningBlockingReasons { get; set; } = new System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason>();
 
 		internal object SyncRoot => _syncRoot;
 
@@ -42,7 +45,10 @@ namespace SizerDataCollector.Core.Collector
 					LastErrorMessage = LastErrorMessage,
 					LastRunId = LastRunId,
 					MachineSerial = MachineSerial,
-					MachineName = MachineName
+					MachineName = MachineName,
+					CommissioningIngestionEnabled = CommissioningIngestionEnabled,
+					CommissioningSerial = CommissioningSerial,
+					CommissioningBlockingReasons = CommissioningBlockingReasons == null ? null : new System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason>(CommissioningBlockingReasons)
 				};
 			}
 		}
@@ -64,6 +70,9 @@ namespace SizerDataCollector.Core.Collector
 		public string LastRunId { get; set; }
 		public string MachineSerial { get; set; }
 		public string MachineName { get; set; }
+		public bool CommissioningIngestionEnabled { get; set; }
+		public System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason> CommissioningBlockingReasons { get; set; }
+		public string CommissioningSerial { get; set; }
 	}
 }
 

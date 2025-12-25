@@ -24,13 +24,15 @@ namespace SizerDataCollector
 				var config = new CollectorConfig(runtimeSettings);
 				LogEffectiveSettings(runtimeSettings);
 
+				var force = HasForceFlag(args);
+
 				switch (mode)
 				{
 					case HarnessMode.Probe:
 						RunProbe(config);
 						break;
 					case HarnessMode.SinglePoll:
-						RunSinglePoll(config, runtimeSettings).GetAwaiter().GetResult();
+						RunSinglePoll(config, runtimeSettings, force).GetAwaiter().GetResult();
 						break;
 					default:
 						ShowUsage();
@@ -69,6 +71,20 @@ namespace SizerDataCollector
 			return HarnessMode.Unknown;
 		}
 
+		private static bool HasForceFlag(string[] args)
+		{
+			if (args == null) return false;
+			foreach (var arg in args)
+			{
+				if (string.Equals(arg?.Trim(), "--force", StringComparison.OrdinalIgnoreCase))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		private static void ShowUsage()
 		{
 			Logger.Log("Usage: SizerDataCollector.exe [probe|single-poll]");
@@ -81,7 +97,91 @@ namespace SizerDataCollector
 			SizerClientTester.TestSizerConnection(config);
 		}
 
-		private static async Task RunSinglePoll(CollectorConfig config, CollectorRuntimeSettings runtimeSettings)
+		private static bool IsCommissioningEnabled(
+			CollectorConfig config,
+			CollectorRuntimeSettings runtimeSettings,
+			CollectorStatus status,
+			HeartbeatWriter heartbeatWriter)
+		{
+			status.CommissioningSerial = string.Empty;
+			status.CommissioningBlockingReasons.Clear();
+
+			if (runtimeSettings?.EnableIngestion != true)
+			{
+				status.CommissioningIngestionEnabled = false;
+				status.CommissioningBlockingReasons.Add(new SizerDataCollector.Core.Commissioning.CommissioningReason { Code = "INGESTION_DISABLED", Message = "Runtime setting EnableIngestion is false." });
+				WriteHeartbeat(status, heartbeatWriter);
+				return false;
+			}
+
+			try
+			{
+				using (var sizerClient = new SizerClient(config))
+				{
+					var serial = sizerClient.GetSerialNoAsync(CancellationToken.None).GetAwaiter().GetResult();
+					if (string.IsNullOrWhiteSpace(serial))
+					{
+						Logger.Log("Commissioning check: Sizer serial number unavailable; disabling ingestion.");
+						status.CommissioningBlockingReasons.Add(new SizerDataCollector.Core.Commissioning.CommissioningReason { Code = "SIZER_UNAVAILABLE", Message = "Sizer serial number unavailable." });
+						status.CommissioningIngestionEnabled = false;
+						WriteHeartbeat(status, heartbeatWriter);
+						return false;
+					}
+
+					var repository = new CommissioningRepository(config.TimescaleConnectionString);
+					var row = repository.GetAsync(serial).GetAwaiter().GetResult();
+					if (row?.IngestionEnabledAt == null)
+					{
+						Logger.Log($"Commissioning check: ingestion not enabled for serial '{serial}'.");
+						status.CommissioningBlockingReasons.Add(new SizerDataCollector.Core.Commissioning.CommissioningReason { Code = "INGESTION_DISABLED", Message = "Ingestion not enabled in commissioning status." });
+						status.CommissioningSerial = serial;
+						status.CommissioningIngestionEnabled = false;
+						WriteHeartbeat(status, heartbeatWriter);
+						return false;
+					}
+
+					status.CommissioningSerial = serial;
+					status.CommissioningIngestionEnabled = true;
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Logger.Log("Commissioning check failed; disabling ingestion.", ex);
+				status.CommissioningIngestionEnabled = false;
+				status.CommissioningBlockingReasons.Add(new SizerDataCollector.Core.Commissioning.CommissioningReason { Code = "COMMISSIONING_CHECK_FAILED", Message = "Commissioning check failed (see logs)." });
+				WriteHeartbeat(status, heartbeatWriter);
+				return false;
+			}
+		}
+
+		private static void WriteHeartbeat(CollectorStatus status, HeartbeatWriter heartbeatWriter)
+		{
+			if (heartbeatWriter == null || status == null)
+			{
+				return;
+			}
+
+			var snapshot = status.CreateSnapshot();
+			var payload = new HeartbeatPayload
+			{
+				MachineSerial = snapshot.MachineSerial,
+				MachineName = snapshot.MachineName,
+				LastPollUtc = snapshot.LastPollCompletedUtc ?? snapshot.LastPollStartedUtc,
+				LastSuccessUtc = snapshot.LastSuccessUtc,
+				LastErrorUtc = snapshot.LastErrorUtc,
+				LastErrorMessage = snapshot.LastErrorMessage,
+				LastRunId = snapshot.LastRunId,
+				CommissioningIngestionEnabled = snapshot.CommissioningIngestionEnabled,
+				CommissioningSerial = snapshot.CommissioningSerial,
+				CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons
+			};
+
+			heartbeatWriter.Write(payload);
+		}
+
+		private static async Task RunSinglePoll(CollectorConfig config, CollectorRuntimeSettings runtimeSettings, bool force)
 		{
 			Logger.Log("Running collector for a single poll...");
 
@@ -94,6 +194,15 @@ namespace SizerDataCollector
 			var heartbeatPath = Path.Combine(dataRoot, "heartbeat.json");
 			var heartbeatWriter = new HeartbeatWriter(heartbeatPath);
 			var repository = new TimescaleRepository(config.TimescaleConnectionString);
+
+			if (!force)
+			{
+				if (!IsCommissioningEnabled(config, runtimeSettings, status, heartbeatWriter))
+				{
+					Logger.Log("Commissioning incomplete; ingestion disabled; single-poll aborted.");
+					return;
+				}
+			}
 
 			using (var sizerClient = new SizerClient(config))
 			using (var cts = new CancellationTokenSource())

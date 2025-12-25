@@ -13,6 +13,10 @@ namespace SizerDataCollector.Core.Collector
 
 		public string LastErrorMessage { get; set; }
 		public string LastRunId { get; set; }
+
+		public bool? CommissioningIngestionEnabled { get; set; }
+		public string CommissioningSerial { get; set; }
+		public System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason> CommissioningBlockingReasons { get; set; }
 	}
 }
 

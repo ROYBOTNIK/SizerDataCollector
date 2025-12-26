@@ -1,3 +1,10 @@
+-- Ensure schema exists
+-- External dependencies (must already exist before applying this migration):
+--   - public.machine_settings  (referenced by oee/public get_recycle_outlet, get_target_throughput)
+--   - oee.band_definitions     (referenced by oee.classify_oee_value)
+-- These are created in earlier migrations (e.g., V001). Running V002 alone on an empty DB will fail if these tables are absent.
+CREATE SCHEMA IF NOT EXISTS oee;
+
 -- User-defined functions (public, oee)
 -- Extracted from authoritative reference; internal Timescale functions are excluded.
 
@@ -155,16 +162,6 @@ ORDER  BY id
 LIMIT  1;
 $$;
 
-CREATE OR REPLACE FUNCTION oee.grade_qty(j jsonb, desired_cat integer) RETURNS numeric
-    LANGUAGE sql IMMUTABLE PARALLEL SAFE
-AS $$
-SELECT COALESCE(
-         SUM((kv.value)::numeric), 0)
-FROM   jsonb_array_elements(j)          AS lane(lj)
-       CROSS JOIN LATERAL jsonb_each_text(lj) AS kv(key,value)
-WHERE  oee.grade_to_cat(kv.key) = desired_cat;
-$$;
-
 CREATE OR REPLACE FUNCTION oee.grade_to_cat(p_grade text) RETURNS integer
     LANGUAGE sql IMMUTABLE
 AS $$
@@ -175,6 +172,37 @@ SELECT CASE
     WHEN p_grade LIKE '%\_E%' ESCAPE '\'  OR p_grade LIKE '%\_D%'           THEN 0
     WHEN p_grade LIKE '%\_Green'  ESCAPE '\' OR p_grade LIKE '%\_Cull'      THEN 2
     ELSE 2 END;
+$$;
+
+-- Replace/override any older signature
+DROP FUNCTION IF EXISTS oee.grade_qty(jsonb, integer);
+
+CREATE OR REPLACE FUNCTION oee.grade_qty(grade_json jsonb, desired_cat integer)
+RETURNS integer
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  total integer := 0;
+  kv record;
+  v_int integer;
+BEGIN
+  IF grade_json IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  FOR kv IN SELECT key, value FROM jsonb_each_text(grade_json)
+  LOOP
+    -- jsonb_each_text gives text values; protect against blanks
+    v_int := COALESCE(NULLIF(kv.value, '')::integer, 0);
+
+    IF oee.grade_to_cat(kv.key) = desired_cat THEN
+      total := total + v_int;
+    END IF;
+  END LOOP;
+
+  RETURN total;
+END;
 $$;
 
 CREATE OR REPLACE FUNCTION oee.num(j jsonb, fallback numeric DEFAULT 0) RETURNS numeric
@@ -346,4 +374,99 @@ AS $_$
             '\.(\d+(?:\.\d+)?)\s*$'
         ))[1]::DOUBLE PRECISION;
 $_$;
+
+-- Public schema
+CREATE OR REPLACE FUNCTION public.avg_int_array(j jsonb) RETURNS double precision
+    LANGUAGE sql IMMUTABLE
+AS $$
+  SELECT CASE
+           WHEN j IS NULL OR jsonb_typeof(j) <> 'array' THEN 0
+           ELSE (SELECT AVG((elem)::int)::double precision
+                 FROM   jsonb_array_elements_text(j) t(elem))
+         END
+$$;
+
+CREATE OR REPLACE FUNCTION public.calc_perf_ratio(total_fpm double precision, missed_fpm double precision, recycle_fpm double precision, target_fpm double precision) RETURNS double precision
+    LANGUAGE plpgsql IMMUTABLE
+AS $$
+DECLARE
+    effective double precision := GREATEST(0, total_fpm - missed_fpm - recycle_fpm);
+    raw_ratio  double precision;
+    ratio      double precision;
+BEGIN
+    IF target_fpm <= 0 OR effective < 3 THEN
+        RETURN 0;
+    END IF;
+
+    raw_ratio := effective / target_fpm;
+
+    IF raw_ratio <= 0.5  THEN ratio := raw_ratio;
+    ELSIF raw_ratio <= 1 THEN ratio := 0.5 + (raw_ratio - 0.5);
+    ELSE                       ratio := 1 - (0.2 / ((raw_ratio - 1) + 0.2));
+    END IF;
+
+    RETURN LEAST(1, GREATEST(0, ratio));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.calc_quality_ratio_qv1(good_qty double precision, peddler_qty double precision, bad_qty double precision, recycle_qty double precision) RETURNS double precision
+    LANGUAGE plpgsql IMMUTABLE
+AS $$
+DECLARE
+    tgt_good     constant double precision := 0.75;
+    tgt_peddler  constant double precision := 0.15;
+    tgt_bad      constant double precision := 0.05;
+    tgt_recycle  constant double precision := 0.05;
+
+    w_good       constant double precision := 0.40;
+    w_peddler    constant double precision := 0.20;
+    w_bad        constant double precision := 0.20;
+    w_recycle    constant double precision := 0.20;
+
+    sig_k        constant double precision := 4.0;
+    clamp_min    constant double precision := -2.0;
+    clamp_max    constant double precision :=  2.0;
+
+    total        double precision;
+    pct_good     double precision;
+    pct_peddler  double precision;
+    pct_bad      double precision;
+    pct_recycle  double precision;
+
+    raw_good     double precision;
+    raw_peddler  double precision;
+    raw_bad      double precision;
+    raw_recycle  double precision;
+
+    part_good    double precision;
+    part_peddler double precision;
+    part_bad     double precision;
+    part_recycle double precision;
+BEGIN
+    total := good_qty + peddler_qty + bad_qty + recycle_qty;
+    IF total <= 0 THEN
+        RETURN 0;
+    END IF;
+
+    pct_good     := good_qty     / total;
+    pct_peddler  := peddler_qty  / total;
+    pct_bad      := bad_qty      / total;
+    pct_recycle  := recycle_qty  / total;
+
+    raw_good     := GREATEST(clamp_min, LEAST(clamp_max, 1 + (pct_good     - tgt_good)    / tgt_good));
+    raw_peddler  := GREATEST(clamp_min, LEAST(clamp_max, 1 - (pct_peddler  - tgt_peddler) / tgt_peddler));
+    raw_bad      := GREATEST(clamp_min, LEAST(clamp_max, 1 - (pct_bad      - tgt_bad)     / tgt_bad));
+    raw_recycle  := GREATEST(clamp_min, LEAST(clamp_max, 1 - (pct_recycle  - tgt_recycle) / tgt_recycle));
+
+    part_good    := 1 / (1 + exp(-sig_k * (raw_good    - 1)));
+    part_peddler := 1 / (1 + exp(-sig_k * (raw_peddler - 1)));
+    part_bad     := 1 / (1 + exp(-sig_k * (raw_bad     - 1)));
+    part_recycle := 1 / (1 + exp(-sig_k * (raw_recycle - 1)));
+
+    RETURN  part_good    * w_good
+          + part_peddler * w_peddler
+          + part_bad     * w_bad
+          + part_recycle * w_recycle;
+END;
+$$;
 

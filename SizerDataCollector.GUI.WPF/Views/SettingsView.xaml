@@ -147,6 +147,105 @@
 
                 <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
                     <StackPanel Margin="0">
+                        <TextBlock Text="Machine Settings (per serial)"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="Configure throughput and recycle outlet per machine; assists use latest discovery."
+                                   Foreground="Gray"
+                                   Margin="0,0,0,8"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Machine" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox ItemsSource="{Binding Machines}"
+                                      SelectedItem="{Binding SelectedMachine}"
+                                      DisplayMemberPath="Display"
+                                      Width="240"
+                                      Margin="0,0,8,0"/>
+                            <Button Command="{Binding RefreshMachinesCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Refresh Machines"/>
+                            </Button>
+                        </StackPanel>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="2*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Target Speed" Grid.Row="0" Grid.Column="0"/>
+                            <TextBox Text="{Binding TargetMachineSpeed, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="0" />
+
+                            <TextBlock Text="Lane Count" Grid.Row="0" Grid.Column="1"/>
+                            <TextBox Text="{Binding LaneCountSetting, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="1" />
+
+                            <TextBlock Text="Target %" Grid.Row="0" Grid.Column="2"/>
+                            <TextBox Text="{Binding TargetPercentage, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="2" />
+
+                            <TextBlock Text="Recycle Outlet" Grid.Row="0" Grid.Column="3"/>
+                            <ComboBox ItemsSource="{Binding OutletOptions}"
+                                      SelectedItem="{Binding SelectedRecycleOutlet}"
+                                      DisplayMemberPath="Display"
+                                      Grid.Row="1" Grid.Column="3"/>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Command="{Binding SaveMachineSettingsCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Save Machine Settings"/>
+                            </Button>
+                            <TextBlock Text="Target throughput preview:" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                            <TextBlock Text="{Binding TargetThroughputPreview, StringFormat={}{0:F2}}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Grade Mapping (per serial)" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                        <DataGrid ItemsSource="{Binding GradeRows}"
+                                  AutoGenerateColumns="False"
+                                  HeadersVisibility="Column"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  MinHeight="180"
+                                  Margin="0,0,0,4">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Grade Key" Binding="{Binding GradeKey}" IsReadOnly="True" Width="2*"/>
+                                <DataGridTextColumn Header="Resolved Cat" Binding="{Binding ResolvedCategory}" IsReadOnly="True" Width="*"/>
+                                <DataGridTemplateColumn Header="Override Cat" Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding DataContext.CategoryOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      SelectedValuePath="Id"
+                                                      DisplayMemberPath="Name"
+                                                      SelectedValue="{Binding OverrideCategory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive, Mode=TwoWay}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Command="{Binding SaveGradeOverridesCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Save Grade Overrides"/>
+                            </Button>
+                            <TextBlock Text="Grade keys sourced from latest discovery snapshot." Foreground="Gray" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
+                    <StackPanel Margin="0">
                         <TextBlock Text="Commissioning"
                                    FontWeight="SemiBold"/>
                         <TextBlock Text="Evaluate commissioning readiness and ingestion gating."

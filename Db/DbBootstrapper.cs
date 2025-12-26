@@ -49,32 +49,48 @@ CREATE TABLE IF NOT EXISTS public.schema_version
 					await EnsureSchemaVersionTableAsync(connection, cancellationToken).ConfigureAwait(false);
 					var applied = await LoadAppliedVersionsAsync(connection, cancellationToken).ConfigureAwait(false);
 
+					LogMigrationDiscovery(scripts);
+					LogAppliedSummary(applied);
+
 					foreach (var script in scripts)
 					{
-						var checksum = ComputeChecksum(script.Content);
-
-						if (applied.TryGetValue(script.Version, out var existing))
+						try
 						{
-							if (string.Equals(existing.Checksum, checksum, StringComparison.OrdinalIgnoreCase))
+							var checksum = ComputeChecksum(script.Content);
+
+							if (applied.TryGetValue(script.Version, out var existing))
 							{
-								result.Migrations.Add(MigrationResult.Skipped(script.Version, script.ScriptName, "Already applied with matching checksum."));
+								if (string.Equals(existing.Checksum, checksum, StringComparison.OrdinalIgnoreCase))
+								{
+									Logger.Log($"SKIPPING {script.ScriptName} (version={script.Version}) reason=already applied");
+									result.Migrations.Add(MigrationResult.Skipped(script.Version, script.ScriptName, "Already applied with matching checksum."));
+									continue;
+								}
+
+								var mismatch = MigrationResult.ChecksumMismatch(script.Version, script.ScriptName, existing.Checksum, checksum);
+								result.Migrations.Add(mismatch);
+								result.Exception = mismatch.Exception;
+								result.ErrorMessage = mismatch.Message;
+								Logger.Log($"SKIPPING {script.ScriptName} (version={script.Version}) reason=checksum mismatch existing={existing.Checksum} new={checksum}");
 								continue;
 							}
 
-							var mismatch = MigrationResult.ChecksumMismatch(script.Version, script.ScriptName, existing.Checksum, checksum);
-							result.Migrations.Add(mismatch);
-							result.Exception = mismatch.Exception;
-							result.ErrorMessage = mismatch.Message;
-							return result;
+							Logger.Log($"APPLYING {script.ScriptName} (version={script.Version})");
+							var migrationResult = await ApplyMigrationAsync(connection, script, checksum, cancellationToken).ConfigureAwait(false);
+							result.Migrations.Add(migrationResult);
+
+							if (migrationResult.Status == MigrationStatus.Failed)
+							{
+								result.Exception = migrationResult.Exception;
+								result.ErrorMessage = migrationResult.Message;
+								return result;
+							}
 						}
-
-						var migrationResult = await ApplyMigrationAsync(connection, script, checksum, cancellationToken).ConfigureAwait(false);
-						result.Migrations.Add(migrationResult);
-
-						if (migrationResult.Status == MigrationStatus.Failed)
+						catch (Exception ex)
 						{
-							result.Exception = migrationResult.Exception;
-							result.ErrorMessage = migrationResult.Message;
+							Logger.Log($"Migration {script.ScriptName} (version={script.Version}) failed.", ex);
+							result.Exception = ex;
+							result.ErrorMessage = ex.Message;
 							return result;
 						}
 					}
@@ -82,6 +98,7 @@ CREATE TABLE IF NOT EXISTS public.schema_version
 			}
 			catch (Exception ex)
 			{
+				Logger.Log("DbBootstrapper: bootstrap failed during migration discovery or application.", ex);
 				result.Exception = ex;
 				result.ErrorMessage = ex.Message;
 			}
@@ -124,6 +141,36 @@ CREATE TABLE IF NOT EXISTS public.schema_version
 			}
 
 			return Task.FromResult<IReadOnlyList<MigrationScript>>(scripts);
+		}
+
+		private static void LogAppliedSummary(Dictionary<string, SchemaVersionEntry> applied)
+		{
+			if (applied == null)
+			{
+				Logger.Log("DbBootstrapper: schema_version check returned null.");
+				return;
+			}
+
+			var latest = applied.Values
+				.OrderByDescending(v => v.AppliedAt)
+				.FirstOrDefault();
+
+			var latestText = latest == null ? "(none)" : $"{latest.Version} at {latest.AppliedAt:u}";
+			Logger.Log($"DbBootstrapper: schema_version applied_count={applied.Count}, latest={latestText}");
+		}
+
+		private void LogMigrationDiscovery(IReadOnlyList<MigrationScript> scripts)
+		{
+			Logger.Log($"DbBootstrapper: migration folder={MigrationPath}");
+
+			if (scripts == null || scripts.Count == 0)
+			{
+				Logger.Log("DbBootstrapper: No migration scripts found.");
+				return;
+			}
+
+			var ordered = scripts.Select(s => s.ScriptName).ToArray();
+			Logger.Log("DbBootstrapper: discovered migrations (apply order): " + string.Join(", ", ordered));
 		}
 
 		private void EnsureMigrationDirectoryExists()
@@ -253,6 +300,7 @@ VALUES (@version, @checksum, @script_name);";
 					}
 
 					transaction.Commit();
+					Logger.Log($"APPLIED {script.ScriptName} (version={script.Version})");
 					return MigrationResult.Applied(script.Version, script.ScriptName);
 				}
 				catch (Npgsql.PostgresException pgex) when (pgex.SqlState == "42P07" || pgex.SqlState == "42710")
@@ -265,7 +313,15 @@ VALUES (@version, @checksum, @script_name);";
 				catch (Exception ex)
 				{
 					try { transaction.Rollback(); } catch { }
-					Logger.Log($"Migration {script.ScriptName} failed.", ex);
+					if (ex is Npgsql.PostgresException pgex)
+					{
+						Logger.Log(
+							$"Migration {script.ScriptName} failed. SqlState={pgex.SqlState} Message={pgex.MessageText} Position={pgex.Position} Where={pgex.Where} InternalQuery={pgex.InternalQuery}");
+					}
+					else
+					{
+						Logger.Log($"Migration {script.ScriptName} failed.", ex);
+					}
 					return MigrationResult.Failed(script.Version, script.ScriptName, ex);
 				}
 			}

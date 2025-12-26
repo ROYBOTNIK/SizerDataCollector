@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -15,6 +16,7 @@ using SizerDataCollector.Core.Logging;
 using SizerDataCollector.Core.Sizer;
 using SizerDataCollector.Core.Sizer.Discovery;
 using SizerDataCollector.GUI.WPF.Commands;
+using System.Linq;
 
 namespace SizerDataCollector.GUI.WPF.ViewModels
 {
@@ -32,6 +34,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private readonly RelayCommand _discoverMachineCommand;
 		private readonly RelayCommand _copyDiscoveryJsonCommand;
 		private readonly RelayCommand _cancelDiscoveryCommand;
+		private readonly RelayCommand _refreshMachinesCommand;
+		private readonly RelayCommand _saveMachineSettingsCommand;
+		private readonly RelayCommand _saveGradeOverridesCommand;
 
 		private string _connectionString = string.Empty;
 		private string _statusMessage = "Ready.";
@@ -81,6 +86,23 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private string _discoverySummaryJson = string.Empty;
 		private CancellationTokenSource _discoveryCts;
 
+		private readonly ObservableCollection<MachineOption> _machines = new ObservableCollection<MachineOption>();
+		private MachineOption _selectedMachine;
+		private readonly ObservableCollection<OutletOption> _outletOptions = new ObservableCollection<OutletOption>();
+		private OutletOption _selectedRecycleOutlet;
+		private double? _targetMachineSpeed;
+		private int? _laneCountSetting;
+		private double? _targetPercentage;
+		private double? _targetThroughputPreview;
+		private readonly ObservableCollection<GradeRow> _gradeRows = new ObservableCollection<GradeRow>();
+		private readonly ObservableCollection<CategoryOption> _categoryOptions = new ObservableCollection<CategoryOption>
+		{
+			new CategoryOption(0, "Good / Export"),
+			new CategoryOption(1, "Peddler / Test"),
+			new CategoryOption(2, "Bad / Green / Cull"),
+			new CategoryOption(3, "Recycle")
+		};
+
 		public SettingsViewModel(CollectorSettingsProvider settingsProvider)
 		{
 			_settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
@@ -97,6 +119,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			_discoverMachineCommand = new RelayCommand(async _ => await RunDiscoveryAsync(), _ => CanRunActions);
 			_copyDiscoveryJsonCommand = new RelayCommand(_ => CopyDiscoveryJson(), _ => HasDiscoveryRawJson);
 			_cancelDiscoveryCommand = new RelayCommand(_ => CancelDiscovery(), _ => _discoveryCts != null && !_discoveryCts.IsCancellationRequested);
+			_refreshMachinesCommand = new RelayCommand(async _ => await RefreshMachinesAsync(), _ => CanRunActions);
+			_saveMachineSettingsCommand = new RelayCommand(async _ => await SaveMachineSettingsAsync(), _ => SelectedMachine != null && CanRunActions);
+			_saveGradeOverridesCommand = new RelayCommand(async _ => await SaveGradeOverridesAsync(), _ => SelectedMachine != null && CanRunActions && _gradeRows.Count > 0);
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -112,6 +137,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public ICommand DiscoverMachineCommand => _discoverMachineCommand;
 		public ICommand CopyDiscoveryJsonCommand => _copyDiscoveryJsonCommand;
 		public ICommand CancelDiscoveryCommand => _cancelDiscoveryCommand;
+		public ICommand RefreshMachinesCommand => _refreshMachinesCommand;
+		public ICommand SaveMachineSettingsCommand => _saveMachineSettingsCommand;
+		public ICommand SaveGradeOverridesCommand => _saveGradeOverridesCommand;
 
 		public string ConnectionString
 		{
@@ -447,11 +475,61 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 		public ObservableCollection<string> CommissioningBlockingReasons => _commissioningBlockingReasons;
 
+		public ObservableCollection<MachineOption> Machines => _machines;
+
+		public MachineOption SelectedMachine
+		{
+			get => _selectedMachine;
+			set
+			{
+				if (SetProperty(ref _selectedMachine, value))
+				{
+					_ = LoadSelectedMachineAsync();
+				}
+			}
+		}
+
+		public ObservableCollection<OutletOption> OutletOptions => _outletOptions;
+
+		public OutletOption SelectedRecycleOutlet
+		{
+			get => _selectedRecycleOutlet;
+			set => SetProperty(ref _selectedRecycleOutlet, value);
+		}
+
+		public double? TargetMachineSpeed
+		{
+			get => _targetMachineSpeed;
+			set => SetProperty(ref _targetMachineSpeed, value);
+		}
+
+		public int? LaneCountSetting
+		{
+			get => _laneCountSetting;
+			set => SetProperty(ref _laneCountSetting, value);
+		}
+
+		public double? TargetPercentage
+		{
+			get => _targetPercentage;
+			set => SetProperty(ref _targetPercentage, value);
+		}
+
+		public double? TargetThroughputPreview
+		{
+			get => _targetThroughputPreview;
+			private set => SetProperty(ref _targetThroughputPreview, value);
+		}
+
+		public ObservableCollection<GradeRow> GradeRows => _gradeRows;
+		public ObservableCollection<CategoryOption> CategoryOptions => _categoryOptions;
+
 		public async Task InitializeAsync()
 		{
 			await RefreshStatusAsync();
 			await RefreshCommissioningAsync();
 			await RefreshDiscoveryHistoryAsync();
+			await RefreshMachinesAsync();
 		}
 
 		private async Task InitializeSqlFolderAsync()
@@ -999,6 +1077,239 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				: (string.IsNullOrWhiteSpace(record.RawSummaryJson) ? string.Empty : record.RawSummaryJson);
 		}
 
+		private async Task RefreshMachinesAsync()
+		{
+			if (!EnsureConnectionStringPresent()) return;
+			try
+			{
+				var repo = new MachineSettingsRepository(ConnectionString);
+				var machines = await repo.GetMachinesAsync(CancellationToken.None).ConfigureAwait(false);
+				ApplyCollection(_machines, machines.Select(m => new MachineOption(m.SerialNo, m.Name)));
+				if (SelectedMachine == null && _machines.Count > 0)
+				{
+					SelectedMachine = _machines[0];
+				}
+			}
+			catch (Exception ex)
+			{
+				StatusMessage = $"Failed to load machines: {ex.Message}";
+			}
+		}
+
+		private async Task LoadSelectedMachineAsync()
+		{
+			if (SelectedMachine == null || !EnsureConnectionStringPresent()) return;
+			using (new BusyScope(this))
+			{
+				try
+				{
+					await LoadMachineSettingsAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
+					await LoadDiscoveryAssistAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
+					await LoadGradeOverridesAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
+					await RefreshThroughputPreviewAsync().ConfigureAwait(false);
+				}
+				catch (Exception ex)
+				{
+					StatusMessage = $"Failed to load machine data: {ex.Message}";
+				}
+			}
+		}
+
+		private async Task LoadMachineSettingsAsync(string serialNo)
+		{
+			var repo = new MachineSettingsRepository(ConnectionString);
+			var settings = await repo.GetSettingsAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
+			TargetMachineSpeed = settings?.TargetMachineSpeed;
+			LaneCountSetting = settings?.LaneCount;
+			TargetPercentage = settings?.TargetPercentage;
+			if (settings?.RecycleOutlet != null)
+			{
+				SelectedRecycleOutlet = _outletOptions.FirstOrDefault(o => o.Id == settings.RecycleOutlet) ?? new OutletOption(settings.RecycleOutlet.Value, $"Outlet {settings.RecycleOutlet.Value}");
+			}
+		}
+
+		private async Task LoadDiscoveryAssistAsync(string serialNo)
+		{
+			var discoveryRepo = new MachineDiscoveryRepository(ConnectionString);
+			var snapshot = await discoveryRepo.GetLatestSnapshotAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
+
+			ApplyCollection(_outletOptions, ParseOutlets(snapshot));
+
+			var gradeKeys = ParseGradeKeys(snapshot);
+			var repo = new MachineSettingsRepository(ConnectionString);
+			var overrides = await repo.GetGradeOverridesAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
+			var rows = new List<GradeRow>();
+			foreach (var key in gradeKeys.Union(overrides.Select(o => o.GradeKey), StringComparer.OrdinalIgnoreCase))
+			{
+				var resolved = await repo.ResolveCategoryAsync(serialNo, key, CancellationToken.None).ConfigureAwait(false);
+				var existing = overrides.FirstOrDefault(o => string.Equals(o.GradeKey, key, StringComparison.OrdinalIgnoreCase));
+				rows.Add(new GradeRow
+				{
+					GradeKey = key,
+					ResolvedCategory = resolved,
+					OverrideCategory = existing?.DesiredCat,
+					IsActive = existing?.IsActive ?? true,
+					HasExistingOverride = existing != null,
+					OriginalDesiredCat = existing?.DesiredCat,
+					OriginalIsActive = existing?.IsActive ?? false
+				});
+			}
+			ApplyCollection(_gradeRows, rows.OrderBy(r => r.GradeKey, StringComparer.OrdinalIgnoreCase));
+		}
+
+		private async Task RefreshThroughputPreviewAsync()
+		{
+			if (SelectedMachine == null) return;
+			var repo = new MachineSettingsRepository(ConnectionString);
+			TargetThroughputPreview = await repo.GetTargetThroughputAsync(SelectedMachine.SerialNo, CancellationToken.None).ConfigureAwait(false);
+		}
+
+		private async Task SaveMachineSettingsAsync()
+		{
+			if (SelectedMachine == null)
+			{
+				StatusMessage = "Select a machine first.";
+				return;
+			}
+
+			if (!TargetMachineSpeed.HasValue || !LaneCountSetting.HasValue || !TargetPercentage.HasValue || SelectedRecycleOutlet == null)
+			{
+				StatusMessage = "Fill target speed, lane count, target %, and recycle outlet.";
+				return;
+			}
+
+			if (!EnsureConnectionStringPresent()) return;
+
+			using (new BusyScope(this))
+			{
+				try
+				{
+					var repo = new MachineSettingsRepository(ConnectionString);
+					await repo.UpsertSettingsAsync(
+						SelectedMachine.SerialNo,
+						TargetMachineSpeed.Value,
+						LaneCountSetting.Value,
+						TargetPercentage.Value,
+						SelectedRecycleOutlet.Id,
+						CancellationToken.None).ConfigureAwait(false);
+
+					await RefreshThroughputPreviewAsync().ConfigureAwait(false);
+					StatusMessage = "Machine settings saved.";
+				}
+				catch (Exception ex)
+				{
+					StatusMessage = $"Save machine settings failed: {ex.Message}";
+				}
+			}
+		}
+
+		private async Task SaveGradeOverridesAsync()
+		{
+			if (SelectedMachine == null)
+			{
+				StatusMessage = "Select a machine first.";
+				return;
+			}
+
+			if (!EnsureConnectionStringPresent()) return;
+
+			using (new BusyScope(this))
+			{
+				try
+				{
+					var repo = new MachineSettingsRepository(ConnectionString);
+					foreach (var row in _gradeRows)
+					{
+						if (row.OverrideCategory.HasValue || row.HasExistingOverride)
+						{
+							var desired = row.OverrideCategory ?? row.OriginalDesiredCat ?? row.ResolvedCategory ?? 2;
+							await repo.UpsertGradeOverrideAsync(
+								SelectedMachine.SerialNo,
+								row.GradeKey,
+								desired,
+								row.IsActive,
+								Environment.UserName,
+								CancellationToken.None).ConfigureAwait(false);
+						}
+					}
+
+					await LoadGradeOverridesAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
+					StatusMessage = "Grade overrides saved.";
+				}
+				catch (Exception ex)
+				{
+					StatusMessage = $"Save grade overrides failed: {ex.Message}";
+				}
+			}
+		}
+
+		private async Task LoadGradeOverridesAsync(string serialNo)
+		{
+			var repo = new MachineSettingsRepository(ConnectionString);
+			var overrides = await repo.GetGradeOverridesAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
+
+			foreach (var row in _gradeRows)
+			{
+				var existing = overrides.FirstOrDefault(o => string.Equals(o.GradeKey, row.GradeKey, StringComparison.OrdinalIgnoreCase));
+				row.OverrideCategory = existing?.DesiredCat;
+				row.IsActive = existing?.IsActive ?? row.IsActive;
+				row.HasExistingOverride = existing != null;
+				row.OriginalDesiredCat = existing?.DesiredCat;
+				row.OriginalIsActive = existing?.IsActive ?? false;
+				row.ResolvedCategory = await repo.ResolveCategoryAsync(serialNo, row.GradeKey, CancellationToken.None).ConfigureAwait(false);
+			}
+
+			OnPropertyChanged(nameof(GradeRows));
+		}
+
+		private static IList<OutletOption> ParseOutlets(MachineDiscoverySnapshot snapshot)
+		{
+			var results = new List<OutletOption>();
+			try
+			{
+				var token = snapshot?.Payloads != null && snapshot.Payloads.TryGetValue("outlets_details", out var outlets) ? outlets : null;
+				var array = NormalizeToken(token) as Newtonsoft.Json.Linq.JArray;
+				if (array == null) return results;
+				foreach (var item in array)
+				{
+					var id = item?["Id"]?.ToObject<int?>();
+					var name = item?["Name"]?.ToObject<string>();
+					if (id.HasValue)
+					{
+						results.Add(new OutletOption(id.Value, string.IsNullOrWhiteSpace(name) ? $"Outlet {id}" : name));
+					}
+				}
+			}
+			catch { }
+			return results;
+		}
+
+		private static HashSet<string> ParseGradeKeys(MachineDiscoverySnapshot snapshot)
+		{
+			var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			try
+			{
+				var token = snapshot?.Payloads != null && snapshot.Payloads.TryGetValue("lanes_grade_fpm", out var grades) ? grades : null;
+				var array = NormalizeToken(token) as Newtonsoft.Json.Linq.JArray;
+				if (array == null) return keys;
+				foreach (var lane in array)
+				{
+					if (lane is Newtonsoft.Json.Linq.JObject obj)
+					{
+						foreach (var prop in obj.Properties())
+						{
+							if (!string.IsNullOrWhiteSpace(prop.Name))
+							{
+								keys.Add(prop.Name);
+							}
+						}
+					}
+				}
+			}
+			catch { }
+			return keys;
+		}
+
 		private void UpdateCommissioningBlockingReasons(System.Collections.Generic.IEnumerable<CommissioningReason> reasons)
 		{
 			var dispatcher = Application.Current?.Dispatcher;
@@ -1144,6 +1455,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			_resetCommissioningCommand.RaiseCanExecuteChanged();
 			_discoverMachineCommand.RaiseCanExecuteChanged();
 			_copyDiscoveryJsonCommand.RaiseCanExecuteChanged();
+			_refreshMachinesCommand.RaiseCanExecuteChanged();
+			_saveMachineSettingsCommand.RaiseCanExecuteChanged();
+			_saveGradeOverridesCommand.RaiseCanExecuteChanged();
 		}
 
 		private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
@@ -1163,6 +1477,30 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
 
+		private static void ApplyCollection<T>(ObservableCollection<T> target, System.Collections.Generic.IEnumerable<T> source)
+		{
+			target.Clear();
+			if (source == null) return;
+			foreach (var item in source)
+			{
+				target.Add(item);
+			}
+		}
+
+		private static Newtonsoft.Json.Linq.JToken NormalizeToken(Newtonsoft.Json.Linq.JToken token)
+		{
+			if (token is Newtonsoft.Json.Linq.JValue val && val.Type == Newtonsoft.Json.Linq.JTokenType.String)
+			{
+				var s = val.ToObject<string>();
+				if (!string.IsNullOrWhiteSpace(s))
+				{
+					try { return Newtonsoft.Json.Linq.JToken.Parse(s); }
+					catch { return token; }
+				}
+			}
+			return token;
+		}
+
 		private sealed class BusyScope : IDisposable
 		{
 			private readonly SettingsViewModel _owner;
@@ -1177,6 +1515,95 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				_owner.IsBusy = false;
 			}
+		}
+
+		public sealed class MachineOption
+		{
+			public MachineOption(string serialNo, string name)
+			{
+				SerialNo = serialNo;
+				Name = name;
+			}
+
+			public string SerialNo { get; }
+			public string Name { get; }
+			public string Display => string.IsNullOrWhiteSpace(Name) ? SerialNo : $"{SerialNo} — {Name}";
+		}
+
+		public sealed class OutletOption
+		{
+			public OutletOption(int id, string name)
+			{
+				Id = id;
+				Name = name;
+			}
+
+			public int Id { get; }
+			public string Name { get; }
+			public string Display => $"{Id} {Name}";
+		}
+
+		public sealed class CategoryOption
+		{
+			public CategoryOption(int id, string name)
+			{
+				Id = id;
+				Name = name;
+			}
+
+			public int Id { get; }
+			public string Name { get; }
+		}
+
+		public sealed class GradeRow : INotifyPropertyChanged
+		{
+			private int? _overrideCategory;
+			private bool _isActive;
+			private int? _resolvedCategory;
+
+			public string GradeKey { get; set; }
+			public int? ResolvedCategory
+			{
+				get => _resolvedCategory;
+				set
+				{
+					if (_resolvedCategory != value)
+					{
+						_resolvedCategory = value;
+						OnPropertyChanged(nameof(ResolvedCategory));
+					}
+				}
+			}
+			public int? OverrideCategory
+			{
+				get => _overrideCategory;
+				set
+				{
+					if (_overrideCategory != value)
+					{
+						_overrideCategory = value;
+						OnPropertyChanged(nameof(OverrideCategory));
+					}
+				}
+			}
+			public bool IsActive
+			{
+				get => _isActive;
+				set
+				{
+					if (_isActive != value)
+					{
+						_isActive = value;
+						OnPropertyChanged(nameof(IsActive));
+					}
+				}
+			}
+			public bool HasExistingOverride { get; set; }
+			public int? OriginalDesiredCat { get; set; }
+			public bool OriginalIsActive { get; set; }
+
+			public event PropertyChangedEventHandler PropertyChanged;
+			private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 		}
 	}
 }

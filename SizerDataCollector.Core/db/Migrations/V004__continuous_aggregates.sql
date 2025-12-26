@@ -1,41 +1,11 @@
 -- Continuous aggregate definitions (authoritative from reference)
+-- Dependencies expected from prior migrations (no creation here):
+--   tables: public.metrics, public.batches, oee.machine_thresholds
+--   functions: oee.num, oee.avg_int_array, oee.availability_state/ratio,
+--              oee.outlet_recycle_fpm, public.outlet_recycle_fpm, public.get_recycle_outlet
+-- All CAGGs are schema-qualified and created only after their inputs are defined.
 
-DO $$
-BEGIN
-IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_daily') THEN
-CREATE MATERIALIZED VIEW oee.cagg_availability_daily
-WITH (timescaledb.continuous) AS
-SELECT time_bucket('1 day'::interval, minute_ts) AS day,
-       serial_no,
-       count(*) FILTER (WHERE state = 2) AS minutes_run,
-       count(*) FILTER (WHERE state = 1) AS minutes_idle,
-       count(*) FILTER (WHERE state = 0) AS minutes_down,
-       avg(availability) AS avg_availability
-FROM oee.cagg_availability_minute
-GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no
-WITH NO DATA;
-END IF;
-END$$;
-
-DO $$
-BEGIN
-IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_daily_batch') THEN
-CREATE MATERIALIZED VIEW oee.cagg_availability_daily_batch
-WITH (timescaledb.continuous) AS
-SELECT time_bucket('1 day'::interval, minute_ts) AS day,
-       serial_no,
-       batch_record_id,
-       min(lot) AS lot,
-       min(variety) AS variety,
-       count(*) FILTER (WHERE state = 2) AS minutes_run,
-       count(*) FILTER (WHERE state = 1) AS minutes_idle,
-       count(*) FILTER (WHERE state = 0) AS minutes_down,
-       avg(availability) AS avg_availability
-FROM oee.cagg_availability_minute_batch
-GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
-WITH NO DATA;
-END IF;
-END$$;
+-- Availability CAGGs: define minute-level first, then daily aggregations (no CASCADE)
 
 DO $$
 BEGIN
@@ -109,20 +79,36 @@ END$$;
 
 DO $$
 BEGIN
-IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_grade_daily_batch') THEN
-CREATE MATERIALIZED VIEW oee.cagg_grade_daily_batch
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_daily') THEN
+CREATE MATERIALIZED VIEW oee.cagg_availability_daily
+WITH (timescaledb.continuous) AS
+SELECT time_bucket('1 day'::interval, minute_ts) AS day,
+       serial_no,
+       count(*) FILTER (WHERE state = 2) AS minutes_run,
+       count(*) FILTER (WHERE state = 1) AS minutes_idle,
+       count(*) FILTER (WHERE state = 0) AS minutes_down,
+       avg(availability) AS avg_availability
+FROM oee.cagg_availability_minute
+GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no
+WITH NO DATA;
+END IF;
+END$$;
+
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_availability_daily_batch') THEN
+CREATE MATERIALIZED VIEW oee.cagg_availability_daily_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('1 day'::interval, minute_ts) AS day,
        serial_no,
        batch_record_id,
        min(lot) AS lot,
        min(variety) AS variety,
-       sum(good_qty) AS good_qty,
-       sum(peddler_qty) AS peddler_qty,
-       sum(bad_qty) AS bad_qty,
-       sum(recycle_qty) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(sum(good_qty), sum(peddler_qty), sum(bad_qty), sum(recycle_qty)) AS quality_ratio
-FROM oee.cagg_grade_minute_batch
+       count(*) FILTER (WHERE state = 2) AS minutes_run,
+       count(*) FILTER (WHERE state = 1) AS minutes_idle,
+       count(*) FILTER (WHERE state = 0) AS minutes_down,
+       avg(availability) AS avg_availability
+FROM oee.cagg_availability_minute_batch
 GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
 WITH NO DATA;
 END IF;
@@ -158,22 +144,20 @@ END$$;
 
 DO $$
 BEGIN
-IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_throughput_daily_batch') THEN
-CREATE MATERIALIZED VIEW oee.cagg_throughput_daily_batch
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_grade_daily_batch') THEN
+CREATE MATERIALIZED VIEW oee.cagg_grade_daily_batch
 WITH (timescaledb.continuous) AS
 SELECT time_bucket('1 day'::interval, minute_ts) AS day,
        serial_no,
        batch_record_id,
        min(lot) AS lot,
        min(variety) AS variety,
-       avg(total_fpm) AS total_fpm,
-       avg(missed_fpm) AS missed_fpm,
-       avg(machine_recycle_fpm) AS recycle_fpm,
-       avg(outlet_recycle_fpm) AS outlet_recycle_fpm,
-       avg(combined_recycle_fpm) AS combined_recycle_fpm,
-       avg(cupfill_pct) AS cupfill_pct,
-       avg(tph) AS tph
-FROM oee.cagg_throughput_minute_batch
+       sum(good_qty) AS good_qty,
+       sum(peddler_qty) AS peddler_qty,
+       sum(bad_qty) AS bad_qty,
+       sum(recycle_qty) AS recycle_qty,
+       oee.calc_quality_ratio_qv1(sum(good_qty), sum(peddler_qty), sum(bad_qty), sum(recycle_qty)) AS quality_ratio
+FROM oee.cagg_grade_minute_batch
 GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
 WITH NO DATA;
 END IF;
@@ -201,6 +185,29 @@ FROM metrics m
 LEFT JOIN batches b ON b.id = m.batch_record_id
 WHERE m.metric = ANY (ARRAY['machine_total_fpm', 'machine_missed_fpm', 'machine_recycle_fpm', 'outlets_details', 'machine_cupfill', 'machine_tph'])
 GROUP BY time_bucket('00:01:00'::interval, m.ts), m.serial_no, m.batch_record_id
+WITH NO DATA;
+END IF;
+END$$;
+
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='oee' AND view_name='cagg_throughput_daily_batch') THEN
+CREATE MATERIALIZED VIEW oee.cagg_throughput_daily_batch
+WITH (timescaledb.continuous) AS
+SELECT time_bucket('1 day'::interval, minute_ts) AS day,
+       serial_no,
+       batch_record_id,
+       min(lot) AS lot,
+       min(variety) AS variety,
+       avg(total_fpm) AS total_fpm,
+       avg(missed_fpm) AS missed_fpm,
+       avg(machine_recycle_fpm) AS recycle_fpm,
+       avg(outlet_recycle_fpm) AS outlet_recycle_fpm,
+       avg(combined_recycle_fpm) AS combined_recycle_fpm,
+       avg(cupfill_pct) AS cupfill_pct,
+       avg(tph) AS tph
+FROM oee.cagg_throughput_minute_batch
+GROUP BY time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
 WITH NO DATA;
 END IF;
 END$$;
@@ -250,25 +257,6 @@ END$$;
 
 DO $$
 BEGIN
-IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='public' AND view_name='cagg_throughput_daily') THEN
-CREATE MATERIALIZED VIEW public.cagg_throughput_daily
-WITH (timescaledb.continuous) AS
-SELECT time_bucket('1 day'::interval, minute_ts) AS day,
-       avg(total_fpm) AS total_fpm,
-       avg(missed_fpm) AS missed_fpm,
-       avg(machine_recycle_fpm) AS recycle_fpm,
-       avg(outlet_recycle_fpm) AS outlet_recycle_fpm,
-       avg(combined_recycle_fpm) AS combined_recycle_fpm,
-       avg(cupfill_pct) AS cupfill_pct,
-       avg(tph) AS tph
-FROM public.cagg_throughput_minute
-GROUP BY time_bucket('1 day'::interval, minute_ts)
-WITH NO DATA;
-END IF;
-END$$;
-
-DO $$
-BEGIN
 IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='public' AND view_name='cagg_throughput_minute') THEN
 CREATE MATERIALIZED VIEW public.cagg_throughput_minute
 WITH (timescaledb.continuous) AS
@@ -288,3 +276,21 @@ WITH NO DATA;
 END IF;
 END$$;
 
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_schema='public' AND view_name='cagg_throughput_daily') THEN
+CREATE MATERIALIZED VIEW public.cagg_throughput_daily
+WITH (timescaledb.continuous) AS
+SELECT time_bucket('1 day'::interval, minute_ts) AS day,
+       avg(total_fpm) AS total_fpm,
+       avg(missed_fpm) AS missed_fpm,
+       avg(machine_recycle_fpm) AS recycle_fpm,
+       avg(outlet_recycle_fpm) AS outlet_recycle_fpm,
+       avg(combined_recycle_fpm) AS combined_recycle_fpm,
+       avg(cupfill_pct) AS cupfill_pct,
+       avg(tph) AS tph
+FROM public.cagg_throughput_minute
+GROUP BY time_bucket('1 day'::interval, minute_ts)
+WITH NO DATA;
+END IF;
+END$$;

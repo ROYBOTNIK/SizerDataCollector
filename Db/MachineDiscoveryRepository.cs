@@ -215,8 +215,16 @@ LIMIT @limit;";
 					await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 					using (var command = new NpgsqlCommand(SelectRecentSql, connection))
 					{
-						command.Parameters.AddWithValue("serial_no", string.IsNullOrWhiteSpace(serialNo) ? (object)DBNull.Value : serialNo);
-						command.Parameters.AddWithValue("limit", limit);
+						if (string.IsNullOrWhiteSpace(serialNo))
+						{
+							command.Parameters.Add("serial_no", NpgsqlDbType.Text).Value = DBNull.Value;
+						}
+						else
+						{
+							command.Parameters.AddWithValue("serial_no", serialNo);
+						}
+
+						command.Parameters.Add("limit", NpgsqlDbType.Integer).Value = limit;
 
 						using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
 						{

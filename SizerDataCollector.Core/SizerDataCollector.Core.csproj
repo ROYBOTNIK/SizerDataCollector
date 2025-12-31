@@ -202,7 +202,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Db\Migrations\*.sql" />
+    <!-- Migrations live under 'db/Migrations'; use lowercase path to match folder -->
+    <EmbeddedResource Include="db\Migrations\*.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

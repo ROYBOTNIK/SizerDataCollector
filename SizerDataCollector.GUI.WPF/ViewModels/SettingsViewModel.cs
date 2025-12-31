@@ -37,6 +37,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private readonly RelayCommand _refreshMachinesCommand;
 		private readonly RelayCommand _saveMachineSettingsCommand;
 		private readonly RelayCommand _saveGradeOverridesCommand;
+		private readonly RelayCommand _addManualGradeMappingCommand;
 
 		private string _connectionString = string.Empty;
 		private string _statusMessage = "Ready.";
@@ -95,11 +96,14 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private double? _targetPercentage;
 		private double? _targetThroughputPreview;
 		private readonly ObservableCollection<GradeRow> _gradeRows = new ObservableCollection<GradeRow>();
+		private string _newGradeKey = string.Empty;
+		private CategoryOption _newGradeCategory;
+		private bool _showInactiveGrades;
 		private readonly ObservableCollection<CategoryOption> _categoryOptions = new ObservableCollection<CategoryOption>
 		{
-			new CategoryOption(0, "Good / Export"),
-			new CategoryOption(1, "Peddler / Test"),
-			new CategoryOption(2, "Bad / Green / Cull"),
+			new CategoryOption(0, "Good"),
+			new CategoryOption(1, "Gate"),
+			new CategoryOption(2, "Bad"),
 			new CategoryOption(3, "Recycle")
 		};
 
@@ -122,6 +126,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			_refreshMachinesCommand = new RelayCommand(async _ => await RefreshMachinesAsync(), _ => CanRunActions);
 			_saveMachineSettingsCommand = new RelayCommand(async _ => await SaveMachineSettingsAsync(), _ => SelectedMachine != null && CanRunActions);
 			_saveGradeOverridesCommand = new RelayCommand(async _ => await SaveGradeOverridesAsync(), _ => SelectedMachine != null && CanRunActions && _gradeRows.Count > 0);
+			_addManualGradeMappingCommand = new RelayCommand(async _ => await AddManualGradeMappingAsync(), _ => SelectedMachine != null && !string.IsNullOrWhiteSpace(NewGradeKey) && NewGradeCategory != null && CanRunActions);
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -140,6 +145,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public ICommand RefreshMachinesCommand => _refreshMachinesCommand;
 		public ICommand SaveMachineSettingsCommand => _saveMachineSettingsCommand;
 		public ICommand SaveGradeOverridesCommand => _saveGradeOverridesCommand;
+		public ICommand AddManualGradeMappingCommand => _addManualGradeMappingCommand;
 
 		public string ConnectionString
 		{
@@ -524,6 +530,45 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public ObservableCollection<GradeRow> GradeRows => _gradeRows;
 		public ObservableCollection<CategoryOption> CategoryOptions => _categoryOptions;
 
+		public string NewGradeKey
+		{
+			get => _newGradeKey;
+			set
+			{
+				if (SetProperty(ref _newGradeKey, value))
+				{
+					_addManualGradeMappingCommand.RaiseCanExecuteChanged();
+				}
+			}
+		}
+
+		public CategoryOption NewGradeCategory
+		{
+			get => _newGradeCategory;
+			set
+			{
+				if (SetProperty(ref _newGradeCategory, value))
+				{
+					_addManualGradeMappingCommand.RaiseCanExecuteChanged();
+				}
+			}
+		}
+
+		public bool ShowInactiveGrades
+		{
+			get => _showInactiveGrades;
+			set
+			{
+				if (SetProperty(ref _showInactiveGrades, value))
+				{
+					if (SelectedMachine != null)
+					{
+						_ = LoadGradeOverridesAsync(SelectedMachine.SerialNo);
+					}
+				}
+			}
+		}
+
 		public async Task InitializeAsync()
 		{
 			await RefreshStatusAsync();
@@ -644,6 +689,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					var sizerClientFactory = new Func<ISizerClient>(() => new SizerClient(config));
 
 					string serialNo = null;
+					var sizerAvailable = true;
 					try
 					{
 						using (var probeClient = sizerClientFactory())
@@ -653,14 +699,26 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					}
 					catch (Exception ex)
 					{
-						Logger.Log("Commissioning: failed to retrieve serial number from Sizer.", ex);
-						ApplyCommissioningFailure("Failed to retrieve serial number from Sizer.");
-						return;
+						Logger.Log("Commissioning: failed to retrieve serial number from Sizer (offline fallback).", ex);
+						sizerAvailable = false;
 					}
 
 					if (string.IsNullOrWhiteSpace(serialNo))
 					{
-						ApplyCommissioningFailure("Sizer returned an empty serial number.");
+						if (SelectedMachine != null)
+						{
+							serialNo = SelectedMachine.SerialNo;
+						}
+						else
+						{
+							var firstMachine = _machines.FirstOrDefault();
+							serialNo = firstMachine?.SerialNo;
+						}
+					}
+
+					if (string.IsNullOrWhiteSpace(serialNo))
+					{
+						ApplyCommissioningFailure("No serial available (Sizer offline and no machine selected).");
 						return;
 					}
 
@@ -695,6 +753,11 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 					ApplyCommissioningStatus(status);
 
 					await RefreshDiscoveryHistoryAsync(serialNo);
+
+					if (!sizerAvailable)
+					{
+						StatusMessage = "Sizer offline: using DB-only commissioning state.";
+					}
 				}
 				catch (Exception ex)
 				{
@@ -1083,7 +1146,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			try
 			{
 				var repo = new MachineSettingsRepository(ConnectionString);
-				var machines = await repo.GetMachinesAsync(CancellationToken.None).ConfigureAwait(false);
+				var machines = await repo.GetMachinesAsync(CancellationToken.None);
 				ApplyCollection(_machines, machines.Select(m => new MachineOption(m.SerialNo, m.Name)));
 				if (SelectedMachine == null && _machines.Count > 0)
 				{
@@ -1103,10 +1166,10 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				try
 				{
-					await LoadMachineSettingsAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
-					await LoadDiscoveryAssistAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
-					await LoadGradeOverridesAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
-					await RefreshThroughputPreviewAsync().ConfigureAwait(false);
+					await LoadMachineSettingsAsync(SelectedMachine.SerialNo);
+					await LoadDiscoveryAssistAsync(SelectedMachine.SerialNo);
+					await LoadGradeOverridesAsync(SelectedMachine.SerialNo);
+					await RefreshThroughputPreviewAsync();
 				}
 				catch (Exception ex)
 				{
@@ -1131,30 +1194,12 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private async Task LoadDiscoveryAssistAsync(string serialNo)
 		{
 			var discoveryRepo = new MachineDiscoveryRepository(ConnectionString);
-			var snapshot = await discoveryRepo.GetLatestSnapshotAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
+			var snapshot = await discoveryRepo.GetLatestSnapshotAsync(serialNo, CancellationToken.None);
 
 			ApplyCollection(_outletOptions, ParseOutlets(snapshot));
 
-			var gradeKeys = ParseGradeKeys(snapshot);
-			var repo = new MachineSettingsRepository(ConnectionString);
-			var overrides = await repo.GetGradeOverridesAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
-			var rows = new List<GradeRow>();
-			foreach (var key in gradeKeys.Union(overrides.Select(o => o.GradeKey), StringComparer.OrdinalIgnoreCase))
-			{
-				var resolved = await repo.ResolveCategoryAsync(serialNo, key, CancellationToken.None).ConfigureAwait(false);
-				var existing = overrides.FirstOrDefault(o => string.Equals(o.GradeKey, key, StringComparison.OrdinalIgnoreCase));
-				rows.Add(new GradeRow
-				{
-					GradeKey = key,
-					ResolvedCategory = resolved,
-					OverrideCategory = existing?.DesiredCat,
-					IsActive = existing?.IsActive ?? true,
-					HasExistingOverride = existing != null,
-					OriginalDesiredCat = existing?.DesiredCat,
-					OriginalIsActive = existing?.IsActive ?? false
-				});
-			}
-			ApplyCollection(_gradeRows, rows.OrderBy(r => r.GradeKey, StringComparer.OrdinalIgnoreCase));
+			// For grade overrides, rely on overrides only (manual entry); do not auto-import discovered keys.
+			await LoadGradeOverridesAsync(serialNo);
 		}
 
 		private async Task RefreshThroughputPreviewAsync()
@@ -1191,9 +1236,9 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 						LaneCountSetting.Value,
 						TargetPercentage.Value,
 						SelectedRecycleOutlet.Id,
-						CancellationToken.None).ConfigureAwait(false);
+						CancellationToken.None);
 
-					await RefreshThroughputPreviewAsync().ConfigureAwait(false);
+					await RefreshThroughputPreviewAsync();
 					StatusMessage = "Machine settings saved.";
 				}
 				catch (Exception ex)
@@ -1229,11 +1274,11 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 								desired,
 								row.IsActive,
 								Environment.UserName,
-								CancellationToken.None).ConfigureAwait(false);
+								CancellationToken.None);
 						}
 					}
 
-					await LoadGradeOverridesAsync(SelectedMachine.SerialNo).ConfigureAwait(false);
+					await LoadGradeOverridesAsync(SelectedMachine.SerialNo);
 					StatusMessage = "Grade overrides saved.";
 				}
 				catch (Exception ex)
@@ -1243,23 +1288,63 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			}
 		}
 
+		public async Task AddManualGradeMappingAsync()
+		{
+			if (SelectedMachine == null || string.IsNullOrWhiteSpace(NewGradeKey) || NewGradeCategory == null)
+			{
+				StatusMessage = "Enter a grade key and category, and select a machine.";
+				return;
+			}
+
+			if (!EnsureConnectionStringPresent()) return;
+
+			using (new BusyScope(this))
+			{
+				try
+				{
+					var repo = new MachineSettingsRepository(ConnectionString);
+					await repo.UpsertGradeOverrideAsync(
+						SelectedMachine.SerialNo,
+						NewGradeKey.Trim(),
+						NewGradeCategory.Id,
+						true,
+						Environment.UserName,
+						CancellationToken.None);
+
+					StatusMessage = $"Mapped '{NewGradeKey.Trim()}' to category {NewGradeCategory.Name}.";
+					await LoadGradeOverridesAsync(SelectedMachine.SerialNo);
+					NewGradeKey = string.Empty;
+				}
+				catch (Exception ex)
+				{
+					StatusMessage = $"Failed to add grade mapping: {ex.Message}";
+				}
+			}
+		}
+
 		private async Task LoadGradeOverridesAsync(string serialNo)
 		{
 			var repo = new MachineSettingsRepository(ConnectionString);
-			var overrides = await repo.GetGradeOverridesAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
+			var overrides = await repo.GetGradeOverridesAsync(serialNo, CancellationToken.None);
 
-			foreach (var row in _gradeRows)
+			var rows = new List<GradeRow>();
+			foreach (var o in overrides)
 			{
-				var existing = overrides.FirstOrDefault(o => string.Equals(o.GradeKey, row.GradeKey, StringComparison.OrdinalIgnoreCase));
-				row.OverrideCategory = existing?.DesiredCat;
-				row.IsActive = existing?.IsActive ?? row.IsActive;
-				row.HasExistingOverride = existing != null;
-				row.OriginalDesiredCat = existing?.DesiredCat;
-				row.OriginalIsActive = existing?.IsActive ?? false;
-				row.ResolvedCategory = await repo.ResolveCategoryAsync(serialNo, row.GradeKey, CancellationToken.None).ConfigureAwait(false);
+				var resolved = await repo.ResolveCategoryAsync(serialNo, o.GradeKey, CancellationToken.None);
+				rows.Add(new GradeRow
+				{
+					GradeKey = o.GradeKey,
+					ResolvedCategory = resolved,
+					OverrideCategory = o.DesiredCat,
+					IsActive = o.IsActive,
+					HasExistingOverride = true,
+					OriginalDesiredCat = o.DesiredCat,
+					OriginalIsActive = o.IsActive
+				});
 			}
 
-			OnPropertyChanged(nameof(GradeRows));
+			var filtered = ShowInactiveGrades ? rows : rows.Where(r => r.IsActive).ToList();
+			ApplyCollection(_gradeRows, filtered.OrderBy(r => r.GradeKey, StringComparer.OrdinalIgnoreCase));
 		}
 
 		private static IList<OutletOption> ParseOutlets(MachineDiscoverySnapshot snapshot)
@@ -1553,6 +1638,12 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 			public int Id { get; }
 			public string Name { get; }
+		}
+
+		public sealed class DiscoveredGradeRow
+		{
+			public string GradeKey { get; set; }
+			public int? LaneCountCandidate { get; set; }
 		}
 
 		public sealed class GradeRow : INotifyPropertyChanged

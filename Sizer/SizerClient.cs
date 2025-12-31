@@ -39,11 +39,21 @@ namespace SizerDataCollector.Core.Sizer
 		private static readonly IReadOnlyDictionary<string, Func<SizerServiceClient, object>> MetricResolvers =
 			new Dictionary<string, Func<SizerServiceClient, object>>(StringComparer.OrdinalIgnoreCase)
 			{
+				// Core throughput/grade metrics
 				["lanes_grade_fpm"] = client => client.GetLanesGradeFPM(),
 				["lanes_size_fpm"] = client => client.GetLanesSizeFPM(),
 				["machine_total_fpm"] = client => client.GetMachineTotalFPM(),
+				["machine_missed_fpm"] = client => client.GetMachineMissedFPM(),
+				["machine_recycle_fpm"] = client => client.GetMachineRecycleFPM(),
 				["machine_cupfill"] = client => client.GetMachineCupfill(),
-				["outlets_details"] = client => client.GetOutlets()
+				["machine_tph"] = client => client.GetMachineTonnesPH(),
+				["outlets_details"] = client => client.GetOutlets(),
+
+				// Additional endpoints available from the service (not all used in DB today)
+				["machine_reject_fpm"] = client => client.GetMachineRejectFPM(),
+				["machine_dropped_fpm"] = client => client.GetMachineDroppedFPM(),
+				["machine_packed_fpm"] = client => client.GetMachinePackedFPM(),
+				["machine_rods_pm"] = client => client.GetMachineRodsPM()
 			};
 
 		private readonly string _serviceUrl;

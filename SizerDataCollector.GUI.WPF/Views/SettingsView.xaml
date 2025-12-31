@@ -208,6 +208,34 @@
                         </StackPanel>
 
                         <TextBlock Text="Grade Mapping (per serial)" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                        <TextBlock Text="Add Grade Mapping (manual)" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <StackPanel>
+                                <TextBlock Text="Grade Key" />
+                                <TextBox Text="{Binding NewGradeKey, UpdateSourceTrigger=PropertyChanged}" Width="260" Margin="0,0,8,0"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Category" />
+                                <ComboBox ItemsSource="{Binding CategoryOptions}"
+                                          SelectedItem="{Binding NewGradeCategory, Mode=TwoWay}"
+                                          DisplayMemberPath="Name"
+                                          SelectedValuePath="Id"
+                                          Width="200"
+                                          Margin="0,0,0,4"/>
+                                <Button Content="Add Mapping"
+                                        Command="{Binding AddManualGradeMappingCommand}"
+                                        IsEnabled="{Binding CanRunActions}"
+                                        Style="{StaticResource ActionButtonStyle}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+                            <TextBlock Text="Grade Overrides" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <CheckBox Content="Show inactive"
+                                      Margin="12,0,0,0"
+                                      IsChecked="{Binding ShowInactiveGrades, Mode=TwoWay}"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
                         <DataGrid ItemsSource="{Binding GradeRows}"
                                   AutoGenerateColumns="False"
                                   HeadersVisibility="Column"

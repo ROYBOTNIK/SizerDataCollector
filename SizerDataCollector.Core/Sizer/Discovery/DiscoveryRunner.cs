@@ -18,7 +18,8 @@ namespace SizerDataCollector.Core.Sizer.Discovery
 			"lanes_size_fpm",
 			"machine_total_fpm",
 			"machine_cupfill",
-			"outlets_details"
+			"outlets_details",
+			"machine_missed_fpm"
 		};
 
 		private readonly Func<CollectorConfig, ISizerClient> _clientFactory;

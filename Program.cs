@@ -128,18 +128,6 @@ namespace SizerDataCollector
 						return false;
 					}
 
-					var repository = new CommissioningRepository(config.TimescaleConnectionString);
-					var row = repository.GetAsync(serial).GetAwaiter().GetResult();
-					if (row?.IngestionEnabledAt == null)
-					{
-						Logger.Log($"Commissioning check: ingestion not enabled for serial '{serial}'.");
-						status.CommissioningBlockingReasons.Add(new SizerDataCollector.Core.Commissioning.CommissioningReason("INGESTION_DISABLED", "Ingestion not enabled in commissioning status."));
-						status.CommissioningSerial = serial;
-						status.CommissioningIngestionEnabled = false;
-						WriteHeartbeat(status, heartbeatWriter);
-						return false;
-					}
-
 					status.CommissioningSerial = serial;
 					status.CommissioningIngestionEnabled = true;
 				}

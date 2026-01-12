@@ -201,9 +201,5 @@
       <LastGenOutput>Reference.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <!-- Migrations live under 'db/Migrations'; use lowercase path to match folder -->
-    <EmbeddedResource Include="db\Migrations\*.sql" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

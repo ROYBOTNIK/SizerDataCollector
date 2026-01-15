@@ -60,24 +60,30 @@ namespace SizerDataCollector.Core.Commissioning
 				health.HasAllPolicies &&
 				health.Exception == null &&
 				string.IsNullOrWhiteSpace(health.PolicyCheckError);
+			var dbReachable = health != null && health.CanConnect && health.Exception == null;
 
-			if (!status.DbBootstrapped)
-			{
-				AddDbReasons(status, health);
-			}
+			AddDbConnectivityReasons(status, health);
 
 			// Probe Sizer for connectivity and serial alignment.
 			status.SizerConnected = await ProbeSizerAsync(serialNo, status, cancellationToken).ConfigureAwait(false);
 
 			// Validate thresholds exist for the serial number.
-			status.ThresholdsSet = await CheckThresholdsAsync(serialNo, cancellationToken).ConfigureAwait(false);
-			if (!status.ThresholdsSet)
+			if (dbReachable && status.DbBootstrapped)
+			{
+				status.ThresholdsSet = await CheckThresholdsAsync(serialNo, cancellationToken).ConfigureAwait(false);
+			}
+			else
+			{
+				status.ThresholdsSet = dbReachable;
+			}
+
+			if (status.DbBootstrapped && !status.ThresholdsSet)
 			{
 				status.BlockingReasons.Add(new CommissioningReason("THRESHOLDS_MISSING", "Machine thresholds not set for this serial number."));
 			}
 
 			// Gating rule for ingestion.
-			status.CanEnableIngestion = status.DbBootstrapped && status.SizerConnected && status.ThresholdsSet;
+			status.CanEnableIngestion = dbReachable && status.SizerConnected && status.ThresholdsSet;
 			if (!status.CanEnableIngestion && status.BlockingReasons.Count == 0)
 			{
 				status.BlockingReasons.Add(new CommissioningReason("INGESTION_DISABLED", "Ingestion cannot be enabled until prerequisites are satisfied."));
@@ -141,7 +147,7 @@ namespace SizerDataCollector.Core.Commissioning
 			}
 		}
 
-		private static void AddDbReasons(CommissioningStatus status, DbHealthReport health)
+		private static void AddDbConnectivityReasons(CommissioningStatus status, DbHealthReport health)
 		{
 			if (health == null)
 			{
@@ -153,28 +159,6 @@ namespace SizerDataCollector.Core.Commissioning
 			{
 				status.BlockingReasons.Add(new CommissioningReason("DB_UNREACHABLE", "Cannot connect to database."));
 			}
-			else if (!health.TimescaleInstalled)
-			{
-				status.BlockingReasons.Add(new CommissioningReason("DB_NOT_HEALTHY", "TimescaleDB extension not installed."));
-			}
-			else if (!health.HasAllTables || !health.HasAllFunctions)
-			{
-				status.BlockingReasons.Add(new CommissioningReason("MIGRATIONS_NOT_APPLIED", "Required tables/functions are missing."));
-			}
-			else if (!health.HasAllContinuousAggregates)
-			{
-				status.BlockingReasons.Add(new CommissioningReason("CAGGS_MISSING", "Continuous aggregates are missing."));
-			}
-			else if (!health.HasAllPolicies)
-			{
-				status.BlockingReasons.Add(new CommissioningReason("POLICIES_MISSING", "Refresh policies are missing."));
-			}
-
-			if (!string.IsNullOrWhiteSpace(health.PolicyCheckError))
-			{
-				status.BlockingReasons.Add(new CommissioningReason("POLICY_CHECK_ERROR", $"Policy check error: {health.PolicyCheckError}"));
-			}
 		}
 	}
 }
-

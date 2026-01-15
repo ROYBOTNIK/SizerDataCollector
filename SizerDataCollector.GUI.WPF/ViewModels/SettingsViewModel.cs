@@ -738,13 +738,16 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 						}
 					}
 
-					var thresholds = await thresholdsRepository.GetAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
-					if (thresholds != null)
+					if (health?.HasAllTables == true && health.Exception == null)
 					{
-						var existing = await repository.GetAsync(serialNo).ConfigureAwait(false);
-						if (existing?.ThresholdsSetAt == null)
+						var thresholds = await thresholdsRepository.GetAsync(serialNo, CancellationToken.None).ConfigureAwait(false);
+						if (thresholds != null)
 						{
-							await repository.SetTimestampAsync(serialNo, "thresholds_set_at", DateTimeOffset.UtcNow).ConfigureAwait(false);
+							var existing = await repository.GetAsync(serialNo).ConfigureAwait(false);
+							if (existing?.ThresholdsSetAt == null)
+							{
+								await repository.SetTimestampAsync(serialNo, "thresholds_set_at", DateTimeOffset.UtcNow).ConfigureAwait(false);
+							}
 						}
 					}
 
@@ -1698,4 +1701,3 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		}
 	}
 }
-

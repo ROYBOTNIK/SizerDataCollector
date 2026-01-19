@@ -12,204 +12,215 @@ using SizerDataCollector.Core.Commissioning;
 
 namespace SizerDataCollector.Service
 {
-	public class SizerCollectorService : ServiceBase
-	{
-		private CancellationTokenSource _cts;
-		private Task _runnerTask;
-		private CollectorStatus _status;
-		private HeartbeatWriter _heartbeatWriter;
+    public class SizerCollectorService : ServiceBase
+    {
+        private CancellationTokenSource _cts;
+        private Task _runnerTask;
+        private CollectorStatus _status;
+        private HeartbeatWriter _heartbeatWriter;
 
-		public SizerCollectorService()
-		{
-			ServiceName = "SizerDataCollectorService";
-		}
+        public SizerCollectorService()
+        {
+            ServiceName = "SizerDataCollectorService";
+        }
 
-		protected override void OnStart(string[] args)
-		{
-			Logger.Log("Service starting...");
+        protected override void OnStart(string[] args)
+        {
+            Logger.Log("Service starting...");
 
-			try
-			{
-				var settingsProvider = new CollectorSettingsProvider();
-				var runtimeSettings = settingsProvider.Load();
-				var config = new CollectorConfig(runtimeSettings);
+            try
+            {
+                var settingsProvider = new CollectorSettingsProvider();
+                var runtimeSettings = settingsProvider.Load();
+                var config = new CollectorConfig(runtimeSettings);
 
-				_status = new CollectorStatus();
-				var dataRoot = NormalizeDataRoot(runtimeSettings.SharedDataDirectory);
-				if (!string.IsNullOrWhiteSpace(dataRoot))
-				{
-					Directory.CreateDirectory(dataRoot);
-				}
-				var heartbeatPath = string.IsNullOrWhiteSpace(dataRoot)
-					? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "heartbeat.json")
-					: Path.Combine(dataRoot, "heartbeat.json");
-				_heartbeatWriter = new HeartbeatWriter(heartbeatPath);
-				_cts = new CancellationTokenSource();
+                _status = new CollectorStatus();
 
-				if (!IsIngestionEnabled(runtimeSettings, config, _status, _heartbeatWriter))
-				{
-					Logger.Log("Commissioning incomplete; ingestion disabled; service idle.");
-					return;
-				}
+                // 1) Normalize any configured SharedDataDirectory
+                var dataRoot = NormalizeDataRoot(runtimeSettings?.SharedDataDirectory);
 
-				_runnerTask = Task.Run(async () =>
-				{
-					try
-					{
-						DatabaseTester.TestAndInitialize(config);
-						var repository = new TimescaleRepository(config.TimescaleConnectionString);
+                // 2) If nothing configured, default to ProgramData (recommended for services)
+                if (string.IsNullOrWhiteSpace(dataRoot))
+                {
+                    dataRoot = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                        "Opti-Fresh",
+                        "SizerDataCollector");
+                }
 
-						using (var sizerClient = new SizerClient(config))
-						{
-							var engine = new CollectorEngine(config, repository, sizerClient);
-							var runner = new CollectorRunner(config, engine, _status, _heartbeatWriter);
-							await runner.RunAsync(_cts.Token).ConfigureAwait(false);
-						}
-					}
-					catch (OperationCanceledException) when (_cts?.IsCancellationRequested == true)
-					{
-						// Expected during shutdown.
-					}
-					catch (Exception ex)
-					{
-						Logger.Log("Service runner encountered an unexpected error.", ex);
-						throw;
-					}
-				});
+                // 3) Ensure directory exists
+                Directory.CreateDirectory(dataRoot);
 
-				Logger.Log("Service started.");
-			}
-			catch (Exception ex)
-			{
-				Logger.Log("Service failed to start.", ex);
-				_cts?.Cancel();
-				_cts?.Dispose();
-				_cts = null;
-				_runnerTask = null;
-				throw;
-			}
-		}
+                // 4) Heartbeat file lives in data root
+                var heartbeatPath = Path.Combine(dataRoot, "heartbeat.json");
 
-		protected override void OnStop()
-		{
-			Logger.Log("Service stopping...");
+                _heartbeatWriter = new HeartbeatWriter(heartbeatPath);
+                _cts = new CancellationTokenSource();
 
-			try
-			{
-				_cts?.Cancel();
+                if (!IsIngestionEnabled(runtimeSettings, config, _status, _heartbeatWriter))
+                {
+                    Logger.Log("Commissioning incomplete; ingestion disabled; service idle.");
+                    return;
+                }
 
-				if (_runnerTask != null)
-				{
-					var timeout = TimeSpan.FromSeconds(30);
-					if (!_runnerTask.Wait(timeout))
-					{
-						Logger.Log($"Service runner did not stop within {timeout.TotalSeconds} seconds.");
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				Logger.Log("Error while stopping service.", ex);
-			}
-			finally
-			{
-				_runnerTask = null;
+                _runnerTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        DatabaseTester.TestAndInitialize(config);
+                        var repository = new TimescaleRepository(config.TimescaleConnectionString);
 
-				_cts?.Dispose();
-				_cts = null;
+                        using (var sizerClient = new SizerClient(config))
+                        {
+                            var engine = new CollectorEngine(config, repository, sizerClient);
+                            var runner = new CollectorRunner(config, engine, _status, _heartbeatWriter);
+                            await runner.RunAsync(_cts.Token).ConfigureAwait(false);
+                        }
+                    }
+                    catch (OperationCanceledException) when (_cts?.IsCancellationRequested == true)
+                    {
+                        // Expected during shutdown.
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log("Service runner encountered an unexpected error.", ex);
+                        throw;
+                    }
+                });
 
-				Logger.Log("Service stopped.");
-			}
-		}
+                Logger.Log("Service started.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Service failed to start.", ex);
+                _cts?.Cancel();
+                _cts?.Dispose();
+                _cts = null;
+                _runnerTask = null;
+                throw;
+            }
+        }
 
-		private static bool IsIngestionEnabled(CollectorRuntimeSettings runtimeSettings, CollectorConfig config, CollectorStatus status, HeartbeatWriter heartbeatWriter)
-		{
-			status.CommissioningSerial = string.Empty;
-			status.CommissioningBlockingReasons.Clear();
+        protected override void OnStop()
+        {
+            Logger.Log("Service stopping...");
 
-			if (runtimeSettings?.EnableIngestion != true)
-			{
-				status.CommissioningIngestionEnabled = false;
-				status.CommissioningBlockingReasons.Add(new CommissioningReason("INGESTION_DISABLED", "Runtime setting EnableIngestion is false."));
-				WriteHeartbeat(status, heartbeatWriter);
-				return false;
-			}
+            try
+            {
+                _cts?.Cancel();
 
-			try
-			{
-				using (var sizerClient = new SizerClient(config))
-				{
-					var serial = sizerClient.GetSerialNoAsync(CancellationToken.None).GetAwaiter().GetResult();
-					if (string.IsNullOrWhiteSpace(serial))
-					{
-						Logger.Log("Commissioning check: Sizer serial number unavailable; disabling ingestion.");
-						status.CommissioningBlockingReasons.Add(new CommissioningReason("SIZER_UNAVAILABLE", "Sizer serial number unavailable."));
-						status.CommissioningIngestionEnabled = false;
-						WriteHeartbeat(status, heartbeatWriter);
-						return false;
-					}
+                if (_runnerTask != null)
+                {
+                    var timeout = TimeSpan.FromSeconds(30);
+                    if (!_runnerTask.Wait(timeout))
+                    {
+                        Logger.Log($"Service runner did not stop within {timeout.TotalSeconds} seconds.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Error while stopping service.", ex);
+            }
+            finally
+            {
+                _runnerTask = null;
 
-					status.CommissioningSerial = serial;
-					status.CommissioningIngestionEnabled = true;
-				}
+                _cts?.Dispose();
+                _cts = null;
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				Logger.Log("Commissioning check failed; disabling ingestion.", ex);
-				status.CommissioningIngestionEnabled = false;
-				status.CommissioningBlockingReasons.Add(new CommissioningReason("COMMISSIONING_CHECK_FAILED", "Commissioning check failed (see logs)."));
-				WriteHeartbeat(status, heartbeatWriter);
-				return false;
-			}
-		}
+                Logger.Log("Service stopped.");
+            }
+        }
 
-		private static void WriteHeartbeat(CollectorStatus status, HeartbeatWriter heartbeatWriter)
-		{
-			if (heartbeatWriter == null || status == null)
-			{
-				return;
-			}
+        private static bool IsIngestionEnabled(CollectorRuntimeSettings runtimeSettings, CollectorConfig config, CollectorStatus status, HeartbeatWriter heartbeatWriter)
+        {
+            status.CommissioningSerial = string.Empty;
+            status.CommissioningBlockingReasons.Clear();
 
-			var snapshot = status.CreateSnapshot();
-			var payload = new HeartbeatPayload
-			{
-				MachineSerial = snapshot.MachineSerial,
-				MachineName = snapshot.MachineName,
-				LastPollUtc = snapshot.LastPollCompletedUtc ?? snapshot.LastPollStartedUtc,
-				LastSuccessUtc = snapshot.LastSuccessUtc,
-				LastErrorUtc = snapshot.LastErrorUtc,
-				LastErrorMessage = snapshot.LastErrorMessage,
-				LastRunId = snapshot.LastRunId,
-				CommissioningIngestionEnabled = snapshot.CommissioningIngestionEnabled,
-				CommissioningSerial = snapshot.CommissioningSerial,
-				CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons
-			};
+            if (runtimeSettings?.EnableIngestion != true)
+            {
+                status.CommissioningIngestionEnabled = false;
+                status.CommissioningBlockingReasons.Add(new CommissioningReason("INGESTION_DISABLED", "Runtime setting EnableIngestion is false."));
+                WriteHeartbeat(status, heartbeatWriter);
+                return false;
+            }
 
-			heartbeatWriter.Write(payload);
-		}
+            try
+            {
+                using (var sizerClient = new SizerClient(config))
+                {
+                    var serial = sizerClient.GetSerialNoAsync(CancellationToken.None).GetAwaiter().GetResult();
+                    if (string.IsNullOrWhiteSpace(serial))
+                    {
+                        Logger.Log("Commissioning check: Sizer serial number unavailable; disabling ingestion.");
+                        status.CommissioningBlockingReasons.Add(new CommissioningReason("SIZER_UNAVAILABLE", "Sizer serial number unavailable."));
+                        status.CommissioningIngestionEnabled = false;
+                        WriteHeartbeat(status, heartbeatWriter);
+                        return false;
+                    }
 
-		private static string NormalizeDataRoot(string candidate)
-		{
-			if (string.IsNullOrWhiteSpace(candidate))
-			{
-				return string.Empty;
-			}
+                    status.CommissioningSerial = serial;
+                    status.CommissioningIngestionEnabled = true;
+                }
 
-			// If a file path was stored by mistake (e.g., ends with .json), use its directory
-			if (candidate.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-			{
-				return Path.GetDirectoryName(candidate);
-			}
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Commissioning check failed; disabling ingestion.", ex);
+                status.CommissioningIngestionEnabled = false;
+                status.CommissioningBlockingReasons.Add(new CommissioningReason("COMMISSIONING_CHECK_FAILED", "Commissioning check failed (see logs)."));
+                WriteHeartbeat(status, heartbeatWriter);
+                return false;
+            }
+        }
 
-			// If a file already exists at that path, fall back to its directory
-			if (File.Exists(candidate))
-			{
-				return Path.GetDirectoryName(candidate);
-			}
+        private static void WriteHeartbeat(CollectorStatus status, HeartbeatWriter heartbeatWriter)
+        {
+            if (heartbeatWriter == null || status == null)
+            {
+                return;
+            }
 
-			return candidate;
-		}
-	}
+            var snapshot = status.CreateSnapshot();
+            var payload = new HeartbeatPayload
+            {
+                MachineSerial = snapshot.MachineSerial,
+                MachineName = snapshot.MachineName,
+                LastPollUtc = snapshot.LastPollCompletedUtc ?? snapshot.LastPollStartedUtc,
+                LastSuccessUtc = snapshot.LastSuccessUtc,
+                LastErrorUtc = snapshot.LastErrorUtc,
+                LastErrorMessage = snapshot.LastErrorMessage,
+                LastRunId = snapshot.LastRunId,
+                CommissioningIngestionEnabled = snapshot.CommissioningIngestionEnabled,
+                CommissioningSerial = snapshot.CommissioningSerial,
+                CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons
+            };
+
+            heartbeatWriter.Write(payload);
+        }
+
+        private static string NormalizeDataRoot(string candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                return string.Empty;
+            }
+
+            // If a file path was stored by mistake (e.g., ends with .json), use its directory
+            if (candidate.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.GetDirectoryName(candidate);
+            }
+
+            // If a file already exists at that path, fall back to its directory
+            if (File.Exists(candidate))
+            {
+                return Path.GetDirectoryName(candidate);
+            }
+
+            return candidate;
+        }
+    }
 }

@@ -22,6 +22,7 @@ namespace SizerDataCollector.GUI.WPF
 			var laneToolsHomeViewModel = new LaneToolsHomeViewModel();
 			var laneConsistencyViewModel = new LaneConsistencyViewModel();
 			var gradeComparisonViewModel = new GradeComparisonViewModel();
+			var mdfQueryToolViewModel = new MdfQueryToolViewModel();
 
 			ViewModel = new MainWindowViewModel(
 				collectorStatusViewModel,
@@ -29,7 +30,8 @@ namespace SizerDataCollector.GUI.WPF
 				settingsViewModel,
 				laneToolsHomeViewModel,
 				laneConsistencyViewModel,
-				gradeComparisonViewModel);
+				gradeComparisonViewModel,
+				mdfQueryToolViewModel);
 			DataContext = ViewModel;
 
 			Loaded += (_, __) => ViewModel.Initialize();

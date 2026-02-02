@@ -91,6 +91,9 @@
                     <Button Content="Grade Comparison"
                             Command="{Binding ShowGradeComparisonCommand}"
                             Style="{StaticResource NavButtonStyle}"/>
+                    <Button Content="MDF Query Tool"
+                            Command="{Binding ShowMdfQueryToolCommand}"
+                            Style="{StaticResource NavButtonStyle}"/>
                     <Button Content="Settings"
                             Command="{Binding ShowSettingsCommand}"
                             Style="{StaticResource NavButtonStyle}"/>

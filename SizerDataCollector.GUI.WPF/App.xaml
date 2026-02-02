@@ -25,6 +25,9 @@
             <DataTemplate DataType="{x:Type vm:GradeComparisonViewModel}">
                 <views:GradeComparisonView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:MdfQueryToolViewModel}">
+                <views:MdfQueryToolView />
+            </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

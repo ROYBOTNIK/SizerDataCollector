@@ -86,11 +86,17 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\MdfQueryToolView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Commands\RelayCommand.cs" />
+    <Compile Include="Services\MdfQueryService.cs" />
+    <Compile Include="Services\SimplePdfWriter.cs" />
     <Compile Include="Services\WindowsServiceManager.cs" />
     <Compile Include="Services\HeartbeatReader.cs" />
     <Compile Include="MainWindow.xaml.cs">
@@ -104,6 +110,7 @@
     <Compile Include="ViewModels\CollectorStatusViewModel.cs" />
     <Compile Include="ViewModels\DashboardViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />
+    <Compile Include="ViewModels\MdfQueryToolViewModel.cs" />
     <Compile Include="Views\CollectorStatusView.xaml.cs">
       <DependentUpon>CollectorStatusView.xaml</DependentUpon>
     </Compile>
@@ -121,6 +128,9 @@
     </Compile>
     <Compile Include="Views\SettingsView.xaml.cs">
       <DependentUpon>SettingsView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\MdfQueryToolView.xaml.cs">
+      <DependentUpon>MdfQueryToolView.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

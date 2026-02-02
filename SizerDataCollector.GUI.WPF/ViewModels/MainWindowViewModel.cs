@@ -16,7 +16,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			SettingsViewModel settingsViewModel,
 			LaneToolsHomeViewModel laneToolsHomeViewModel,
 			LaneConsistencyViewModel laneConsistencyViewModel,
-			GradeComparisonViewModel gradeComparisonViewModel)
+			GradeComparisonViewModel gradeComparisonViewModel,
+			MdfQueryToolViewModel mdfQueryToolViewModel)
 		{
 			CollectorStatusPage = collectorStatusViewModel ?? throw new ArgumentNullException(nameof(collectorStatusViewModel));
 			DashboardPage = dashboardViewModel ?? throw new ArgumentNullException(nameof(dashboardViewModel));
@@ -24,6 +25,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			LaneToolsHomePage = laneToolsHomeViewModel ?? throw new ArgumentNullException(nameof(laneToolsHomeViewModel));
 			LaneConsistencyPage = laneConsistencyViewModel ?? throw new ArgumentNullException(nameof(laneConsistencyViewModel));
 			GradeComparisonPage = gradeComparisonViewModel ?? throw new ArgumentNullException(nameof(gradeComparisonViewModel));
+			MdfQueryToolPage = mdfQueryToolViewModel ?? throw new ArgumentNullException(nameof(mdfQueryToolViewModel));
 
 			DashboardPage.AttachCollector(CollectorStatusPage);
 
@@ -33,6 +35,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			ShowLaneToolsHomeCommand = new RelayCommand(_ => CurrentPage = LaneToolsHomePage);
 			ShowLaneConsistencyCommand = new RelayCommand(_ => CurrentPage = LaneConsistencyPage);
 			ShowGradeComparisonCommand = new RelayCommand(_ => CurrentPage = GradeComparisonPage);
+			ShowMdfQueryToolCommand = new RelayCommand(_ => CurrentPage = MdfQueryToolPage);
 
 			CurrentPage = DashboardPage;
 
@@ -73,6 +76,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 		public GradeComparisonViewModel GradeComparisonPage { get; }
 
+		public MdfQueryToolViewModel MdfQueryToolPage { get; }
+
 		public ICommand ShowDashboardCommand { get; }
 
 		public ICommand ShowCollectorStatusCommand { get; }
@@ -84,6 +89,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public ICommand ShowLaneConsistencyCommand { get; }
 
 		public ICommand ShowGradeComparisonCommand { get; }
+
+		public ICommand ShowMdfQueryToolCommand { get; }
 
 		public void Initialize()
 		{
@@ -138,4 +145,3 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		}
 	}
 }
-

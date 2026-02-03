@@ -27,6 +27,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -185,7 +186,33 @@
                     </Grid>
                 </GroupBox>
 
-                <GroupBox Grid.Row="2" Grid.ColumnSpan="2" Header="Preview Results" Margin="0,0,0,8">
+                <GroupBox Grid.Row="2" Grid.ColumnSpan="2" Header="Schema Metadata (All Tables)" Margin="0,0,0,8">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Content="Inspect Schema"
+                                    Padding="12,4"
+                                    Command="{Binding LoadSchemaDetailsCommand}"/>
+                            <TextBlock Text="Copy/paste the tab-delimited output below."
+                                       Foreground="Gray"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,0,0"/>
+                        </StackPanel>
+                        <TextBox Grid.Row="1"
+                                 AcceptsReturn="True"
+                                 FontFamily="Consolas"
+                                 MinHeight="140"
+                                 Text="{Binding SchemaDetailsText}"
+                                 IsReadOnly="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"/>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="3" Grid.ColumnSpan="2" Header="Preview Results" Margin="0,0,0,8">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -211,7 +238,7 @@
                     </Grid>
                 </GroupBox>
 
-                <TextBlock Grid.Row="3"
+                <TextBlock Grid.Row="4"
                            Grid.ColumnSpan="2"
                            Text="{Binding StatusMessage}"
                            Foreground="Gray"/>

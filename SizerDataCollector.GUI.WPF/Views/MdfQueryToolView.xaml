@@ -26,12 +26,16 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <GroupBox Header="MDF Source" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="5*"/>
+                </Grid.ColumnDefinitions>
+                <GroupBox Grid.ColumnSpan="2" Header="MDF Source" Margin="0,0,0,8">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -130,7 +134,7 @@
                     </Grid>
                 </GroupBox>
 
-                <GroupBox Grid.Row="1" Header="Schema Preview" Margin="0,0,0,8">
+                <GroupBox Grid.Row="1" Header="Schema Preview" Margin="0,0,8,8">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -151,7 +155,7 @@
                     </Grid>
                 </GroupBox>
 
-                <GroupBox Grid.Row="2" Header="Query Builder" Margin="0,0,0,8">
+                <GroupBox Grid.Row="1" Grid.Column="1" Header="Query Builder" Margin="0,0,0,8">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -163,7 +167,7 @@
                                     Padding="12,4"
                                     Margin="0,0,8,0"
                                     Command="{Binding GenerateQueryCommand}"/>
-                            <Button Content="Preview Rows"
+                            <Button Content="Run Query"
                                     Padding="12,4"
                                     Command="{Binding PreviewQueryCommand}"/>
                         </StackPanel>
@@ -173,12 +177,42 @@
                                    Margin="0,8,0,8"/>
                         <TextBox Grid.Row="2"
                                  AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 FontFamily="Consolas"
+                                 MinHeight="160"
                                  Text="{Binding QueryText, UpdateSourceTrigger=PropertyChanged}"
+                                 IsReadOnly="False"
                                  VerticalScrollBarVisibility="Auto"/>
                     </Grid>
                 </GroupBox>
 
-                <GroupBox Grid.Row="3" Header="Preview Results" Margin="0,0,0,8">
+                <GroupBox Grid.Row="2" Grid.ColumnSpan="2" Header="Schema Metadata (All Tables)" Margin="0,0,0,8">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Content="Inspect Schema"
+                                    Padding="12,4"
+                                    Command="{Binding LoadSchemaDetailsCommand}"/>
+                            <TextBlock Text="Copy/paste the tab-delimited output below."
+                                       Foreground="Gray"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,0,0"/>
+                        </StackPanel>
+                        <TextBox Grid.Row="1"
+                                 AcceptsReturn="True"
+                                 FontFamily="Consolas"
+                                 MinHeight="140"
+                                 Text="{Binding SchemaDetailsText}"
+                                 IsReadOnly="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"/>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="3" Grid.ColumnSpan="2" Header="Preview Results" Margin="0,0,0,8">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -192,6 +226,10 @@
                             <Button Content="Export PDF"
                                     Padding="12,4"
                                     Command="{Binding ExportPdfCommand}"/>
+                            <TextBlock Text="{Binding PreviewSummary}"
+                                       Foreground="Gray"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,0,0"/>
                         </StackPanel>
                         <DataGrid Grid.Row="1"
                                   ItemsSource="{Binding PreviewRows}"
@@ -201,6 +239,7 @@
                 </GroupBox>
 
                 <TextBlock Grid.Row="4"
+                           Grid.ColumnSpan="2"
                            Text="{Binding StatusMessage}"
                            Foreground="Gray"/>
             </Grid>

@@ -49,6 +49,46 @@ ORDER BY TABLE_SCHEMA, TABLE_NAME;", connection))
 			}
 		}
 
+		public DataTable LoadSchemaDetails(MdfConnectionOptions options)
+		{
+			var map = LoadSchemaMap(options);
+			var table = new DataTable("schema_details");
+			table.Columns.Add("table_schema", typeof(string));
+			table.Columns.Add("table_name", typeof(string));
+			table.Columns.Add("column_name", typeof(string));
+			table.Columns.Add("data_type", typeof(string));
+			table.Columns.Add("is_nullable", typeof(string));
+			table.Columns.Add("column_default", typeof(string));
+			table.Columns.Add("is_primary_key", typeof(string));
+			table.Columns.Add("is_foreign_key", typeof(string));
+			table.Columns.Add("foreign_schema", typeof(string));
+			table.Columns.Add("foreign_table", typeof(string));
+			table.Columns.Add("foreign_column", typeof(string));
+
+			foreach (var tableDefinition in map.Tables
+				.OrderBy(item => item.Schema, StringComparer.OrdinalIgnoreCase)
+				.ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+			{
+				foreach (var column in tableDefinition.Columns)
+				{
+					table.Rows.Add(
+						tableDefinition.Schema,
+						tableDefinition.Name,
+						column.ColumnName,
+						column.DataType,
+						column.IsNullable ? "YES" : "NO",
+						column.ColumnDefault,
+						column.IsPrimaryKey ? "YES" : "NO",
+						column.IsForeignKey ? "YES" : "NO",
+						column.ForeignSchema,
+						column.ForeignTable,
+						column.ForeignColumn);
+				}
+			}
+
+			return table;
+		}
+
         // Pseudocode / Plan:
         // 1. Replace direct assignments to map.Success (which fails because the setter is non-public) with a helper that sets the property via reflection.
         // 2. Implement a private static helper SetSchemaMapSuccess(SchemaMap map, bool value):

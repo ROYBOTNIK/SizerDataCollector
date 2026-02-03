@@ -27,6 +27,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private string _userName;
 		private string _password;
 		private bool _readOnly;
+		private string _previewSummary;
 
 		public MdfQueryToolViewModel()
 			: this(new MdfQueryService())
@@ -57,10 +58,10 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 			BrowseMdfCommand = new RelayCommand(_ => BrowseForMdf(), _ => SelectedSourceMode?.Mode == MdfSourceMode.LocalFile);
 			LoadSchemaCommand = new RelayCommand(_ => LoadSchema(), _ => CanLoadSchema());
-			GenerateQueryCommand = new RelayCommand(_ => GenerateQuery(), _ => !string.IsNullOrWhiteSpace(SelectedTable));
-			PreviewQueryCommand = new RelayCommand(_ => PreviewQuery(), _ => !string.IsNullOrWhiteSpace(QueryText));
-			ExportCsvCommand = new RelayCommand(_ => ExportCsv(), _ => PreviewRows != null);
-			ExportPdfCommand = new RelayCommand(_ => ExportPdf(), _ => PreviewRows != null);
+			GenerateQueryCommand = new RelayCommand(_ => GenerateQuery(), _ => !IsBusy && !string.IsNullOrWhiteSpace(SelectedTable));
+			PreviewQueryCommand = new RelayCommand(_ => PreviewQuery(), _ => !IsBusy && !string.IsNullOrWhiteSpace(QueryText));
+			ExportCsvCommand = new RelayCommand(_ => ExportCsv(), _ => PreviewRows != null && !IsBusy);
+			ExportPdfCommand = new RelayCommand(_ => ExportPdf(), _ => PreviewRows != null && !IsBusy);
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -207,9 +208,18 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				if (SetProperty(ref _previewRows, value))
 				{
+					OnPropertyChanged(nameof(HasPreviewRows));
 					RefreshCommandStates();
 				}
 			}
+		}
+
+		public bool HasPreviewRows => PreviewRows != null;
+
+		public string PreviewSummary
+		{
+			get => _previewSummary;
+			private set => SetProperty(ref _previewSummary, value);
 		}
 
 		public string StatusMessage
@@ -271,6 +281,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				}
 
 				StatusMessage = Tables.Count == 0 ? "No tables found." : $"Loaded {Tables.Count} tables.";
+				PreviewSummary = string.Empty;
 			}
 			catch (Exception ex)
 			{
@@ -296,11 +307,13 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				StatusMessage = "Running query...";
 				var preview = _queryService.LoadPreview(BuildConnectionOptions(), QueryText);
 				PreviewRows = preview.DefaultView;
-				StatusMessage = $"Preview loaded ({preview.Rows.Count} rows).";
+				PreviewSummary = $"{preview.Rows.Count} rows loaded.";
+				StatusMessage = "Preview loaded.";
 			}
 			catch (Exception ex)
 			{
 				StatusMessage = $"Query failed: {ex.Message}";
+				PreviewSummary = string.Empty;
 			}
 			finally
 			{

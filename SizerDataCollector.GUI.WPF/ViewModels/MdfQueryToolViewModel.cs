@@ -28,7 +28,6 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private string _password;
 		private bool _readOnly;
 		private string _previewSummary;
-		private string _schemaDetailsText = string.Empty;
 
 		public MdfQueryToolViewModel()
 			: this(new MdfQueryService())
@@ -56,10 +55,10 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 			Tables = new ObservableCollection<string>();
 			QueryText = "SELECT TOP (100) *\nFROM dbo.LotHistory;";
+			SchemaDetailsText = string.Empty;
 
 			BrowseMdfCommand = new RelayCommand(_ => BrowseForMdf(), _ => SelectedSourceMode?.Mode == MdfSourceMode.LocalFile);
 			LoadSchemaCommand = new RelayCommand(_ => LoadSchema(), _ => CanLoadSchema());
-			LoadSchemaDetailsCommand = new RelayCommand(_ => LoadSchemaDetails(), _ => CanLoadSchema());
 			GenerateQueryCommand = new RelayCommand(_ => GenerateQuery(), _ => !IsBusy && !string.IsNullOrWhiteSpace(SelectedTable));
 			PreviewQueryCommand = new RelayCommand(_ => PreviewQuery(), _ => !IsBusy && !string.IsNullOrWhiteSpace(QueryText));
 			ExportCsvCommand = new RelayCommand(_ => ExportCsv(), _ => PreviewRows != null && !IsBusy);
@@ -222,12 +221,6 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		{
 			get => _previewSummary;
 			private set => SetProperty(ref _previewSummary, value);
-		}
-
-		public string SchemaDetailsText
-		{
-			get => _schemaDetailsText;
-			private set => SetProperty(ref _schemaDetailsText, value);
 		}
 
 		public string StatusMessage

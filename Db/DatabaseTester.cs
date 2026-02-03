@@ -1,10 +1,11 @@
 using System;
 using Npgsql;
-using SizerDataCollector.Config;
+using SizerDataCollector.Core.Config;
+using SizerDataCollector.Core.Logging;
 
-namespace SizerDataCollector
+namespace SizerDataCollector.Core.Db
 {
-	internal static class DatabaseTester
+	public static class DatabaseTester
 	{
 		/// <summary>
 		/// Tests the connection to Timescale/Postgres and ensures required tables exist

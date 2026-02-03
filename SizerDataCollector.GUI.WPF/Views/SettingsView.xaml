@@ -1,0 +1,512 @@
+<UserControl x:Class="SizerDataCollector.GUI.WPF.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock Text="Database Bootstrap"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           Margin="0,0,0,4"/>
+                <TextBlock Text="Manage database bootstrap and health checks."
+                           Foreground="Gray"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Orientation="Vertical">
+                <StackPanel.Resources>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Margin" Value="0,0,0,12"/>
+                    </Style>
+                    <Style x:Key="ActionButtonStyle" TargetType="Button">
+                        <Setter Property="FontSize" Value="13"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="MinWidth" Value="160"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    </Style>
+                    <Style x:Key="ActionTextBlockStyle" TargetType="TextBlock">
+                        <Setter Property="TextWrapping" Value="Wrap"/>
+                        <Setter Property="TextAlignment" Value="Center"/>
+                    </Style>
+                </StackPanel.Resources>
+                <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
+                    <StackPanel Margin="0">
+                        <TextBlock Text="Connection"
+                                   FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding ConnectionString, Mode=OneWay}"
+                                 IsReadOnly="True"
+                                 VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
+                    <StackPanel Margin="0">
+                        <TextBlock Text="Actions"
+                                   FontWeight="SemiBold"/>
+                        <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Button Command="{Binding InitializeSqlFolderCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Initialize SQL Folder"/>
+                            </Button>
+                            <Button Command="{Binding BootstrapDatabaseCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Bootstrap Database"/>
+                            </Button>
+                            <Button Command="{Binding RefreshStatusCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Refresh Status"/>
+                            </Button>
+                        </WrapPanel>
+                        <TextBlock Text="{Binding StatusMessage}"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
+                    <StackPanel Margin="0">
+                        <TextBlock Text="Status"
+                                   FontWeight="SemiBold"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Postgres reachable" Grid.Row="0" Grid.Column="0"/>
+                            <TextBlock Text="{Binding PostgresReachable}" Grid.Row="0" Grid.Column="1" />
+
+                            <TextBlock Text="Timescale enabled" Grid.Row="1" Grid.Column="0"/>
+                            <TextBlock Text="{Binding TimescaleEnabled}" Grid.Row="1" Grid.Column="1" />
+
+                            <TextBlock Text="Database" Grid.Row="2" Grid.Column="0"/>
+                            <TextBlock Text="{Binding DatabaseName}" Grid.Row="2" Grid.Column="1" />
+
+                            <TextBlock Text="Applied migrations" Grid.Row="3" Grid.Column="0"/>
+                            <TextBlock Text="{Binding AppliedMigrations}" Grid.Row="3" Grid.Column="1" />
+
+                            <TextBlock Text="Continuous aggregates" Grid.Row="4" Grid.Column="0"/>
+                            <TextBlock Text="{Binding ContinuousAggregateCount}" Grid.Row="4" Grid.Column="1" />
+
+                            <TextBlock Text="Seed counts (bands / thresholds / calendar)" Grid.Row="5" Grid.Column="0"/>
+                            <TextBlock Grid.Row="5" Grid.Column="1">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} / {1} / {2}">
+                                        <Binding Path="BandDefinitionsCount"/>
+                                        <Binding Path="MachineThresholdsCount"/>
+                                        <Binding Path="ShiftCalendarCount"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <TextBlock Text="Discovery snapshots (count)" Grid.Row="6" Grid.Column="0"/>
+                            <TextBlock Text="{Binding DiscoverySnapshotCount}" Grid.Row="6" Grid.Column="1" />
+
+                            <TextBlock Text="Latest discovery" Grid.Row="7" Grid.Column="0"/>
+                            <TextBlock Text="{Binding LatestDiscoveryAt, StringFormat={}{0:G}}" Grid.Row="7" Grid.Column="1" />
+                        </Grid>
+
+                        <Expander Header="Missing objects" IsExpanded="False" Margin="0,4,0,0">
+                            <ItemsControl ItemsSource="{Binding MissingObjects}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+
+                        <TextBlock Text="{Binding LastCheckedAt, StringFormat=Last checked: {0:G}}"
+                                   Foreground="Gray"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
+                    <StackPanel Margin="0">
+                        <TextBlock Text="Machine Settings (per serial)"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="Configure throughput and recycle outlet per machine; assists use latest discovery."
+                                   Foreground="Gray"
+                                   Margin="0,0,0,8"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Machine" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox ItemsSource="{Binding Machines}"
+                                      SelectedItem="{Binding SelectedMachine}"
+                                      DisplayMemberPath="Display"
+                                      Width="240"
+                                      Margin="0,0,8,0"/>
+                            <Button Command="{Binding RefreshMachinesCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Refresh Machines"/>
+                            </Button>
+                        </StackPanel>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="2*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Target Speed" Grid.Row="0" Grid.Column="0"/>
+                            <TextBox Text="{Binding TargetMachineSpeed, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="0" />
+
+                            <TextBlock Text="Lane Count" Grid.Row="0" Grid.Column="1"/>
+                            <TextBox Text="{Binding LaneCountSetting, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="1" />
+
+                            <TextBlock Text="Target %" Grid.Row="0" Grid.Column="2"/>
+                            <TextBox Text="{Binding TargetPercentage, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="2" />
+
+                            <TextBlock Text="Recycle Outlet" Grid.Row="0" Grid.Column="3"/>
+                            <ComboBox ItemsSource="{Binding OutletOptions}"
+                                      SelectedItem="{Binding SelectedRecycleOutlet}"
+                                      DisplayMemberPath="Display"
+                                      Grid.Row="1" Grid.Column="3"/>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Command="{Binding SaveMachineSettingsCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Save Machine Settings"/>
+                            </Button>
+                            <TextBlock Text="Target throughput preview:" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                            <TextBlock Text="{Binding TargetThroughputPreview, StringFormat={}{0:F2}}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Grade Mapping (per serial)" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                        <TextBlock Text="Add Grade Mapping (manual)" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <StackPanel>
+                                <TextBlock Text="Grade Key" />
+                                <TextBox Text="{Binding NewGradeKey, UpdateSourceTrigger=PropertyChanged}" Width="260" Margin="0,0,8,0"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Category" />
+                                <ComboBox ItemsSource="{Binding CategoryOptions}"
+                                          SelectedItem="{Binding NewGradeCategory, Mode=TwoWay}"
+                                          DisplayMemberPath="Name"
+                                          SelectedValuePath="Id"
+                                          Width="200"
+                                          Margin="0,0,0,4"/>
+                                <Button Content="Add Mapping"
+                                        Command="{Binding AddManualGradeMappingCommand}"
+                                        IsEnabled="{Binding CanRunActions}"
+                                        Style="{StaticResource ActionButtonStyle}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+                            <TextBlock Text="Grade Overrides" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <CheckBox Content="Show inactive"
+                                      Margin="12,0,0,0"
+                                      IsChecked="{Binding ShowInactiveGrades, Mode=TwoWay}"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <DataGrid ItemsSource="{Binding GradeRows}"
+                                  AutoGenerateColumns="False"
+                                  HeadersVisibility="Column"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  MinHeight="180"
+                                  Margin="0,0,0,4">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Grade Key" Binding="{Binding GradeKey}" IsReadOnly="True" Width="2*"/>
+                                <DataGridTextColumn Header="Resolved Cat" Binding="{Binding ResolvedCategory}" IsReadOnly="True" Width="*"/>
+                                <DataGridTemplateColumn Header="Override Cat" Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox ItemsSource="{Binding DataContext.CategoryOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      SelectedValuePath="Id"
+                                                      DisplayMemberPath="Name"
+                                                      SelectedValue="{Binding OverrideCategory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive, Mode=TwoWay}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Command="{Binding SaveGradeOverridesCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,0"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Save Grade Overrides"/>
+                            </Button>
+                            <TextBlock Text="Grade keys sourced from latest discovery snapshot." Foreground="Gray" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="1" Padding="12">
+                    <StackPanel Margin="0">
+                        <TextBlock Text="Commissioning"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="Evaluate commissioning readiness and ingestion gating."
+                                   Foreground="Gray"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Serial" Grid.Row="0" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningSerial}" Grid.Row="0" Grid.Column="1"/>
+
+                            <TextBlock Text="DB Bootstrapped" Grid.Row="1" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningDbBootstrappedText}" Grid.Row="1" Grid.Column="1"/>
+
+                            <TextBlock Text="Sizer Connected" Grid.Row="2" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningSizerConnectedText}" Grid.Row="2" Grid.Column="1"/>
+
+                            <TextBlock Text="Thresholds Set" Grid.Row="3" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningThresholdsSetText}" Grid.Row="3" Grid.Column="1"/>
+
+                            <TextBlock Text="Machine Discovered" Grid.Row="4" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningMachineDiscoveredText}" Grid.Row="4" Grid.Column="1"/>
+
+                            <TextBlock Text="Grade Mapping Completed" Grid.Row="5" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningGradeMappingCompletedText}" Grid.Row="5" Grid.Column="1"/>
+
+                            <TextBlock Text="Ingestion Enabled" Grid.Row="6" Grid.Column="0"/>
+                            <TextBlock Text="{Binding CommissioningIngestionEnabledText}" Grid.Row="6" Grid.Column="1"/>
+                        </Grid>
+
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Command="{Binding TestSizerConnectionCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Test Sizer Connection"/>
+                            </Button>
+                            <Button Command="{Binding RefreshCommissioningCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Refresh Commissioning"/>
+                            </Button>
+                            <Button Command="{Binding EnableIngestionCommand}"
+                                    IsEnabled="{Binding CommissioningCanEnableIngestion}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Enable Ingestion"/>
+                            </Button>
+                            <Button Command="{Binding DiscoverMachineCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Run Discovery"/>
+                            </Button>
+                            <Button Command="{Binding CancelDiscoveryCommand}"
+                                    IsEnabled="{Binding IsBusy}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Cancel Discovery"/>
+                            </Button>
+                            <Button Command="{Binding ResetCommissioningCommand}"
+                                    IsEnabled="{Binding CanRunActions}"
+                                    Margin="0,0,8,8"
+                                    Style="{StaticResource ActionButtonStyle}">
+                                <TextBlock Style="{StaticResource ActionTextBlockStyle}" Text="Reset Commissioning"/>
+                            </Button>
+                        </WrapPanel>
+
+                        <TextBlock Text="{Binding CommissioningStatusMessage}"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,4"/>
+
+                        <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Discovery (Stage 5.1)" FontWeight="SemiBold"/>
+                                <ProgressBar Height="6" Margin="0,4,0,4"
+                                             IsIndeterminate="True"
+                                             Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <Grid Margin="0,2,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Serial" Grid.Row="0" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoverySerial}" Grid.Row="0" Grid.Column="1"/>
+
+                                    <TextBlock Text="Machine Name" Grid.Row="1" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryMachineName}" Grid.Row="1" Grid.Column="1"/>
+
+                                    <TextBlock Text="Snapshot Id" Grid.Row="2" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoverySnapshotId}" Grid.Row="2" Grid.Column="1"/>
+
+                                    <TextBlock Text="Discovered At" Grid.Row="3" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryDiscoveredAt, StringFormat={}{0:u}}" Grid.Row="3" Grid.Column="1"/>
+
+                                    <TextBlock Text="Outlets" Grid.Row="4" Grid.Column="0"/>
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0} ({1})">
+                                                <Binding Path="DiscoveryOutletCount"/>
+                                                <Binding Path="DiscoveryOutletNames"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+
+                                    <TextBlock Text="Lanes (non-null entries)" Grid.Row="5" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryLaneViewCount}" Grid.Row="5" Grid.Column="1"/>
+                                </Grid>
+
+                                <Grid Margin="0,2,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Distinct Grade Keys" Grid.Row="0" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoveryGradeKeyCount}" Grid.Row="0" Grid.Column="1"/>
+
+                                    <TextBlock Text="Distinct Size Keys" Grid.Row="1" Grid.Column="0"/>
+                                    <TextBlock Text="{Binding DiscoverySizeKeyCount}" Grid.Row="1" Grid.Column="1"/>
+                                </Grid>
+
+                                <TextBlock Text="{Binding DiscoveryStatusMessage}"
+                                           Foreground="Gray"
+                                           TextWrapping="Wrap"
+                                           Margin="0,4,0,4"/>
+
+                                <Expander Header="Raw Snapshot JSON" IsExpanded="False" Margin="0,4,0,0">
+                                    <StackPanel>
+                                        <TextBox Text="{Binding DiscoveryRawJson, Mode=OneWay, TargetNullValue=''}"
+                                                 IsReadOnly="True"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 MinHeight="120"/>
+                                        <TextBlock Text="Summary JSON" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                        <TextBox Text="{Binding DiscoverySummaryJson, Mode=OneWay, TargetNullValue=''}"
+                                                 IsReadOnly="True"
+                                                 AcceptsReturn="True"
+                                                 TextWrapping="Wrap"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 MinHeight="80"/>
+                                        <Button Command="{Binding CopyDiscoveryJsonCommand}" Margin="0,4,0,0"
+                                                IsEnabled="{Binding HasDiscoveryRawJson}"
+                                                HorizontalAlignment="Left">
+                                            <TextBlock Text="Copy JSON"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8" Margin="0,8,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Discovery History (last 10)" FontWeight="SemiBold"/>
+                                <ListBox ItemsSource="{Binding DiscoveryHistory}"
+                                         SelectedItem="{Binding SelectedDiscoverySnapshot, Mode=TwoWay}"
+                                         MinHeight="160"
+                                         Margin="0,4,0,0">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Vertical" Margin="0,4,0,4">
+                                                <TextBlock Text="{Binding DiscoveredAt, StringFormat={}{0:u}}"/>
+                                                <TextBlock>
+                                                    <Run Text="Success: "/>
+                                                    <Run Text="{Binding Success}"/>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding ErrorText}" TextTrimming="CharacterEllipsis" Foreground="Gray"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </Border>
+
+                        <Expander Header="Blocking reasons" IsExpanded="False" Margin="0,0,0,8">
+                            <ItemsControl ItemsSource="{Binding CommissioningBlockingReasons}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+
+                        <TextBlock Text="Notes" FontWeight="SemiBold"/>
+                        <DockPanel Margin="0,4,0,0">
+                            <TextBox Text="{Binding CommissioningNotes, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="True"
+                                     Height="80"
+                                     VerticalScrollBarVisibility="Auto"
+                                     DockPanel.Dock="Top"
+                                     TextWrapping="Wrap"/>
+                        </DockPanel>
+                        <Button Command="{Binding SaveCommissioningNotesCommand}"
+                                IsEnabled="{Binding CanRunActions}"
+                                Padding="12,8"
+                                Margin="0,4,0,0"
+                                HorizontalAlignment="Left">
+                            <TextBlock Text="Save Notes"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
+

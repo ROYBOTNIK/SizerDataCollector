@@ -5,6 +5,10 @@ VisualStudioVersion = 17.14.36401.2 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SizerDataCollector", "SizerDataCollector.csproj", "{8C05A0F0-7688-4111-915A-03797C7712E4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SizerDataCollector.Core", "SizerDataCollector.Core\SizerDataCollector.Core.csproj", "{9A68A51B-03B1-466C-BB76-9C6BDF34D50A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SizerDataCollector.Service", "SizerDataCollector.Service\SizerDataCollector.Service.csproj", "{E8D7E4C9-9B33-4F45-B1E5-A5CFC0B4D389}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{8C05A0F0-7688-4111-915A-03797C7712E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C05A0F0-7688-4111-915A-03797C7712E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C05A0F0-7688-4111-915A-03797C7712E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A68A51B-03B1-466C-BB76-9C6BDF34D50A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A68A51B-03B1-466C-BB76-9C6BDF34D50A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A68A51B-03B1-466C-BB76-9C6BDF34D50A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A68A51B-03B1-466C-BB76-9C6BDF34D50A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8D7E4C9-9B33-4F45-B1E5-A5CFC0B4D389}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8D7E4C9-9B33-4F45-B1E5-A5CFC0B4D389}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8D7E4C9-9B33-4F45-B1E5-A5CFC0B4D389}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8D7E4C9-9B33-4F45-B1E5-A5CFC0B4D389}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

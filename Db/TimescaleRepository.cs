@@ -6,9 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
 using NpgsqlTypes;
-using Logger = SizerDataCollector.Logger;
+using SizerDataCollector.Core.Logging;
 
-namespace SizerDataCollector.Db
+namespace SizerDataCollector.Core.Db
 {
 	public interface ITimescaleRepository
 	{
@@ -297,7 +297,13 @@ RETURNING id;";
 				return;
 			}
 
-			Logger.Log($"Inserting {metricList.Count} metric rows.");
+			var distinctMetricCount = metricList
+				.Select(m => m?.MetricName)
+				.Where(name => !string.IsNullOrWhiteSpace(name))
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.Count();
+
+			Logger.Log($"Inserting {metricList.Count} metric rows across {distinctMetricCount} metric types.");
 
 			try
 			{
@@ -350,7 +356,7 @@ RETURNING id;";
 							}
 
 							transaction.Commit();
-							Logger.Log($"Metrics insert complete. Rows affected (excluding duplicates): {totalInserted}.");
+							Logger.Log($"Metrics insert complete. Rows affected (excluding duplicates): {totalInserted} out of {metricList.Count} attempted.");
 						}
 						catch
 						{

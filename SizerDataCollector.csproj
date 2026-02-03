@@ -92,111 +92,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Collector\CollectorEngine.cs" />
-    <Compile Include="Config\CollectorConfig.cs" />
-    <Compile Include="Connected Services\SizerServiceReference\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Compile>
-    <Compile Include="Db\DatabaseTester.cs" />
-    <Compile Include="Db\MetricRow.cs" />
-    <Compile Include="Db\TimescaleRepository.cs" />
-    <Compile Include="Logging\Logging.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sizer\SizerClient.cs" />
-    <Compile Include="Sizer\SizerClientTester.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="Connected Services\SizerServiceReference\item.wsdl" />
-    <None Include="Connected Services\SizerServiceReference\item.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\item1.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\item2.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\item3.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\item4.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\item5.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\item6.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\item7.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.AbstractSamplingConfiguration.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Batch.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.GetVersionResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Grower.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Label.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.LaneGroup.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Layout.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Outlet.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Pack.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Product.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.SamplingProgress.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.ServiceVersion.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Variety.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="Connected Services\SizerServiceReference\SizerService.wsdl" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <WCFMetadata Include="Connected Services\" />
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadataStorage Include="Connected Services\SizerServiceReference\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Connected Services\SizerServiceReference\item.disco" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Connected Services\SizerServiceReference\configuration91.svcinfo" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Connected Services\SizerServiceReference\configuration.svcinfo" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Connected Services\SizerServiceReference\Reference.svcmap">
-      <Generator>WCF Proxy Generator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
+    <ProjectReference Include="SizerDataCollector.Core\SizerDataCollector.Core.csproj">
+      <Project>{9A68A51B-03B1-466C-BB76-9C6BDF34D50A}</Project>
+      <Name>SizerDataCollector.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

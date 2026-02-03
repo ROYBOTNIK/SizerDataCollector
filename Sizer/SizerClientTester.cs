@@ -1,11 +1,12 @@
 using System;
 using System.ServiceModel;
-using SizerDataCollector.Config;
+using SizerDataCollector.Core.Config;
+using SizerDataCollector.Core.Logging;
 using SizerDataCollector.SizerServiceReference;  // Adjust if your project name differs
 
-namespace SizerDataCollector
+namespace SizerDataCollector.Core.Sizer
 {
-	internal static class SizerClientTester
+	public static class SizerClientTester
 	{
 		/// <summary>
 		/// Connects to the Sizer WCF service, calls GetSerialNo and GetMachineName,

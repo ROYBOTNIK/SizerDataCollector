@@ -35,7 +35,7 @@ namespace SizerDataCollector.Core.Schema
 				return map;
 			}
 
-			options = options ?? new SchemaParseOptions();
+			options ??= new SchemaParseOptions();
 			string content;
 			try
 			{

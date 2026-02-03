@@ -27,6 +27,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		private string _userName;
 		private string _password;
 		private bool _readOnly;
+		private string _previewSummary;
+		private string _schemaDetailsText = string.Empty;
 
 		public MdfQueryToolViewModel()
 			: this(new MdfQueryService())
@@ -57,10 +59,11 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 			BrowseMdfCommand = new RelayCommand(_ => BrowseForMdf(), _ => SelectedSourceMode?.Mode == MdfSourceMode.LocalFile);
 			LoadSchemaCommand = new RelayCommand(_ => LoadSchema(), _ => CanLoadSchema());
-			GenerateQueryCommand = new RelayCommand(_ => GenerateQuery(), _ => !string.IsNullOrWhiteSpace(SelectedTable));
-			PreviewQueryCommand = new RelayCommand(_ => PreviewQuery(), _ => !string.IsNullOrWhiteSpace(QueryText));
-			ExportCsvCommand = new RelayCommand(_ => ExportCsv(), _ => PreviewRows != null);
-			ExportPdfCommand = new RelayCommand(_ => ExportPdf(), _ => PreviewRows != null);
+			LoadSchemaDetailsCommand = new RelayCommand(_ => LoadSchemaDetails(), _ => CanLoadSchema());
+			GenerateQueryCommand = new RelayCommand(_ => GenerateQuery(), _ => !IsBusy && !string.IsNullOrWhiteSpace(SelectedTable));
+			PreviewQueryCommand = new RelayCommand(_ => PreviewQuery(), _ => !IsBusy && !string.IsNullOrWhiteSpace(QueryText));
+			ExportCsvCommand = new RelayCommand(_ => ExportCsv(), _ => PreviewRows != null && !IsBusy);
+			ExportPdfCommand = new RelayCommand(_ => ExportPdf(), _ => PreviewRows != null && !IsBusy);
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -207,9 +210,24 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				if (SetProperty(ref _previewRows, value))
 				{
+					OnPropertyChanged(nameof(HasPreviewRows));
 					RefreshCommandStates();
 				}
 			}
+		}
+
+		public bool HasPreviewRows => PreviewRows != null;
+
+		public string PreviewSummary
+		{
+			get => _previewSummary;
+			private set => SetProperty(ref _previewSummary, value);
+		}
+
+		public string SchemaDetailsText
+		{
+			get => _schemaDetailsText;
+			private set => SetProperty(ref _schemaDetailsText, value);
 		}
 
 		public string StatusMessage
@@ -233,6 +251,8 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		public ICommand BrowseMdfCommand { get; }
 
 		public ICommand LoadSchemaCommand { get; }
+
+		public ICommand LoadSchemaDetailsCommand { get; }
 
 		public ICommand GenerateQueryCommand { get; }
 
@@ -271,6 +291,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				}
 
 				StatusMessage = Tables.Count == 0 ? "No tables found." : $"Loaded {Tables.Count} tables.";
+				PreviewSummary = string.Empty;
 			}
 			catch (Exception ex)
 			{
@@ -288,6 +309,27 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			StatusMessage = "Query template generated.";
 		}
 
+		private void LoadSchemaDetails()
+		{
+			try
+			{
+				IsBusy = true;
+				StatusMessage = "Inspecting schema...";
+				var details = _queryService.LoadSchemaDetails(BuildConnectionOptions());
+				SchemaDetailsText = BuildDelimitedText(details, '\t');
+				StatusMessage = "Schema metadata loaded.";
+			}
+			catch (Exception ex)
+			{
+				StatusMessage = $"Schema inspection failed: {ex.Message}";
+				SchemaDetailsText = string.Empty;
+			}
+			finally
+			{
+				IsBusy = false;
+			}
+		}
+
 		private void PreviewQuery()
 		{
 			try
@@ -296,11 +338,13 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				StatusMessage = "Running query...";
 				var preview = _queryService.LoadPreview(BuildConnectionOptions(), QueryText);
 				PreviewRows = preview.DefaultView;
-				StatusMessage = $"Preview loaded ({preview.Rows.Count} rows).";
+				PreviewSummary = $"{preview.Rows.Count} rows loaded.";
+				StatusMessage = "Preview loaded.";
 			}
 			catch (Exception ex)
 			{
 				StatusMessage = $"Query failed: {ex.Message}";
+				PreviewSummary = string.Empty;
 			}
 			finally
 			{
@@ -403,15 +447,21 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 
 		private string BuildCsv(DataTable table)
 		{
+			return BuildDelimitedText(table, ',', EscapeCsv);
+		}
+
+		private string BuildDelimitedText(DataTable table, char delimiter, Func<string, string> formatter = null)
+		{
 			var builder = new StringBuilder();
 			for (var i = 0; i < table.Columns.Count; i++)
 			{
 				if (i > 0)
 				{
-					builder.Append(',');
+					builder.Append(delimiter);
 				}
 
-				builder.Append(EscapeCsv(table.Columns[i].ColumnName));
+				var value = table.Columns[i].ColumnName;
+				builder.Append(formatter == null ? value : formatter(value));
 			}
 
 			builder.AppendLine();
@@ -422,10 +472,11 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				{
 					if (i > 0)
 					{
-						builder.Append(',');
+						builder.Append(delimiter);
 					}
 
-					builder.Append(EscapeCsv(Convert.ToString(row[i])));
+					var value = Convert.ToString(row[i]);
+					builder.Append(formatter == null ? value : formatter(value));
 				}
 
 				builder.AppendLine();
@@ -450,6 +501,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 		{
 			(BrowseMdfCommand as RelayCommand)?.RaiseCanExecuteChanged();
 			(LoadSchemaCommand as RelayCommand)?.RaiseCanExecuteChanged();
+			(LoadSchemaDetailsCommand as RelayCommand)?.RaiseCanExecuteChanged();
 			(GenerateQueryCommand as RelayCommand)?.RaiseCanExecuteChanged();
 			(PreviewQueryCommand as RelayCommand)?.RaiseCanExecuteChanged();
 			(ExportCsvCommand as RelayCommand)?.RaiseCanExecuteChanged();

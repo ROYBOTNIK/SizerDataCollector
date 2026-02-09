@@ -24,6 +24,17 @@ namespace SizerDataCollector.Service
             ServiceName = "SizerDataCollectorService";
         }
 
+
+        public void StartAsConsole(string[] args = null)
+        {
+            OnStart(args ?? new string[0]);
+        }
+
+        public void StopAsConsole()
+        {
+            OnStop();
+        }
+
         protected override void OnStart(string[] args)
         {
             Logger.Log("Service starting...");

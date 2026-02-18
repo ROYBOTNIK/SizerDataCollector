@@ -35,7 +35,23 @@ CREATE TABLE IF NOT EXISTS public.schema_version
 			_assembly = typeof(DbBootstrapper).Assembly;
 		}
 
-		public async Task<BootstrapResult> BootstrapAsync(CancellationToken cancellationToken)
+		/// <summary>
+		/// Applies database migrations using the embedded SQL scripts.
+		/// This overload preserves the original behaviour (no dry-run, destructive operations allowed)
+		/// for existing callers such as the WPF commissioning UI.
+		/// </summary>
+		public Task<BootstrapResult> BootstrapAsync(CancellationToken cancellationToken)
+		{
+			return BootstrapAsync(allowDestructive: true, dryRun: false, cancellationToken: cancellationToken);
+		}
+
+		/// <summary>
+		/// Applies database migrations with optional dry-run and destructive-operation gating.
+		/// When <paramref name="allowDestructive"/> is false, scripts that contain
+		/// potentially destructive statements (DROP TABLE/SCHEMA, TRUNCATE, ALTER TABLE ... DROP COLUMN)
+		/// will be skipped and reported as such in the result.
+		/// </summary>
+		public async Task<BootstrapResult> BootstrapAsync(bool allowDestructive, bool dryRun, CancellationToken cancellationToken)
 		{
 			var result = new BootstrapResult();
 
@@ -72,6 +88,23 @@ CREATE TABLE IF NOT EXISTS public.schema_version
 								result.Exception = mismatch.Exception;
 								result.ErrorMessage = mismatch.Message;
 								Logger.Log($"SKIPPING {script.ScriptName} (version={script.Version}) reason=checksum mismatch existing={existing.Checksum} new={checksum}");
+								continue;
+							}
+
+							var isDestructive = IsPotentiallyDestructive(script.Content);
+							if (isDestructive && !allowDestructive)
+							{
+								const string reason = "Potentially destructive migration skipped (requires --allow-destructive).";
+								Logger.Log($"SKIPPING {script.ScriptName} (version={script.Version}) reason={reason}");
+								result.Migrations.Add(MigrationResult.Skipped(script.Version, script.ScriptName, reason));
+								continue;
+							}
+
+							if (dryRun)
+							{
+								const string reason = "Dry run: script not executed.";
+								Logger.Log($"DRY-RUN {script.ScriptName} (version={script.Version})");
+								result.Migrations.Add(MigrationResult.Skipped(script.Version, script.ScriptName, reason));
 								continue;
 							}
 
@@ -112,6 +145,62 @@ CREATE TABLE IF NOT EXISTS public.schema_version
 			CopyEmbeddedMigrations();
 			cancellationToken.ThrowIfCancellationRequested();
 			return Task.CompletedTask;
+		}
+
+		/// <summary>
+		/// Plans migrations without executing them, returning a per-script view of what is
+		/// already applied, what would be applied, and which scripts are potentially destructive.
+		/// </summary>
+		public async Task<IReadOnlyList<MigrationPlanItem>> PlanAsync(CancellationToken cancellationToken)
+		{
+			var scripts = await PrepareAndLoadScriptsAsync(cancellationToken).ConfigureAwait(false);
+			var plan = new List<MigrationPlanItem>(scripts.Count);
+
+			using (var connection = new NpgsqlConnection(_connectionString))
+			{
+				await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+				await EnsureSchemaVersionTableAsync(connection, cancellationToken).ConfigureAwait(false);
+				var applied = await LoadAppliedVersionsAsync(connection, cancellationToken).ConfigureAwait(false);
+
+				LogMigrationDiscovery(scripts);
+				LogAppliedSummary(applied);
+
+				foreach (var script in scripts)
+				{
+					cancellationToken.ThrowIfCancellationRequested();
+					applied.TryGetValue(script.Version, out var existing);
+					var checksum = ComputeChecksum(script.Content);
+					var isDestructive = IsPotentiallyDestructive(script.Content);
+
+					var item = new MigrationPlanItem
+					{
+						Version = script.Version,
+						ScriptName = script.ScriptName,
+						Checksum = checksum,
+						ExistingChecksum = existing?.Checksum,
+						ExistingScriptName = existing?.ScriptName,
+						AppliedAt = existing?.AppliedAt,
+						IsPotentiallyDestructive = isDestructive
+					};
+
+					if (existing == null)
+					{
+						item.Status = MigrationPlanStatus.PendingApply;
+					}
+					else if (string.Equals(existing.Checksum, checksum, StringComparison.OrdinalIgnoreCase))
+					{
+						item.Status = MigrationPlanStatus.AlreadyApplied;
+					}
+					else
+					{
+						item.Status = MigrationPlanStatus.ChecksumMismatch;
+					}
+
+					plan.Add(item);
+				}
+			}
+
+			return plan;
 		}
 
 		private Task<IReadOnlyList<MigrationScript>> PrepareAndLoadScriptsAsync(CancellationToken cancellationToken)
@@ -327,6 +416,41 @@ VALUES (@version, @checksum, @script_name);";
 			}
 		}
 
+		private static bool IsPotentiallyDestructive(string sql)
+		{
+			if (string.IsNullOrWhiteSpace(sql))
+			{
+				return false;
+			}
+
+			var text = sql.ToLowerInvariant();
+
+			// Intentionally limit this to operations that can drop user data or core tables.
+			// Dropping views/materialized views/functions is allowed by default as these are
+			// derived objects over the core metrics tables.
+			if (text.Contains("drop table ") || text.Contains("drop schema "))
+			{
+				return true;
+			}
+
+			if (text.Contains("truncate table "))
+			{
+				return true;
+			}
+
+			var alterIndex = text.IndexOf("alter table ", StringComparison.Ordinal);
+			if (alterIndex >= 0)
+			{
+				var tail = text.Substring(alterIndex);
+				if (tail.Contains(" drop column"))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		private static string ComputeChecksum(string content)
 		{
 			using (var sha = SHA256.Create())
@@ -424,6 +548,35 @@ VALUES (@version, @checksum, @script_name);";
 		Skipped,
 		ChecksumMismatch,
 		Failed
+	}
+
+	/// <summary>
+	/// Describes the planned state of a migration script before execution.
+	/// Used by CLI tooling for dry-run reporting.
+	/// </summary>
+	public enum MigrationPlanStatus
+	{
+		/// <summary>Script has not been recorded in schema_version and would be applied.</summary>
+		PendingApply,
+		/// <summary>Script checksum matches an entry in schema_version.</summary>
+		AlreadyApplied,
+		/// <summary>Script version exists in schema_version but checksum differs.</summary>
+		ChecksumMismatch
+	}
+
+	/// <summary>
+	/// Lightweight view of a migration script and its relationship to the target database.
+	/// </summary>
+	public sealed class MigrationPlanItem
+	{
+		public string Version { get; set; }
+		public string ScriptName { get; set; }
+		public string Checksum { get; set; }
+		public string ExistingChecksum { get; set; }
+		public string ExistingScriptName { get; set; }
+		public DateTime? AppliedAt { get; set; }
+		public bool IsPotentiallyDestructive { get; set; }
+		public MigrationPlanStatus Status { get; set; }
 	}
 
 	internal sealed class MigrationScript

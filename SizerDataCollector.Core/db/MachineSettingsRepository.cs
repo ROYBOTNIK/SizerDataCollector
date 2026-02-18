@@ -193,6 +193,22 @@ SET desired_cat = EXCLUDED.desired_cat,
 				}
 			}
 		}
+
+		public async Task RemoveGradeOverrideAsync(string serialNo, string gradeKey, CancellationToken cancellationToken)
+		{
+			const string sql = @"DELETE FROM oee.grade_map WHERE serial_no = @serial_no AND grade_key = @grade_key;";
+
+			using (var connection = new NpgsqlConnection(_connectionString))
+			{
+				await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+				using (var command = new NpgsqlCommand(sql, connection))
+				{
+					command.Parameters.AddWithValue("serial_no", serialNo);
+					command.Parameters.AddWithValue("grade_key", gradeKey);
+					await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+				}
+			}
+		}
 	}
 
 	public sealed class MachineRow

@@ -56,6 +56,13 @@ namespace SizerDataCollector.Core.Sizer
 				["machine_rods_pm"] = client => client.GetMachineRodsPM()
 			};
 
+		/// <summary>
+		/// Returns the set of logical metric keys supported by the Sizer service client.
+		/// Useful for tooling/CLI discovery; does not perform any network calls.
+		/// </summary>
+		public static IReadOnlyCollection<string> SupportedMetricKeys
+			=> MetricResolvers.Keys.ToArray();
+
 		private readonly string _serviceUrl;
 		private readonly TimeSpan _openTimeout;
 		private readonly TimeSpan _sendTimeout;

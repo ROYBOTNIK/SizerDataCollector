@@ -42,7 +42,7 @@ If invoked without arguments or with `help`, the CLI prints a concise usage summ
 
 ## Configuration (`config`)
 
-Configuration is stored in `collector_config.json` (via `CollectorSettingsProvider`) with defaults from `App.config`.
+Configuration is stored in `%ProgramData%\Opti-Fresh\SizerDataCollector\collector_config.json` (via `CollectorSettingsProvider`) with defaults from `App.config`. A legacy file next to the executable is still read as a fallback.
 
 ### `config show`
 
@@ -68,7 +68,7 @@ This is predictable and easy for agents to parse.
 
 ### `config set`
 
-Updates `collector_config.json` non‑interactively:
+Updates `%ProgramData%\Opti-Fresh\SizerDataCollector\collector_config.json` non‑interactively:
 
 ```bash
 SizerDataCollector config set \
@@ -350,20 +350,54 @@ These are thin wrappers over the new implementations.
 
 ## Discovery (`discovery`)
 
-Discovery is a non‑mutating probe into the Sizer WCF service, built on `DiscoveryRunner`.
+Discovery now supports endpoint probing, bounded network scanning, and explicit endpoint apply.
 
 ### `discovery run`
 
 ```bash
-SizerDataCollector discovery run
+SizerDataCollector discovery run [--format=json|text]
 ```
 
-This uses `DiscoveryRunnerHarness.RunOnceAsync` and prints a JSON `MachineDiscoverySnapshot` to stdout:
+Runs a deep probe for the currently configured endpoint via `DiscoveryRunner` and prints a stable JSON/text result.
 
-- Includes serial, machine name, per‑call timings, and raw payloads
-- Summarizes key counts (lanes, outlets, grade keys, size keys)
+### `discovery probe`
 
-The JSON format is stable and intended for agent consumption.
+```bash
+SizerDataCollector discovery probe --host=<ip-or-hostname> [--port=8001] [--timeout-ms=1500] [--format=json|text]
+```
+
+Fast single-endpoint probe returning:
+
+- `reachable` / `candidateFound`
+- `serialNo` / `machineName` (if available)
+- confidence and latency
+
+Exit codes:
+
+- `0` candidate found
+- `2` endpoint probed but no candidate
+
+### `discovery scan`
+
+```bash
+SizerDataCollector discovery scan --subnet=<CIDR>|--range=<start-end>|--hosts=<h1,h2,...> [--port=8001] [--timeout-ms=1500] [--concurrency=32] [--max-found=5] [--format=json|text]
+```
+
+Agent-safe defaults:
+
+- bounded scan size (4096 hosts, or 65536 with `--allow-large-scan=true`)
+- bounded concurrency (max 128)
+- bounded per-endpoint timeout
+- explicit target source (exactly one of subnet/range/hosts required)
+- no config writes unless `discovery apply` is called
+
+### `discovery apply`
+
+```bash
+SizerDataCollector discovery apply --host=<ip-or-hostname> [--port=8001]
+```
+
+Writes selected endpoint to runtime settings (`SizerHost`, `SizerPort`) through `CollectorSettingsProvider`.
 
 ---
 
@@ -375,7 +409,7 @@ General rules:
 - **Configuration / usage errors**: `ERROR: ...` to stderr, exit code `1`
 - **Operational errors (DB unavailable, health check failure, migration failure)**: detailed log via `Logger.Log`, concise message to stderr, exit code `2`
 
-This makes it straightforward for agents and cron jobs to:
+This makes it straightforward for agents and schedulers to:
 
 - Check exit codes for high‑level status
 - Parse key=value lines or JSON for detailed state

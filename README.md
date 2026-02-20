@@ -11,7 +11,7 @@ This repo also contains a WPF configuration UI and Windows service host as part 
 - Configure runtime settings via `collector_config.json` (with App.config defaults)
 - List and update which Sizer metrics are collected
 - Run ingestion once (for cron) or in a continuous loop (for services)
-- Run discovery probes against the Sizer WCF service (JSON output)
+- Run discovery probes/scans against Sizer WCF endpoints (JSON or text output)
 - Run TimescaleDB health checks
 - Apply schema/migration scripts with checksum tracking and dry‑run support
 - Safe by default: potentially destructive DB changes are skipped unless explicitly allowed
@@ -35,7 +35,8 @@ For a deeper design overview, see **[DESIGN.md](./DESIGN.md)**.
 Runtime settings are loaded from:
 
 1. `App.config` (defaults)
-2. `collector_config.json` next to `SizerDataCollector.exe` (overrides)
+2. `%ProgramData%\Opti-Fresh\SizerDataCollector\collector_config.json` (overrides)
+3. Legacy fallback: `collector_config.json` next to `SizerDataCollector.exe`
 
 Core settings:
 
@@ -68,7 +69,7 @@ Supported commands:
 - `metrics` – list/update enabled metrics
 - `db` – health checks and migrations
 - `collector` – run ingestion
-- `discovery` – Sizer discovery probe
+- `discovery` – Sizer endpoint probe/scan and endpoint apply
 - `probe`, `single-poll` – legacy harness entrypoints (backwards compatible)
 
 Run with no arguments or `help` to see a usage summary.
@@ -90,7 +91,23 @@ SizerDataCollector config set \
   --timescale-connection-string="Host=db-host;Port=5432;Username=postgres;Password=secret;Database=oee_prod;" \
   --enable-ingestion=true \
   --poll-interval-seconds=60 \
-  --enabled-metrics=lanes_grade_fpm,lanes_size_fpm,machine_total_fpm,machine_cupfill,outlets_details
+  --enabled-metrics=lanes_grade_fpm,lanes_size_fpm,machine_total_fpm,machine_cupfill,outlets_details \
+  --log-level=Info \
+  --diagnostic-mode=false \
+  --log-as-json=false \
+  --log-max-file-bytes=10485760 \
+  --log-retention-days=14 \
+  --log-max-files=100
+```
+
+Enable temporary diagnostic logging (agent/operator friendly):
+
+```bash
+# Enable debug-level diagnostics for 30 minutes, then auto-expire
+SizerDataCollector config set --diagnostic-duration-minutes=30 --log-level=Debug
+
+# Disable diagnostics immediately
+SizerDataCollector config set --diagnostic-mode=false --diagnostic-until-utc=
 ```
 
 ### 2. Inspect and update metrics
@@ -183,13 +200,83 @@ ExecStart=/opt/OptiFresh/SizerDataCollector.exe collector run-loop
 Restart=always
 ```
 
-### 6. Run Sizer discovery
+### 5b. Check runtime status (heartbeat + config)
 
 ```bash
-SizerDataCollector discovery run > discovery_snapshot.json
+# JSON status (recommended for agents)
+SizerDataCollector status --format=json
+
+# Text status
+SizerDataCollector status --format=text
+
+# Optional explicit heartbeat path
+SizerDataCollector status --heartbeat-file="C:\ProgramData\Opti-Fresh\SizerCollector\heartbeat.json"
 ```
 
-This runs `DiscoveryRunner` once and prints a JSON `MachineDiscoverySnapshot` containing:
+`status` reports current runtime config (including logging mode) plus the latest heartbeat payload and file metadata.
+For service-hosted workloads, heartbeat also carries `SERVICE_STATE`/`SERVICE_STATE_REASON` so automation can detect `running`, `degraded`, `blocked`, or `stopping` conditions.
+
+### 5c. Run production preflight checks
+
+```bash
+# Full preflight (recommended before first start/deploy)
+SizerDataCollector preflight --format=json
+
+# Skip network/DB checks when validating offline packaging
+SizerDataCollector preflight --check-sizer=false --check-db=false --format=text
+
+# Tune Sizer probe timeout for slower networks
+SizerDataCollector preflight --timeout-ms=3000 --format=json
+```
+
+`preflight` validates:
+
+- runtime settings load
+- required config sanity (host/port)
+- write access to shared data + runtime config directories
+- optional Sizer connectivity probe
+- optional DB health check
+
+Exit codes:
+
+- `0`: all required checks passed
+- `2`: one or more required checks failed
+- `1`: invalid command arguments
+
+### 6. Run Sizer discovery and endpoint scan
+
+```bash
+# Run a deep discovery snapshot for the currently configured endpoint
+SizerDataCollector discovery run --format=json > discovery_snapshot.json
+
+# Probe one specific endpoint quickly (agent-friendly single-target check)
+SizerDataCollector discovery probe --host=10.155.155.10 --port=8001 --timeout-ms=1500 --format=json
+
+# Scan a subnet for candidate endpoints
+SizerDataCollector discovery scan --subnet=10.155.155.0/24 --port=8001 --timeout-ms=1200 --concurrency=32 --max-found=5 --format=json
+
+# Apply a discovered endpoint to runtime settings
+SizerDataCollector discovery apply --host=10.155.155.10 --port=8001
+```
+
+`discovery run` prints a `MachineDiscoverySnapshot` for a single configured endpoint.  
+`discovery probe` and `discovery scan` return deterministic endpoint results that are easy for AI agents to parse and reason about.
+
+`discovery scan` target selection is explicit (exactly one required):
+
+- `--subnet=<CIDR>` (example: `10.155.155.0/24`)
+- `--range=<start-end>` (example: `10.155.155.10-10.155.155.80`)
+- `--hosts=<h1,h2,...>` (example: `10.155.155.10,10.155.155.11`)
+
+Safety and determinism defaults for agents:
+
+- bounded timeout (`--timeout-ms`, default `1500`)
+- bounded parallelism (`--concurrency`, default `32`, max `128`)
+- bounded discovery results (`--max-found`, default `5`)
+- host-count limit to prevent accidental huge scans (`4096` unless `--allow-large-scan=true`)
+- no implicit config writes (`discovery apply` is explicit)
+
+Discovery snapshot content includes:
 
 - Serial number and machine name
 - Timings per WCF call
@@ -197,6 +284,31 @@ This runs `DiscoveryRunner` once and prints a JSON `MachineDiscoverySnapshot` co
 - A summarised view of lanes, outlets, grade/size keys, etc.
 
 Useful for commissioning, support, and offline analysis.
+
+### 7. AI-agent workflow (recommended)
+
+```bash
+# 1) Find likely endpoints
+SizerDataCollector discovery scan --subnet=10.155.155.0/24 --format=json
+
+# 2) Apply the best candidate
+SizerDataCollector discovery apply --host=10.155.155.10 --port=8001
+
+# 3) Verify Sizer connectivity
+SizerDataCollector collector probe
+
+# 4) Verify DB connectivity/schema health
+SizerDataCollector db health --format=json
+
+# 5) Continue with commissioning if needed
+SizerDataCollector commissioning status --serial=ABC123
+```
+
+Expected behavior for automation:
+
+- `discovery probe` returns exit code `0` when a candidate is found, otherwise `2`
+- `discovery scan` returns exit code `0` when scan execution succeeds (parse `summary`/`candidates` to decide next action)
+- `discovery apply` returns `STATUS=OK` and writes `SIZER_HOST`/`SIZER_PORT` into runtime settings
 
 ---
 
@@ -339,6 +451,56 @@ SizerDataCollector db apply-sql --file ./drop_old_view.sql --allow-destructive
 
 ---
 
+## Production Deploy Scripts (Windows)
+
+PowerShell scripts are provided under `scripts/` for repeatable install/upgrade/rollback.
+
+### Install or upgrade
+
+```powershell
+# Run as Administrator
+powershell -ExecutionPolicy Bypass -File .\scripts\install-production.ps1
+```
+
+What this does:
+
+- builds Release artifacts (unless `-SkipBuild`)
+- backs up existing install directory
+- deploys CLI + service binaries under `C:\Program Files\Opti-Fresh\SizerDataCollector`
+- creates/updates Windows service (`SizerDataCollectorService`)
+- runs `preflight` (unless `-SkipPreflight`)
+- starts service (unless `-SkipStart`)
+
+Useful flags:
+
+- `-InstallRoot "C:\Program Files\Opti-Fresh\SizerDataCollector"`
+- `-ServiceName "SizerDataCollectorService"`
+- `-SkipBuild`
+- `-SkipPreflight`
+- `-SkipStart`
+
+### Uninstall
+
+```powershell
+# Run as Administrator
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-production.ps1
+```
+
+Optional:
+
+- `-RemoveInstallFolder` to also delete deployed binaries
+
+### Rollback
+
+```powershell
+# Run as Administrator
+powershell -ExecutionPolicy Bypass -File .\scripts\rollback-production.ps1 -BackupPath "C:\ProgramData\Opti-Fresh\SizerDataCollector\backups\install_YYYYMMDD_HHMMSS" -StartService
+```
+
+The `BackupPath` value is printed at the end of each successful install/upgrade.
+
+---
+
 ## Legacy Harness Modes
 
 The original harness behaviour is preserved for compatibility:
@@ -350,6 +512,25 @@ The original harness behaviour is preserved for compatibility:
   - Runs the collector in a continuous loop (legacy naming)
 
 New automation should prefer the explicit `collector` subcommands.
+
+---
+
+## Agent Ops Contract (Exit + Event IDs)
+
+Use these stable codes for automation and alert routing.
+
+CLI exit code contract:
+
+- `0` success / healthy
+- `1` usage or validation error (bad flags/arguments)
+- `2` operational failure (dependency, connectivity, health, or runtime checks)
+
+Windows service Event Log IDs (`Application`, source `SizerDataCollectorService`):
+
+- `1001` service startup failure
+- `1002` service runtime fault entering degraded retry mode
+
+For service automation, pair Event Log IDs with heartbeat `SERVICE_STATE`/`SERVICE_STATE_REASON` from `SizerDataCollector status --format=json`.
 
 ---
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -36,6 +37,7 @@ namespace SizerDataCollector
 
                 var command = args[0]?.Trim().ToLowerInvariant();
                 var tail = args.Skip(1).ToArray();
+                ConfigureLoggerFromRuntimeSettings();
 
                 switch (command)
                 {
@@ -55,6 +57,10 @@ namespace SizerDataCollector
                         return RunGradesCommand(tail);
                     case "targets":
                         return RunTargetsCommand(tail);
+                    case "status":
+                        return RunStatusCommand(tail);
+                    case "preflight":
+                        return RunPreflightCommand(tail);
                     case "help":
                     case "--help":
                     case "-h":
@@ -80,6 +86,7 @@ namespace SizerDataCollector
         {
             var settingsProvider = new CollectorSettingsProvider();
             var runtimeSettings = settingsProvider.Load();
+            Logger.Configure(runtimeSettings);
             var config = new CollectorConfig(runtimeSettings);
             LogEffectiveSettings(runtimeSettings);
 
@@ -147,6 +154,20 @@ namespace SizerDataCollector
             SizerClientTester.TestSizerConnection(config);
         }
 
+        private static void ConfigureLoggerFromRuntimeSettings()
+        {
+            try
+            {
+                var provider = new CollectorSettingsProvider();
+                var settings = provider.Load();
+                Logger.Configure(settings);
+            }
+            catch
+            {
+                // Continue with bootstrap logger settings from app.config.
+            }
+        }
+
         #endregion
 
         #region CLI: config
@@ -190,6 +211,13 @@ namespace SizerDataCollector
             Console.WriteLine("INITIAL_BACKOFF_SECONDS=" + settings.InitialBackoffSeconds);
             Console.WriteLine("MAX_BACKOFF_SECONDS=" + settings.MaxBackoffSeconds);
             Console.WriteLine("SHARED_DATA_DIRECTORY=" + settings.SharedDataDirectory);
+            Console.WriteLine("LOG_LEVEL=" + (settings.LogLevel ?? "Info"));
+            Console.WriteLine("DIAGNOSTIC_MODE=" + settings.DiagnosticMode);
+            Console.WriteLine("DIAGNOSTIC_UNTIL_UTC=" + FormatTimestamp(settings.DiagnosticUntilUtc));
+            Console.WriteLine("LOG_AS_JSON=" + settings.LogAsJson);
+            Console.WriteLine("LOG_MAX_FILE_BYTES=" + settings.LogMaxFileBytes);
+            Console.WriteLine("LOG_RETENTION_DAYS=" + settings.LogRetentionDays);
+            Console.WriteLine("LOG_MAX_FILES=" + settings.LogMaxFiles);
             Console.WriteLine("TIMESCALE_CONNECTION_STRING_CONFIGURED=" + !string.IsNullOrWhiteSpace(settings.TimescaleConnectionString));
 
             var enabledMetrics = settings.EnabledMetrics ?? new List<string>();
@@ -353,6 +381,139 @@ namespace SizerDataCollector
                 changed = true;
             }
 
+            if (options.TryGetValue("log-level", out value))
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    Console.Error.WriteLine("ERROR: log-level cannot be empty.");
+                    hasError = true;
+                }
+                else
+                {
+                    settings.LogLevel = value.Trim();
+                    changed = true;
+                }
+            }
+
+            if (options.TryGetValue("log-as-json", out value))
+            {
+                bool asJson;
+                if (!TryParseBool(value, out asJson))
+                {
+                    Console.Error.WriteLine("ERROR: log-as-json must be true/false/1/0.");
+                    hasError = true;
+                }
+                else
+                {
+                    settings.LogAsJson = asJson;
+                    changed = true;
+                }
+            }
+
+            if (options.TryGetValue("log-max-file-bytes", out value))
+            {
+                long parsed;
+                if (!long.TryParse(value, out parsed) || parsed < 1024)
+                {
+                    Console.Error.WriteLine("ERROR: log-max-file-bytes must be an integer >= 1024.");
+                    hasError = true;
+                }
+                else
+                {
+                    settings.LogMaxFileBytes = parsed;
+                    changed = true;
+                }
+            }
+
+            if (options.TryGetValue("log-retention-days", out value))
+            {
+                int parsed;
+                if (!int.TryParse(value, out parsed) || parsed < 1 || parsed > 3650)
+                {
+                    Console.Error.WriteLine("ERROR: log-retention-days must be an integer between 1 and 3650.");
+                    hasError = true;
+                }
+                else
+                {
+                    settings.LogRetentionDays = parsed;
+                    changed = true;
+                }
+            }
+
+            if (options.TryGetValue("log-max-files", out value))
+            {
+                int parsed;
+                if (!int.TryParse(value, out parsed) || parsed < 1 || parsed > 10000)
+                {
+                    Console.Error.WriteLine("ERROR: log-max-files must be an integer between 1 and 10000.");
+                    hasError = true;
+                }
+                else
+                {
+                    settings.LogMaxFiles = parsed;
+                    changed = true;
+                }
+            }
+
+            if (options.TryGetValue("diagnostic-mode", out value))
+            {
+                bool diagnosticMode;
+                if (!TryParseBool(value, out diagnosticMode))
+                {
+                    Console.Error.WriteLine("ERROR: diagnostic-mode must be true/false/1/0.");
+                    hasError = true;
+                }
+                else
+                {
+                    settings.DiagnosticMode = diagnosticMode;
+                    if (!diagnosticMode)
+                    {
+                        settings.DiagnosticUntilUtc = null;
+                    }
+                    changed = true;
+                }
+            }
+
+            if (options.TryGetValue("diagnostic-until-utc", out value))
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    settings.DiagnosticUntilUtc = null;
+                    changed = true;
+                }
+                else
+                {
+                    DateTimeOffset parsedUntil;
+                    if (!DateTimeOffset.TryParse(value, out parsedUntil))
+                    {
+                        Console.Error.WriteLine("ERROR: diagnostic-until-utc must be a valid ISO-8601 timestamp.");
+                        hasError = true;
+                    }
+                    else
+                    {
+                        settings.DiagnosticUntilUtc = parsedUntil;
+                        settings.DiagnosticMode = true;
+                        changed = true;
+                    }
+                }
+            }
+
+            if (options.TryGetValue("diagnostic-duration-minutes", out value))
+            {
+                int minutes;
+                if (!int.TryParse(value, out minutes) || minutes <= 0 || minutes > 10080)
+                {
+                    Console.Error.WriteLine("ERROR: diagnostic-duration-minutes must be an integer between 1 and 10080.");
+                    hasError = true;
+                }
+                else
+                {
+                    settings.DiagnosticMode = true;
+                    settings.DiagnosticUntilUtc = DateTimeOffset.UtcNow.AddMinutes(minutes);
+                    changed = true;
+                }
+            }
+
             if (options.TryGetValue("enabled-metrics", out value) || options.TryGetValue("metrics", out value))
             {
                 var metrics = (value ?? string.Empty)
@@ -378,6 +539,7 @@ namespace SizerDataCollector
             }
 
             provider.Save(settings);
+            Logger.Configure(settings);
             Console.WriteLine("STATUS=OK");
             Console.WriteLine("MESSAGE=Runtime settings updated. Restart any running services/agents to apply.");
             return 0;
@@ -855,11 +1017,311 @@ namespace SizerDataCollector
 
         private static int RunDiscoveryCommand(string[] args)
         {
+            if (args == null || args.Length == 0)
+            {
+                Console.WriteLine("Usage: SizerDataCollector discovery [run|probe|scan|apply] [options]");
+                return 1;
+            }
+
+            var sub = args[0]?.Trim().ToLowerInvariant();
+            var tail = args.Skip(1).ToArray();
+
+            switch (sub)
+            {
+                case "run":
+                    return RunDiscoveryRun(tail);
+                case "probe":
+                    return RunDiscoveryProbe(tail);
+                case "scan":
+                    return RunDiscoveryScan(tail);
+                case "apply":
+                    return RunDiscoveryApply(tail);
+                default:
+                    Console.Error.WriteLine("ERROR: Unknown discovery subcommand '" + sub + "'.");
+                    return 1;
+            }
+        }
+
+        private static int RunDiscoveryRun(string[] args)
+        {
+            var options = ParseKeyValueArgs(args);
+            var format = GetOutputFormat(options, "json");
+
             var settingsProvider = new CollectorSettingsProvider();
             var runtimeSettings = settingsProvider.Load();
             var config = new CollectorConfig(runtimeSettings);
+            var snapshot = new DiscoveryRunner().RunAsync(config, CancellationToken.None).GetAwaiter().GetResult();
+            var result = BuildProbeResult(
+                config.SizerHost,
+                config.SizerPort,
+                snapshot.SerialNo,
+                snapshot.MachineName,
+                null,
+                snapshot.DurationMs,
+                true,
+                true,
+                true);
 
-            DiscoveryRunnerHarness.RunOnceAsync(config, CancellationToken.None).GetAwaiter().GetResult();
+            if (string.Equals(format, "text", StringComparison.OrdinalIgnoreCase))
+            {
+                WriteProbeResultText(result);
+                return result.CandidateFound ? 0 : 2;
+            }
+
+            Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            return result.CandidateFound ? 0 : 2;
+        }
+
+        private static int RunDiscoveryProbe(string[] args)
+        {
+            var options = ParseKeyValueArgs(args);
+
+            string host;
+            if (!options.TryGetValue("host", out host) || string.IsNullOrWhiteSpace(host))
+            {
+                Console.Error.WriteLine("ERROR: discovery probe requires --host=<ip-or-hostname>.");
+                return 1;
+            }
+
+            var settingsProvider = new CollectorSettingsProvider();
+            var runtimeSettings = settingsProvider.Load();
+
+            var port = runtimeSettings.SizerPort > 0 ? runtimeSettings.SizerPort : 8001;
+            string value;
+            if (options.TryGetValue("port", out value))
+            {
+                int parsedPort;
+                if (!int.TryParse(value, out parsedPort) || parsedPort <= 0 || parsedPort > 65535)
+                {
+                    Console.Error.WriteLine("ERROR: port must be an integer between 1 and 65535.");
+                    return 1;
+                }
+
+                port = parsedPort;
+            }
+
+            var timeoutMs = 1500;
+            if (options.TryGetValue("timeout-ms", out value))
+            {
+                int parsedTimeout;
+                if (!int.TryParse(value, out parsedTimeout) || parsedTimeout < 100 || parsedTimeout > 120000)
+                {
+                    Console.Error.WriteLine("ERROR: timeout-ms must be an integer between 100 and 120000.");
+                    return 1;
+                }
+
+                timeoutMs = parsedTimeout;
+            }
+
+            var requireSerial = true;
+            if (options.TryGetValue("require-serial", out value) && !TryParseBool(value, out requireSerial))
+            {
+                Console.Error.WriteLine("ERROR: require-serial must be true/false/1/0.");
+                return 1;
+            }
+
+            var requireMachineName = true;
+            if (options.TryGetValue("require-machine-name", out value) && !TryParseBool(value, out requireMachineName))
+            {
+                Console.Error.WriteLine("ERROR: require-machine-name must be true/false/1/0.");
+                return 1;
+            }
+
+            var format = GetOutputFormat(options, "json");
+            var result = ProbeEndpoint(runtimeSettings, host.Trim(), port, timeoutMs, requireSerial, requireMachineName);
+
+            if (string.Equals(format, "text", StringComparison.OrdinalIgnoreCase))
+            {
+                WriteProbeResultText(result);
+            }
+            else
+            {
+                Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            }
+
+            return result.CandidateFound ? 0 : 2;
+        }
+
+        private static int RunDiscoveryApply(string[] args)
+        {
+            var options = ParseKeyValueArgs(args);
+            string host;
+            if (!options.TryGetValue("host", out host) || string.IsNullOrWhiteSpace(host))
+            {
+                Console.Error.WriteLine("ERROR: discovery apply requires --host=<ip-or-hostname>.");
+                return 1;
+            }
+
+            var provider = new CollectorSettingsProvider();
+            var settings = provider.Load();
+
+            var port = settings.SizerPort > 0 ? settings.SizerPort : 8001;
+            string value;
+            if (options.TryGetValue("port", out value))
+            {
+                int parsedPort;
+                if (!int.TryParse(value, out parsedPort) || parsedPort <= 0 || parsedPort > 65535)
+                {
+                    Console.Error.WriteLine("ERROR: port must be an integer between 1 and 65535.");
+                    return 1;
+                }
+
+                port = parsedPort;
+            }
+
+            settings.SizerHost = host.Trim();
+            settings.SizerPort = port;
+            provider.Save(settings);
+
+            Console.WriteLine("STATUS=OK");
+            Console.WriteLine("MESSAGE=Discovery endpoint applied to runtime settings.");
+            Console.WriteLine("SIZER_HOST=" + settings.SizerHost);
+            Console.WriteLine("SIZER_PORT=" + settings.SizerPort);
+            return 0;
+        }
+
+        private static int RunDiscoveryScan(string[] args)
+        {
+            var options = ParseKeyValueArgs(args);
+            string value;
+
+            var baseSettings = new CollectorSettingsProvider().Load();
+            var port = baseSettings.SizerPort > 0 ? baseSettings.SizerPort : 8001;
+            if (options.TryGetValue("port", out value))
+            {
+                int parsedPort;
+                if (!int.TryParse(value, out parsedPort) || parsedPort <= 0 || parsedPort > 65535)
+                {
+                    Console.Error.WriteLine("ERROR: port must be an integer between 1 and 65535.");
+                    return 1;
+                }
+
+                port = parsedPort;
+            }
+
+            var timeoutMs = 1500;
+            if (options.TryGetValue("timeout-ms", out value))
+            {
+                int parsedTimeout;
+                if (!int.TryParse(value, out parsedTimeout) || parsedTimeout < 100 || parsedTimeout > 120000)
+                {
+                    Console.Error.WriteLine("ERROR: timeout-ms must be an integer between 100 and 120000.");
+                    return 1;
+                }
+
+                timeoutMs = parsedTimeout;
+            }
+
+            var concurrency = 32;
+            if (options.TryGetValue("concurrency", out value))
+            {
+                int parsedConcurrency;
+                if (!int.TryParse(value, out parsedConcurrency) || parsedConcurrency < 1 || parsedConcurrency > 128)
+                {
+                    Console.Error.WriteLine("ERROR: concurrency must be an integer between 1 and 128.");
+                    return 1;
+                }
+
+                concurrency = parsedConcurrency;
+            }
+
+            var maxFound = 5;
+            if (options.TryGetValue("max-found", out value))
+            {
+                int parsedMaxFound;
+                if (!int.TryParse(value, out parsedMaxFound) || parsedMaxFound < 1 || parsedMaxFound > 1000)
+                {
+                    Console.Error.WriteLine("ERROR: max-found must be an integer between 1 and 1000.");
+                    return 1;
+                }
+
+                maxFound = parsedMaxFound;
+            }
+
+            var requireSerial = true;
+            if (options.TryGetValue("require-serial", out value) && !TryParseBool(value, out requireSerial))
+            {
+                Console.Error.WriteLine("ERROR: require-serial must be true/false/1/0.");
+                return 1;
+            }
+
+            var requireMachineName = true;
+            if (options.TryGetValue("require-machine-name", out value) && !TryParseBool(value, out requireMachineName))
+            {
+                Console.Error.WriteLine("ERROR: require-machine-name must be true/false/1/0.");
+                return 1;
+            }
+
+            var includeAll = false;
+            if (options.TryGetValue("include-all", out value) && !TryParseBool(value, out includeAll))
+            {
+                Console.Error.WriteLine("ERROR: include-all must be true/false/1/0.");
+                return 1;
+            }
+
+            var allowLargeScan = false;
+            if (options.TryGetValue("allow-large-scan", out value) && !TryParseBool(value, out allowLargeScan))
+            {
+                Console.Error.WriteLine("ERROR: allow-large-scan must be true/false/1/0.");
+                return 1;
+            }
+
+            var format = GetOutputFormat(options, "json");
+            var hosts = ResolveScanHosts(options, allowLargeScan);
+            if (hosts == null || hosts.Count == 0)
+            {
+                Console.Error.WriteLine("ERROR: discovery scan requires one of --subnet=<CIDR>, --range=<start-end>, or --hosts=<h1,h2,...>.");
+                return 1;
+            }
+
+            var scanStartedUtc = DateTimeOffset.UtcNow;
+            var results = ScanHosts(baseSettings, hosts, port, timeoutMs, concurrency, requireSerial, requireMachineName, maxFound);
+            var scanFinishedUtc = DateTimeOffset.UtcNow;
+
+            var candidates = results.Where(r => r.CandidateFound).ToList();
+            var response = new DiscoveryScanResponse
+            {
+                Status = "ok",
+                StartedAtUtc = scanStartedUtc,
+                FinishedAtUtc = scanFinishedUtc,
+                Input = new DiscoveryScanInput
+                {
+                    Port = port,
+                    TimeoutMs = timeoutMs,
+                    Concurrency = concurrency,
+                    RequireSerial = requireSerial,
+                    RequireMachineName = requireMachineName,
+                    MaxFound = maxFound,
+                    HostCount = hosts.Count
+                },
+                Summary = new DiscoveryScanSummary
+                {
+                    HostsTotal = hosts.Count,
+                    HostsProbed = results.Count,
+                    HostsReachable = results.Count(r => r.Reachable),
+                    CandidatesFound = candidates.Count
+                },
+                Candidates = candidates,
+                Results = includeAll ? results : new List<DiscoveryProbeResult>()
+            };
+
+            if (string.Equals(format, "text", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("STATUS=OK");
+                Console.WriteLine("HOSTS_TOTAL=" + response.Summary.HostsTotal);
+                Console.WriteLine("HOSTS_PROBED=" + response.Summary.HostsProbed);
+                Console.WriteLine("HOSTS_REACHABLE=" + response.Summary.HostsReachable);
+                Console.WriteLine("CANDIDATES_FOUND=" + response.Summary.CandidatesFound);
+                foreach (var candidate in response.Candidates)
+                {
+                    Console.WriteLine("CANDIDATE=" + candidate.Host + ":" + candidate.Port + "|" + (candidate.SerialNo ?? string.Empty) + "|" + (candidate.MachineName ?? string.Empty) + "|" + candidate.Confidence);
+                }
+            }
+            else
+            {
+                Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+            }
+
             return 0;
         }
 
@@ -1630,7 +2092,749 @@ namespace SizerDataCollector
 
         #endregion
 
+        #region CLI: preflight
+
+        private static int RunPreflightCommand(string[] args)
+        {
+            var options = ParseKeyValueArgs(args);
+            var format = GetOutputFormat(options, "json");
+            string raw;
+
+            var checkSizer = true;
+            if (options.TryGetValue("check-sizer", out raw) && !TryParseBool(raw, out checkSizer))
+            {
+                Console.Error.WriteLine("ERROR: check-sizer must be true/false/1/0.");
+                return 1;
+            }
+
+            var checkDb = true;
+            if (options.TryGetValue("check-db", out raw) && !TryParseBool(raw, out checkDb))
+            {
+                Console.Error.WriteLine("ERROR: check-db must be true/false/1/0.");
+                return 1;
+            }
+
+            var timeoutMs = 1500;
+            if (options.TryGetValue("timeout-ms", out raw))
+            {
+                int parsed;
+                if (!int.TryParse(raw, out parsed) || parsed < 100 || parsed > 120000)
+                {
+                    Console.Error.WriteLine("ERROR: timeout-ms must be an integer between 100 and 120000.");
+                    return 1;
+                }
+
+                timeoutMs = parsed;
+            }
+
+            var startedAtUtc = DateTimeOffset.UtcNow;
+            var checks = new List<PreflightCheckResult>();
+            var provider = new CollectorSettingsProvider();
+            var settings = provider.Load();
+
+            checks.Add(new PreflightCheckResult
+            {
+                Name = "runtime_settings_load",
+                Passed = settings != null,
+                Severity = "required",
+                Details = settings == null ? "Failed to load runtime settings." : "Runtime settings loaded."
+            });
+
+            checks.Add(new PreflightCheckResult
+            {
+                Name = "sizer_config",
+                Passed = settings != null &&
+                         !string.IsNullOrWhiteSpace(settings.SizerHost) &&
+                         settings.SizerPort > 0 &&
+                         settings.SizerPort <= 65535,
+                Severity = "required",
+                Details = settings == null
+                    ? "Settings unavailable."
+                    : "Host=" + (settings.SizerHost ?? string.Empty) + ", Port=" + settings.SizerPort
+            });
+
+            var sharedDataDirectory = settings?.SharedDataDirectory;
+            if (string.IsNullOrWhiteSpace(sharedDataDirectory))
+            {
+                sharedDataDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "Opti-Fresh",
+                    "SizerCollector");
+            }
+
+            checks.Add(TestDirectoryWritable("shared_data_directory_writable", sharedDataDirectory, "required"));
+
+            var configDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "Opti-Fresh",
+                "SizerDataCollector");
+            checks.Add(TestDirectoryWritable("runtime_config_directory_writable", configDirectory, "required"));
+
+            if (checkSizer)
+            {
+                var probe = ProbeEndpoint(
+                    settings,
+                    settings?.SizerHost ?? string.Empty,
+                    settings?.SizerPort ?? 0,
+                    timeoutMs,
+                    true,
+                    true);
+
+                checks.Add(new PreflightCheckResult
+                {
+                    Name = "sizer_connectivity",
+                    Passed = probe.CandidateFound,
+                    Severity = "required",
+                    Details = string.IsNullOrWhiteSpace(probe.Error)
+                        ? "Probe succeeded. Serial=" + (probe.SerialNo ?? string.Empty) + ", Machine=" + (probe.MachineName ?? string.Empty)
+                        : probe.Error
+                });
+            }
+            else
+            {
+                checks.Add(new PreflightCheckResult
+                {
+                    Name = "sizer_connectivity",
+                    Passed = true,
+                    Severity = "optional",
+                    Details = "Skipped by option (--check-sizer=false)."
+                });
+            }
+
+            if (checkDb)
+            {
+                if (string.IsNullOrWhiteSpace(settings?.TimescaleConnectionString))
+                {
+                    checks.Add(new PreflightCheckResult
+                    {
+                        Name = "db_health",
+                        Passed = false,
+                        Severity = "required",
+                        Details = "Timescale connection string is not configured."
+                    });
+                }
+                else
+                {
+                    var report = new DbIntrospector(settings.TimescaleConnectionString)
+                        .RunAsync(CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
+
+                    checks.Add(new PreflightCheckResult
+                    {
+                        Name = "db_health",
+                        Passed = report.Healthy,
+                        Severity = "required",
+                        Details = report.Healthy
+                            ? "DB health check passed."
+                            : "Healthy=false; CanConnect=" + report.CanConnect + "; TimescaleInstalled=" + report.TimescaleInstalled + "; Error=" + (report.Error ?? string.Empty)
+                    });
+                }
+            }
+            else
+            {
+                checks.Add(new PreflightCheckResult
+                {
+                    Name = "db_health",
+                    Passed = true,
+                    Severity = "optional",
+                    Details = "Skipped by option (--check-db=false)."
+                });
+            }
+
+            var healthy = checks
+                .Where(c => string.Equals(c.Severity, "required", StringComparison.OrdinalIgnoreCase))
+                .All(c => c.Passed);
+
+            var result = new PreflightResult
+            {
+                Status = healthy ? "ok" : "error",
+                StartedAtUtc = startedAtUtc,
+                FinishedAtUtc = DateTimeOffset.UtcNow,
+                Healthy = healthy,
+                Checks = checks
+            };
+
+            if (string.Equals(format, "text", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("STATUS=" + (healthy ? "OK" : "ERROR"));
+                Console.WriteLine("HEALTHY=" + healthy);
+                foreach (var check in checks)
+                {
+                    Console.WriteLine(
+                        "CHECK name=" + check.Name +
+                        " severity=" + check.Severity +
+                        " passed=" + check.Passed +
+                        " details=" + (check.Details ?? string.Empty).Replace(Environment.NewLine, " "));
+                }
+            }
+            else
+            {
+                Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            }
+
+            return healthy ? 0 : 2;
+        }
+
+        private static PreflightCheckResult TestDirectoryWritable(string name, string directory, string severity)
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return new PreflightCheckResult
+                {
+                    Name = name,
+                    Passed = false,
+                    Severity = severity,
+                    Details = "Directory path is empty."
+                };
+            }
+
+            try
+            {
+                Directory.CreateDirectory(directory);
+                var probeFile = Path.Combine(directory, ".write_probe_" + Guid.NewGuid().ToString("N") + ".tmp");
+                File.WriteAllText(probeFile, DateTime.UtcNow.ToString("O"));
+                File.Delete(probeFile);
+                return new PreflightCheckResult
+                {
+                    Name = name,
+                    Passed = true,
+                    Severity = severity,
+                    Details = directory
+                };
+            }
+            catch (Exception ex)
+            {
+                return new PreflightCheckResult
+                {
+                    Name = name,
+                    Passed = false,
+                    Severity = severity,
+                    Details = directory + " -> " + ex.Message
+                };
+            }
+        }
+
+        #endregion
+
+        #region CLI: status
+
+        private static int RunStatusCommand(string[] args)
+        {
+            var options = ParseKeyValueArgs(args);
+            var format = GetOutputFormat(options, "json");
+
+            var provider = new CollectorSettingsProvider();
+            var settings = provider.Load();
+
+            string heartbeatPath;
+            if (!options.TryGetValue("heartbeat-file", out heartbeatPath) || string.IsNullOrWhiteSpace(heartbeatPath))
+            {
+                var dataRoot = settings.SharedDataDirectory;
+                if (string.IsNullOrWhiteSpace(dataRoot))
+                {
+                    dataRoot = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                        "Opti-Fresh",
+                        "SizerCollector");
+                }
+
+                heartbeatPath = Path.Combine(dataRoot, "heartbeat.json");
+            }
+
+            HeartbeatPayload heartbeat = null;
+            var heartbeatExists = File.Exists(heartbeatPath);
+            string heartbeatReadError = string.Empty;
+            DateTimeOffset? heartbeatLastWriteUtc = null;
+            if (heartbeatExists)
+            {
+                try
+                {
+                    var json = File.ReadAllText(heartbeatPath);
+                    heartbeat = JsonConvert.DeserializeObject<HeartbeatPayload>(json);
+                    heartbeatLastWriteUtc = File.GetLastWriteTimeUtc(heartbeatPath);
+                }
+                catch (Exception ex)
+                {
+                    heartbeatReadError = ex.Message;
+                }
+            }
+
+            if (string.Equals(format, "text", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("STATUS=OK");
+                Console.WriteLine("SIZER_HOST=" + settings.SizerHost);
+                Console.WriteLine("SIZER_PORT=" + settings.SizerPort);
+                Console.WriteLine("ENABLE_INGESTION=" + settings.EnableIngestion);
+                Console.WriteLine("LOG_LEVEL=" + (settings.LogLevel ?? "Info"));
+                Console.WriteLine("DIAGNOSTIC_MODE=" + settings.DiagnosticMode);
+                Console.WriteLine("DIAGNOSTIC_UNTIL_UTC=" + FormatTimestamp(settings.DiagnosticUntilUtc));
+                Console.WriteLine("LOG_AS_JSON=" + settings.LogAsJson);
+                Console.WriteLine("LOG_MAX_FILE_BYTES=" + settings.LogMaxFileBytes);
+                Console.WriteLine("LOG_RETENTION_DAYS=" + settings.LogRetentionDays);
+                Console.WriteLine("LOG_MAX_FILES=" + settings.LogMaxFiles);
+                Console.WriteLine("HEARTBEAT_PATH=" + heartbeatPath);
+                Console.WriteLine("HEARTBEAT_EXISTS=" + heartbeatExists);
+                Console.WriteLine("HEARTBEAT_LAST_WRITE_UTC=" + FormatTimestamp(heartbeatLastWriteUtc));
+                Console.WriteLine("HEARTBEAT_READ_ERROR=" + heartbeatReadError);
+                if (heartbeat != null)
+                {
+                    Console.WriteLine("MACHINE_SERIAL=" + (heartbeat.MachineSerial ?? string.Empty));
+                    Console.WriteLine("MACHINE_NAME=" + (heartbeat.MachineName ?? string.Empty));
+                    Console.WriteLine("LAST_POLL_UTC=" + FormatTimestamp(heartbeat.LastPollUtc));
+                    Console.WriteLine("LAST_SUCCESS_UTC=" + FormatTimestamp(heartbeat.LastSuccessUtc));
+                    Console.WriteLine("LAST_ERROR_UTC=" + FormatTimestamp(heartbeat.LastErrorUtc));
+                    Console.WriteLine("LAST_ERROR_MESSAGE=" + (heartbeat.LastErrorMessage ?? string.Empty));
+                    Console.WriteLine("LAST_RUN_ID=" + (heartbeat.LastRunId ?? string.Empty));
+                    Console.WriteLine("COMMISSIONING_INGESTION_ENABLED=" + (heartbeat.CommissioningIngestionEnabled.HasValue ? heartbeat.CommissioningIngestionEnabled.Value.ToString() : string.Empty));
+                    Console.WriteLine("COMMISSIONING_SERIAL=" + (heartbeat.CommissioningSerial ?? string.Empty));
+                    Console.WriteLine("SERVICE_STATE=" + (heartbeat.ServiceState ?? string.Empty));
+                    Console.WriteLine("SERVICE_STATE_REASON=" + (heartbeat.ServiceStateReason ?? string.Empty));
+                }
+                return 0;
+            }
+
+            Console.WriteLine(JsonConvert.SerializeObject(new
+            {
+                status = "ok",
+                runtime = new
+                {
+                    sizerHost = settings.SizerHost,
+                    sizerPort = settings.SizerPort,
+                    enableIngestion = settings.EnableIngestion,
+                    logLevel = settings.LogLevel,
+                    diagnosticMode = settings.DiagnosticMode,
+                    diagnosticUntilUtc = settings.DiagnosticUntilUtc,
+                    logAsJson = settings.LogAsJson,
+                    logMaxFileBytes = settings.LogMaxFileBytes,
+                    logRetentionDays = settings.LogRetentionDays,
+                    logMaxFiles = settings.LogMaxFiles
+                },
+                heartbeat = new
+                {
+                    path = heartbeatPath,
+                    exists = heartbeatExists,
+                    lastWriteUtc = heartbeatLastWriteUtc,
+                    readError = heartbeatReadError,
+                    payload = heartbeat
+                }
+            }, Formatting.Indented));
+            return 0;
+        }
+
+        #endregion
+
         #region Shared helpers
+
+        private static string GetOutputFormat(Dictionary<string, string> options, string defaultValue)
+        {
+            string format;
+            if (!options.TryGetValue("format", out format) || string.IsNullOrWhiteSpace(format))
+            {
+                return defaultValue;
+            }
+
+            return format.Trim().ToLowerInvariant();
+        }
+
+        private static List<DiscoveryProbeResult> ScanHosts(
+            CollectorRuntimeSettings baseSettings,
+            List<string> hosts,
+            int port,
+            int timeoutMs,
+            int concurrency,
+            bool requireSerial,
+            bool requireMachineName,
+            int maxFound)
+        {
+            var results = new List<DiscoveryProbeResult>();
+            var sync = new object();
+            var candidateCount = 0;
+
+            using (var gate = new SemaphoreSlim(concurrency))
+            {
+                var tasks = hosts.Select(async host =>
+                {
+                    await gate.WaitAsync().ConfigureAwait(false);
+                    try
+                    {
+                        lock (sync)
+                        {
+                            if (candidateCount >= maxFound)
+                            {
+                                return;
+                            }
+                        }
+
+                        var probe = ProbeEndpoint(baseSettings, host, port, timeoutMs, requireSerial, requireMachineName);
+                        lock (sync)
+                        {
+                            results.Add(probe);
+                            if (probe.CandidateFound)
+                            {
+                                candidateCount++;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        gate.Release();
+                    }
+                }).ToArray();
+
+                Task.WhenAll(tasks).GetAwaiter().GetResult();
+            }
+
+            return results
+                .OrderBy(r => r.Host, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(r => r.Port)
+                .ToList();
+        }
+
+        private static DiscoveryProbeResult ProbeEndpoint(
+            CollectorRuntimeSettings baseSettings,
+            string host,
+            int port,
+            int timeoutMs,
+            bool requireSerial,
+            bool requireMachineName)
+        {
+            var started = DateTimeOffset.UtcNow;
+            var serial = string.Empty;
+            var machineName = string.Empty;
+            var error = string.Empty;
+            var reachable = false;
+
+            var settings = CloneRuntimeSettings(baseSettings);
+            settings.SizerHost = host;
+            settings.SizerPort = port;
+
+            var timeoutSeconds = (int)Math.Ceiling(timeoutMs / 1000.0);
+            if (timeoutSeconds < 1)
+            {
+                timeoutSeconds = 1;
+            }
+
+            settings.OpenTimeoutSec = timeoutSeconds;
+            settings.SendTimeoutSec = timeoutSeconds;
+            settings.ReceiveTimeoutSec = timeoutSeconds;
+
+            try
+            {
+                var config = new CollectorConfig(settings);
+                using (var client = new SizerClient(config))
+                {
+                    string serialError;
+                    serial = ProbeValueWithTimeout(ct => client.GetSerialNoAsync(ct), timeoutMs, out serialError);
+                    if (string.IsNullOrWhiteSpace(serialError))
+                    {
+                        reachable = true;
+                    }
+                    else
+                    {
+                        error = "serial_no: " + serialError;
+                    }
+
+                    string machineError;
+                    machineName = ProbeValueWithTimeout(ct => client.GetMachineNameAsync(ct), timeoutMs, out machineError);
+                    if (string.IsNullOrWhiteSpace(machineError))
+                    {
+                        reachable = true;
+                    }
+                    else
+                    {
+                        error = string.IsNullOrWhiteSpace(error)
+                            ? "machine_name: " + machineError
+                            : error + "; machine_name: " + machineError;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                error = string.IsNullOrWhiteSpace(error) ? ex.Message : error + "; " + ex.Message;
+            }
+
+            var finished = DateTimeOffset.UtcNow;
+            var elapsed = (int)Math.Round((finished - started).TotalMilliseconds);
+            return BuildProbeResult(host, port, serial, machineName, error, elapsed, reachable, requireSerial, requireMachineName);
+        }
+
+        private static DiscoveryProbeResult BuildProbeResult(
+            string host,
+            int port,
+            string serial,
+            string machineName,
+            string error,
+            int? latencyMs,
+            bool reachable,
+            bool requireSerial,
+            bool requireMachineName)
+        {
+            var hasSerial = !string.IsNullOrWhiteSpace(serial);
+            var hasMachineName = !string.IsNullOrWhiteSpace(machineName);
+            var candidateFound = (!requireSerial || hasSerial) && (!requireMachineName || hasMachineName);
+
+            string confidence;
+            if (hasSerial && hasMachineName)
+            {
+                confidence = "high";
+            }
+            else if (hasSerial || hasMachineName)
+            {
+                confidence = "medium";
+            }
+            else
+            {
+                confidence = "low";
+            }
+
+            return new DiscoveryProbeResult
+            {
+                Status = candidateFound ? "ok" : "no-match",
+                Host = host,
+                Port = port,
+                Reachable = reachable,
+                CandidateFound = candidateFound,
+                SerialNo = serial ?? string.Empty,
+                MachineName = machineName ?? string.Empty,
+                Confidence = confidence,
+                LatencyMs = latencyMs,
+                Error = error ?? string.Empty
+            };
+        }
+
+        private static void WriteProbeResultText(DiscoveryProbeResult result)
+        {
+            Console.WriteLine("STATUS=" + (result.CandidateFound ? "OK" : "NO_MATCH"));
+            Console.WriteLine("HOST=" + result.Host);
+            Console.WriteLine("PORT=" + result.Port);
+            Console.WriteLine("REACHABLE=" + result.Reachable);
+            Console.WriteLine("CANDIDATE_FOUND=" + result.CandidateFound);
+            Console.WriteLine("SERIAL_NO=" + (result.SerialNo ?? string.Empty));
+            Console.WriteLine("MACHINE_NAME=" + (result.MachineName ?? string.Empty));
+            Console.WriteLine("CONFIDENCE=" + result.Confidence);
+            Console.WriteLine("LATENCY_MS=" + (result.LatencyMs.HasValue ? result.LatencyMs.Value.ToString() : string.Empty));
+            if (!string.IsNullOrWhiteSpace(result.Error))
+            {
+                Console.WriteLine("ERROR=" + result.Error);
+            }
+        }
+
+        private static CollectorRuntimeSettings CloneRuntimeSettings(CollectorRuntimeSettings source)
+        {
+            if (source == null)
+            {
+                return new CollectorRuntimeSettings();
+            }
+
+            return new CollectorRuntimeSettings
+            {
+                SizerHost = source.SizerHost,
+                SizerPort = source.SizerPort,
+                OpenTimeoutSec = source.OpenTimeoutSec,
+                SendTimeoutSec = source.SendTimeoutSec,
+                ReceiveTimeoutSec = source.ReceiveTimeoutSec,
+                TimescaleConnectionString = source.TimescaleConnectionString,
+                EnabledMetrics = source.EnabledMetrics == null ? new List<string>() : source.EnabledMetrics.ToList(),
+                EnableIngestion = source.EnableIngestion,
+                PollIntervalSeconds = source.PollIntervalSeconds,
+                InitialBackoffSeconds = source.InitialBackoffSeconds,
+                MaxBackoffSeconds = source.MaxBackoffSeconds,
+                SharedDataDirectory = source.SharedDataDirectory
+            };
+        }
+
+        private static string ProbeValueWithTimeout(Func<CancellationToken, Task<string>> operation, int timeoutMs, out string error)
+        {
+            using (var cts = new CancellationTokenSource(timeoutMs))
+            {
+                try
+                {
+                    error = string.Empty;
+                    var value = operation(cts.Token).GetAwaiter().GetResult();
+                    return value;
+                }
+                catch (OperationCanceledException)
+                {
+                    error = "timeout";
+                    return string.Empty;
+                }
+                catch (Exception ex)
+                {
+                    error = ex.Message;
+                    return string.Empty;
+                }
+            }
+        }
+
+        private static List<string> ResolveScanHosts(Dictionary<string, string> options, bool allowLargeScan)
+        {
+            string subnet;
+            string range;
+            string hosts;
+            var hasSubnet = options.TryGetValue("subnet", out subnet) && !string.IsNullOrWhiteSpace(subnet);
+            var hasRange = options.TryGetValue("range", out range) && !string.IsNullOrWhiteSpace(range);
+            var hasHosts = options.TryGetValue("hosts", out hosts) && !string.IsNullOrWhiteSpace(hosts);
+
+            var sourceCount = (hasSubnet ? 1 : 0) + (hasRange ? 1 : 0) + (hasHosts ? 1 : 0);
+            if (sourceCount == 0)
+            {
+                return new List<string>();
+            }
+
+            if (sourceCount > 1)
+            {
+                Console.Error.WriteLine("ERROR: Specify only one of --subnet, --range, or --hosts.");
+                return null;
+            }
+
+            var maxHosts = allowLargeScan ? 65536 : 4096;
+            List<string> resolved;
+            string error;
+
+            if (hasSubnet)
+            {
+                if (!TryExpandSubnet(subnet.Trim(), maxHosts, out resolved, out error))
+                {
+                    Console.Error.WriteLine("ERROR: " + error);
+                    return null;
+                }
+            }
+            else if (hasRange)
+            {
+                if (!TryExpandRange(range.Trim(), maxHosts, out resolved, out error))
+                {
+                    Console.Error.WriteLine("ERROR: " + error);
+                    return null;
+                }
+            }
+            else
+            {
+                resolved = hosts
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(h => h.Trim())
+                    .Where(h => !string.IsNullOrWhiteSpace(h))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (resolved.Count > maxHosts)
+                {
+                    Console.Error.WriteLine("ERROR: hosts list exceeds scan limit of " + maxHosts + ". Use --allow-large-scan to increase the limit.");
+                    return null;
+                }
+            }
+
+            return resolved;
+        }
+
+        private static bool TryExpandSubnet(string subnetCidr, int maxHosts, out List<string> hosts, out string error)
+        {
+            hosts = new List<string>();
+            error = string.Empty;
+
+            var parts = subnetCidr.Split('/');
+            if (parts.Length != 2)
+            {
+                error = "subnet must be in CIDR format, e.g. 10.155.155.0/24.";
+                return false;
+            }
+
+            IPAddress ip;
+            if (!IPAddress.TryParse(parts[0], out ip) || ip.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                error = "subnet base address must be a valid IPv4 address.";
+                return false;
+            }
+
+            int prefix;
+            if (!int.TryParse(parts[1], out prefix) || prefix < 0 || prefix > 32)
+            {
+                error = "subnet prefix must be an integer between 0 and 32.";
+                return false;
+            }
+
+            var count = 1UL << (32 - prefix);
+            if (count > (ulong)maxHosts)
+            {
+                error = "subnet expands to " + count + " hosts which exceeds scan limit of " + maxHosts + ". Use --allow-large-scan to increase the limit.";
+                return false;
+            }
+
+            var baseValue = ToUInt32(ip);
+            var mask = prefix == 0 ? 0u : uint.MaxValue << (32 - prefix);
+            var network = baseValue & mask;
+            for (ulong i = 0; i < count; i++)
+            {
+                hosts.Add(ToIPv4String(network + (uint)i));
+            }
+
+            return true;
+        }
+
+        private static bool TryExpandRange(string rangeValue, int maxHosts, out List<string> hosts, out string error)
+        {
+            hosts = new List<string>();
+            error = string.Empty;
+
+            var parts = rangeValue.Split('-');
+            if (parts.Length != 2)
+            {
+                error = "range must be in format start-end, e.g. 10.155.155.1-10.155.155.254.";
+                return false;
+            }
+
+            IPAddress startIp;
+            IPAddress endIp;
+            if (!IPAddress.TryParse(parts[0], out startIp) || startIp.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                error = "range start must be a valid IPv4 address.";
+                return false;
+            }
+
+            if (!IPAddress.TryParse(parts[1], out endIp) || endIp.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                error = "range end must be a valid IPv4 address.";
+                return false;
+            }
+
+            var start = ToUInt32(startIp);
+            var end = ToUInt32(endIp);
+            if (start > end)
+            {
+                error = "range start must be <= range end.";
+                return false;
+            }
+
+            var count = (ulong)(end - start) + 1UL;
+            if (count > (ulong)maxHosts)
+            {
+                error = "range expands to " + count + " hosts which exceeds scan limit of " + maxHosts + ". Use --allow-large-scan to increase the limit.";
+                return false;
+            }
+
+            for (var value = start; value <= end; value++)
+            {
+                hosts.Add(ToIPv4String(value));
+            }
+
+            return true;
+        }
+
+        private static uint ToUInt32(IPAddress ip)
+        {
+            var bytes = ip.GetAddressBytes();
+            return ((uint)bytes[0] << 24) | ((uint)bytes[1] << 16) | ((uint)bytes[2] << 8) | bytes[3];
+        }
+
+        private static string ToIPv4String(uint value)
+        {
+            return string.Format(
+                "{0}.{1}.{2}.{3}",
+                (value >> 24) & 255,
+                (value >> 16) & 255,
+                (value >> 8) & 255,
+                value & 255);
+        }
 
         private static Dictionary<string, string> ParseKeyValueArgs(string[] args)
         {
@@ -1823,7 +3027,9 @@ namespace SizerDataCollector
                 LastRunId = snapshot.LastRunId,
                 CommissioningIngestionEnabled = snapshot.CommissioningIngestionEnabled,
                 CommissioningSerial = snapshot.CommissioningSerial,
-                CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons
+                CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons,
+                ServiceState = snapshot.ServiceState,
+                ServiceStateReason = snapshot.ServiceStateReason
             };
 
             heartbeatWriter.Write(payload);
@@ -1839,7 +3045,7 @@ namespace SizerDataCollector
             Console.WriteLine();
             Console.WriteLine("Configuration:");
             Console.WriteLine("  SizerDataCollector config show");
-            Console.WriteLine("  SizerDataCollector config set --timescale-connection-string=... --enable-ingestion=true --enabled-metrics=m1,m2");
+            Console.WriteLine("  SizerDataCollector config set --timescale-connection-string=... --enable-ingestion=true --enabled-metrics=m1,m2 --log-level=Info --diagnostic-mode=false --log-as-json=false --log-max-file-bytes=10485760 --log-retention-days=14 --log-max-files=100");
             Console.WriteLine();
             Console.WriteLine("Metrics:");
             Console.WriteLine("  SizerDataCollector metrics list");
@@ -1857,7 +3063,10 @@ namespace SizerDataCollector
             Console.WriteLine("  SizerDataCollector collector run-loop [--force]");
             Console.WriteLine();
             Console.WriteLine("Discovery:");
-            Console.WriteLine("  SizerDataCollector discovery run");
+            Console.WriteLine("  SizerDataCollector discovery run [--format=json|text]");
+            Console.WriteLine("  SizerDataCollector discovery probe --host=<ip-or-hostname> [--port=8001] [--timeout-ms=1500] [--format=json|text]");
+            Console.WriteLine("  SizerDataCollector discovery scan --subnet=<CIDR>|--range=<start-end>|--hosts=<h1,h2,...> [--port=8001] [--timeout-ms=1500] [--concurrency=32] [--max-found=5] [--format=json|text]");
+            Console.WriteLine("  SizerDataCollector discovery apply --host=<ip-or-hostname> [--port=8001]");
             Console.WriteLine();
             Console.WriteLine("Commissioning:");
             Console.WriteLine("  SizerDataCollector commissioning status --serial=<serial>");
@@ -1879,6 +3088,10 @@ namespace SizerDataCollector
             Console.WriteLine("Targets:");
             Console.WriteLine("  SizerDataCollector targets get --serial=<serial>");
             Console.WriteLine("  SizerDataCollector targets set --serial=<serial> --target-machine-speed=... --lane-count=... --target-percentage=... --recycle-outlet=...");
+            Console.WriteLine();
+            Console.WriteLine("Runtime status:");
+            Console.WriteLine("  SizerDataCollector status [--format=json|text] [--heartbeat-file=<path>]");
+            Console.WriteLine("  SizerDataCollector preflight [--format=json|text] [--check-sizer=true|false] [--check-db=true|false] [--timeout-ms=1500]");
         }
 
         private static void LogEffectiveSettings(CollectorRuntimeSettings settings)
@@ -1900,6 +3113,84 @@ namespace SizerDataCollector
             Logger.Log("  Max backoff: " + settings.MaxBackoffSeconds + "s");
             Logger.Log("  Enable ingestion: " + settings.EnableIngestion);
             Logger.Log("  Enabled metrics: " + (settings.EnabledMetrics == null ? 0 : settings.EnabledMetrics.Count));
+            Logger.Log("  Log level: " + (settings.LogLevel ?? "Info"));
+            Logger.Log("  Diagnostic mode: " + settings.DiagnosticMode);
+            Logger.Log("  Diagnostic until (UTC): " + FormatTimestamp(settings.DiagnosticUntilUtc));
+            Logger.Log("  Log as JSON: " + settings.LogAsJson);
+            Logger.Log("  Log max file bytes: " + settings.LogMaxFileBytes);
+            Logger.Log("  Log retention days: " + settings.LogRetentionDays);
+            Logger.Log("  Log max files: " + settings.LogMaxFiles);
+        }
+
+        private static string FormatTimestamp(DateTimeOffset? value)
+        {
+            return value.HasValue ? value.Value.ToString("u") : string.Empty;
+        }
+
+        private static string FormatTimestamp(DateTime? value)
+        {
+            return value.HasValue ? value.Value.ToString("u") : string.Empty;
+        }
+
+        private sealed class DiscoveryProbeResult
+        {
+            public string Status { get; set; }
+            public string Host { get; set; }
+            public int Port { get; set; }
+            public bool Reachable { get; set; }
+            public bool CandidateFound { get; set; }
+            public string SerialNo { get; set; }
+            public string MachineName { get; set; }
+            public string Confidence { get; set; }
+            public int? LatencyMs { get; set; }
+            public string Error { get; set; }
+        }
+
+        private sealed class DiscoveryScanResponse
+        {
+            public string Status { get; set; }
+            public DateTimeOffset StartedAtUtc { get; set; }
+            public DateTimeOffset FinishedAtUtc { get; set; }
+            public DiscoveryScanInput Input { get; set; }
+            public DiscoveryScanSummary Summary { get; set; }
+            public List<DiscoveryProbeResult> Candidates { get; set; } = new List<DiscoveryProbeResult>();
+            public List<DiscoveryProbeResult> Results { get; set; } = new List<DiscoveryProbeResult>();
+        }
+
+        private sealed class DiscoveryScanInput
+        {
+            public int Port { get; set; }
+            public int TimeoutMs { get; set; }
+            public int Concurrency { get; set; }
+            public bool RequireSerial { get; set; }
+            public bool RequireMachineName { get; set; }
+            public int MaxFound { get; set; }
+            public int HostCount { get; set; }
+        }
+
+        private sealed class DiscoveryScanSummary
+        {
+            public int HostsTotal { get; set; }
+            public int HostsProbed { get; set; }
+            public int HostsReachable { get; set; }
+            public int CandidatesFound { get; set; }
+        }
+
+        private sealed class PreflightResult
+        {
+            public string Status { get; set; }
+            public DateTimeOffset StartedAtUtc { get; set; }
+            public DateTimeOffset FinishedAtUtc { get; set; }
+            public bool Healthy { get; set; }
+            public List<PreflightCheckResult> Checks { get; set; } = new List<PreflightCheckResult>();
+        }
+
+        private sealed class PreflightCheckResult
+        {
+            public string Name { get; set; }
+            public bool Passed { get; set; }
+            public string Severity { get; set; }
+            public string Details { get; set; }
         }
 
         private enum HarnessMode

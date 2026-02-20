@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ namespace SizerDataCollector.Service
 {
     public class SizerCollectorService : ServiceBase
     {
+        private const string EventSourceName = "SizerDataCollectorService";
+        private const string EventLogName = "Application";
         private CancellationTokenSource _cts;
         private Task _runnerTask;
         private CollectorStatus _status;
@@ -32,9 +35,11 @@ namespace SizerDataCollector.Service
             {
                 var settingsProvider = new CollectorSettingsProvider();
                 var runtimeSettings = settingsProvider.Load();
+                Logger.Configure(runtimeSettings);
                 var config = new CollectorConfig(runtimeSettings);
 
                 _status = new CollectorStatus();
+                SetServiceState("starting", "Service initialization in progress.", false);
 
                 // 1) Normalize any configured SharedDataDirectory
                 var dataRoot = NormalizeDataRoot(runtimeSettings?.SharedDataDirectory);
@@ -60,39 +65,19 @@ namespace SizerDataCollector.Service
                 if (!IsIngestionEnabled(runtimeSettings, config, _status, _heartbeatWriter))
                 {
                     Logger.Log("Commissioning incomplete; ingestion disabled; service idle.");
+                    SetServiceState("blocked", "Commissioning or ingestion settings prevent startup.", true);
                     return;
                 }
 
-                _runnerTask = Task.Run(async () =>
-                {
-                    try
-                    {
-                        DatabaseTester.TestAndInitialize(config);
-                        var repository = new TimescaleRepository(config.TimescaleConnectionString);
-
-                        using (var sizerClient = new SizerClient(config))
-                        {
-                            var engine = new CollectorEngine(config, repository, sizerClient);
-                            var runner = new CollectorRunner(config, engine, _status, _heartbeatWriter);
-                            await runner.RunAsync(_cts.Token).ConfigureAwait(false);
-                        }
-                    }
-                    catch (OperationCanceledException) when (_cts?.IsCancellationRequested == true)
-                    {
-                        // Expected during shutdown.
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log("Service runner encountered an unexpected error.", ex);
-                        throw;
-                    }
-                });
+                _runnerTask = Task.Run(() => RunSupervisedLoopAsync(config, _cts.Token));
 
                 Logger.Log("Service started.");
+                SetServiceState("running", "Collector service running.", true);
             }
             catch (Exception ex)
             {
                 Logger.Log("Service failed to start.", ex);
+                TryWriteEventLog("Service failed to start: " + ex.Message, EventLogEntryType.Error, 1001);
                 _cts?.Cancel();
                 _cts?.Dispose();
                 _cts = null;
@@ -104,6 +89,7 @@ namespace SizerDataCollector.Service
         protected override void OnStop()
         {
             Logger.Log("Service stopping...");
+            SetServiceState("stopping", "Service shutdown requested.", true);
 
             try
             {
@@ -130,6 +116,98 @@ namespace SizerDataCollector.Service
                 _cts = null;
 
                 Logger.Log("Service stopped.");
+                SetServiceState("stopped", "Service stopped.", true);
+            }
+        }
+
+        private async Task RunSupervisedLoopAsync(CollectorConfig config, CancellationToken cancellationToken)
+        {
+            var restartDelay = TimeSpan.FromSeconds(15);
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    SetServiceState("running", "Collector loop active.", true);
+                    DatabaseTester.TestAndInitialize(config);
+                    var repository = new TimescaleRepository(config.TimescaleConnectionString);
+
+                    using (var sizerClient = new SizerClient(config))
+                    {
+                        var engine = new CollectorEngine(config, repository, sizerClient);
+                        var runner = new CollectorRunner(config, engine, _status, _heartbeatWriter);
+                        await runner.RunAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        Logger.Log("Collector runner exited unexpectedly; restarting supervised loop.");
+                        SetServiceState("degraded", "Collector loop exited unexpectedly; retrying.", true);
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Service runner faulted; entering degraded retry mode.", ex, LogLevel.Error);
+                    RecordServiceFault(ex);
+                    SetServiceState("degraded", "Service runner faulted; retrying.", true);
+                    TryWriteEventLog("Service runner faulted; retrying. " + ex.Message, EventLogEntryType.Warning, 1002);
+                    WriteHeartbeat(_status, _heartbeatWriter);
+
+                    try
+                    {
+                        await Task.Delay(restartDelay, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void RecordServiceFault(Exception ex)
+        {
+            if (_status == null)
+            {
+                return;
+            }
+
+            _status.LastErrorUtc = DateTime.UtcNow;
+            _status.LastErrorMessage = ex?.Message ?? "Unknown service fault";
+        }
+
+        private void SetServiceState(string state, string reason, bool emitHeartbeat)
+        {
+            if (_status == null)
+            {
+                return;
+            }
+
+            _status.ServiceState = state;
+            _status.ServiceStateReason = reason;
+            if (emitHeartbeat && _heartbeatWriter != null)
+            {
+                WriteHeartbeat(_status, _heartbeatWriter);
+            }
+        }
+
+        private static void TryWriteEventLog(string message, EventLogEntryType entryType, int eventId)
+        {
+            try
+            {
+                if (!EventLog.SourceExists(EventSourceName))
+                {
+                    EventLog.CreateEventSource(EventSourceName, EventLogName);
+                }
+
+                EventLog.WriteEntry(EventSourceName, message, entryType, eventId);
+            }
+            catch
+            {
+                // Avoid failing service path if EventLog registration/write fails.
             }
         }
 
@@ -195,7 +273,9 @@ namespace SizerDataCollector.Service
                 LastRunId = snapshot.LastRunId,
                 CommissioningIngestionEnabled = snapshot.CommissioningIngestionEnabled,
                 CommissioningSerial = snapshot.CommissioningSerial,
-                CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons
+                CommissioningBlockingReasons = snapshot.CommissioningBlockingReasons,
+                ServiceState = snapshot.ServiceState,
+                ServiceStateReason = snapshot.ServiceStateReason
             };
 
             heartbeatWriter.Write(payload);

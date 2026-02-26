@@ -1,17 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration.Install;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.ServiceProcess;
 using System.Threading;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
 using SizerDataCollector.Core.Sizer;
+using SizerDataCollector.Service.Commands;
 
 namespace SizerDataCollector.Service
 {
 	internal static class Program
 	{
+		private const string ServiceName = "SizerDataCollectorService";
+		private static readonly TimeSpan DefaultServiceTimeout = TimeSpan.FromSeconds(30);
+
 		private static int Main(string[] args)
 		{
 			if (args != null && args.Length > 0)
@@ -55,6 +61,12 @@ namespace SizerDataCollector.Service
 					return TestConnections();
 				case "console":
 					return RunConsoleMode();
+				case "service":
+					return RunServiceCommand(args.Skip(1).ToArray());
+				case "db":
+					return DbCommands.Run(args.Skip(1).ToArray());
+				case "machine":
+					return MachineCommands.Run(args.Skip(1).ToArray(), options);
 				default:
 					Console.WriteLine($"Unknown command '{command}'.");
 					ShowUsage();
@@ -249,6 +261,221 @@ namespace SizerDataCollector.Service
 			return 0;
 		}
 
+		private static int RunServiceCommand(string[] args)
+		{
+			var subCommand = args.Length > 0
+				? (args[0] ?? string.Empty).Trim().ToLowerInvariant()
+				: string.Empty;
+
+			var options = ParseOptions(args.Skip(1).ToArray());
+			var timeout = DefaultServiceTimeout;
+
+			if (options.TryGetValue("timeout", out var timeoutRaw) &&
+				int.TryParse(timeoutRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timeoutSec) &&
+				timeoutSec > 0)
+			{
+				timeout = TimeSpan.FromSeconds(timeoutSec);
+			}
+
+			switch (subCommand)
+			{
+				case "status":
+					return ServiceStatus();
+				case "install":
+					return ServiceInstall();
+				case "uninstall":
+					return ServiceUninstall();
+				case "start":
+					return ServiceStart(timeout);
+				case "stop":
+					return ServiceStop(timeout);
+				case "restart":
+					return ServiceRestart(timeout);
+				default:
+					Console.WriteLine("Usage: SizerDataCollector.Service.exe service <status|install|uninstall|start|stop|restart> [--timeout <seconds>]");
+					return 1;
+			}
+		}
+
+		private static int ServiceStatus()
+		{
+			try
+			{
+				using (var controller = new ServiceController(ServiceName))
+				{
+					var status = controller.Status;
+					Console.WriteLine($"Service '{ServiceName}' is installed.");
+					Console.WriteLine($"  Status: {status}");
+					return 0;
+				}
+			}
+			catch (InvalidOperationException)
+			{
+				Console.WriteLine($"Service '{ServiceName}' is not installed.");
+				return 1;
+			}
+		}
+
+		private static int ServiceInstall()
+		{
+			try
+			{
+				using (var controller = new ServiceController(ServiceName))
+				{
+					var _ = controller.Status;
+					Console.WriteLine($"Service '{ServiceName}' is already installed.");
+					return 0;
+				}
+			}
+			catch (InvalidOperationException)
+			{
+			}
+
+			try
+			{
+				var exePath = Assembly.GetExecutingAssembly().Location;
+				ManagedInstallerClass.InstallHelper(new[] { exePath });
+				Console.WriteLine($"Service '{ServiceName}' installed successfully.");
+				return 0;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Failed to install service: {ex.Message}");
+				Console.WriteLine("Ensure you are running as Administrator.");
+				return 1;
+			}
+		}
+
+		private static int ServiceUninstall()
+		{
+			try
+			{
+				using (var controller = new ServiceController(ServiceName))
+				{
+					var status = controller.Status;
+					if (status != ServiceControllerStatus.Stopped)
+					{
+						Console.WriteLine($"Service is currently {status}. Stopping first...");
+						if (status != ServiceControllerStatus.StopPending)
+						{
+							controller.Stop();
+						}
+						controller.WaitForStatus(ServiceControllerStatus.Stopped, DefaultServiceTimeout);
+					}
+				}
+			}
+			catch (InvalidOperationException)
+			{
+				Console.WriteLine($"Service '{ServiceName}' is not installed.");
+				return 1;
+			}
+
+			try
+			{
+				var exePath = Assembly.GetExecutingAssembly().Location;
+				ManagedInstallerClass.InstallHelper(new[] { "/u", exePath });
+				Console.WriteLine($"Service '{ServiceName}' uninstalled successfully.");
+				return 0;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Failed to uninstall service: {ex.Message}");
+				Console.WriteLine("Ensure you are running as Administrator.");
+				return 1;
+			}
+		}
+
+		private static int ServiceStart(TimeSpan timeout)
+		{
+			try
+			{
+				using (var controller = new ServiceController(ServiceName))
+				{
+					if (controller.Status == ServiceControllerStatus.Running)
+					{
+						Console.WriteLine($"Service '{ServiceName}' is already running.");
+						return 0;
+					}
+
+					if (controller.Status != ServiceControllerStatus.StartPending)
+					{
+						Console.WriteLine($"Starting service '{ServiceName}'...");
+						controller.Start();
+					}
+
+					controller.WaitForStatus(ServiceControllerStatus.Running, timeout);
+					Console.WriteLine($"Service '{ServiceName}' started.");
+					return 0;
+				}
+			}
+			catch (InvalidOperationException)
+			{
+				Console.WriteLine($"Service '{ServiceName}' is not installed.");
+				return 1;
+			}
+			catch (System.ServiceProcess.TimeoutException)
+			{
+				Console.WriteLine($"Timed out waiting for service '{ServiceName}' to start.");
+				return 1;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Failed to start service: {ex.Message}");
+				return 1;
+			}
+		}
+
+		private static int ServiceStop(TimeSpan timeout)
+		{
+			try
+			{
+				using (var controller = new ServiceController(ServiceName))
+				{
+					if (controller.Status == ServiceControllerStatus.Stopped)
+					{
+						Console.WriteLine($"Service '{ServiceName}' is already stopped.");
+						return 0;
+					}
+
+					if (controller.Status != ServiceControllerStatus.StopPending)
+					{
+						Console.WriteLine($"Stopping service '{ServiceName}'...");
+						controller.Stop();
+					}
+
+					controller.WaitForStatus(ServiceControllerStatus.Stopped, timeout);
+					Console.WriteLine($"Service '{ServiceName}' stopped.");
+					return 0;
+				}
+			}
+			catch (InvalidOperationException)
+			{
+				Console.WriteLine($"Service '{ServiceName}' is not installed.");
+				return 1;
+			}
+			catch (System.ServiceProcess.TimeoutException)
+			{
+				Console.WriteLine($"Timed out waiting for service '{ServiceName}' to stop.");
+				return 1;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Failed to stop service: {ex.Message}");
+				return 1;
+			}
+		}
+
+		private static int ServiceRestart(TimeSpan timeout)
+		{
+			var stopResult = ServiceStop(timeout);
+			if (stopResult != 0)
+			{
+				return stopResult;
+			}
+
+			return ServiceStart(timeout);
+		}
+
 		private static string Prompt(string label, string current)
 		{
 			Console.Write($"{label} [{current}]: ");
@@ -298,6 +525,43 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("  SizerDataCollector.Service.exe set-ingestion --enabled true|false");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-shared-dir --path \"C:\\ProgramData\\Opti-Fresh\\SizerCollector\"");
 			Console.WriteLine("  SizerDataCollector.Service.exe test-connections");
+			Console.WriteLine();
+			Console.WriteLine("Service control (requires Administrator):");
+			Console.WriteLine("  SizerDataCollector.Service.exe service status");
+			Console.WriteLine("  SizerDataCollector.Service.exe service install");
+			Console.WriteLine("  SizerDataCollector.Service.exe service uninstall");
+			Console.WriteLine("  SizerDataCollector.Service.exe service start     [--timeout <seconds>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe service stop      [--timeout <seconds>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe service restart   [--timeout <seconds>]");
+			Console.WriteLine();
+			Console.WriteLine("Database management:");
+			Console.WriteLine("  SizerDataCollector.Service.exe db status");
+			Console.WriteLine("  SizerDataCollector.Service.exe db init                (create/update full schema)");
+			Console.WriteLine("  SizerDataCollector.Service.exe db apply-functions");
+			Console.WriteLine("  SizerDataCollector.Service.exe db apply-caggs");
+			Console.WriteLine("  SizerDataCollector.Service.exe db apply-views");
+			Console.WriteLine("  SizerDataCollector.Service.exe db apply-all");
+			Console.WriteLine("  SizerDataCollector.Service.exe db list-functions");
+			Console.WriteLine("  SizerDataCollector.Service.exe db list-views");
+			Console.WriteLine("  SizerDataCollector.Service.exe db list-caggs");
+			Console.WriteLine();
+			Console.WriteLine("Machine setup:");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine list");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine register       --serial <sn> --name <name>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine status         --serial <sn>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine set-thresholds --serial <sn> --min-rpm <val> --min-total-fpm <val>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine set-settings   --serial <sn> --target-speed <val>");
+			Console.WriteLine("      --lane-count <val> --target-pct <val> --recycle-outlet <val>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine grade-map      --serial <sn>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine grade-map      --serial <sn> --set --grade <key> --category <0-3>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine commission     --serial <sn>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine show-quality-params --serial <sn>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine set-quality-params  --serial <sn> [--tgt-good <v>] ...");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine show-perf-params    --serial <sn>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine set-perf-params     --serial <sn> [--min-effective <v>] ...");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine show-bands          --serial <sn>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine set-band            --serial <sn> --band <name> --lower <v> --upper <v>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine remove-band         --serial <sn> --band <name>");
 		}
 	}
 }

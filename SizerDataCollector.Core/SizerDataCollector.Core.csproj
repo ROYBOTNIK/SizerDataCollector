@@ -99,7 +99,7 @@
     <Compile Include="Collector\HeartbeatPayload.cs" />
     <Compile Include="Collector\HeartbeatWriter.cs" />
     <Compile Include="..\Collector\CollectorStatus.cs" />
-    <Compile Include="..\Db\DbBootstrapper.cs" />
+    <Compile Include="..\Db\SqlDefinitionRunner.cs" />
     <Compile Include="..\Db\MachineDiscoveryRepository.cs" />
     <Compile Include="..\Config\CollectorConfig.cs" />
     <Compile Include="..\Config\CollectorRuntimeSettings.cs" />
@@ -117,6 +117,7 @@
     <Compile Include="Db\CommissioningRepository.cs" />
     <Compile Include="Db\ThresholdsRepository.cs" />
     <Compile Include="Db\MachineSettingsRepository.cs" />
+    <Compile Include="Db\OeeParamsRepository.cs" />
     <Compile Include="Monitoring\HeartbeatWriter.cs" />
     <Compile Include="..\Logging\Logging.cs" />
     <Compile Include="..\Sizer\SizerClient.cs" />

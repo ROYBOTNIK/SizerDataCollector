@@ -68,11 +68,18 @@ namespace SizerDataCollector.Service
                 _heartbeatWriter = new HeartbeatWriter(heartbeatPath);
                 _cts = new CancellationTokenSource();
 
-                if (!IsIngestionEnabled(runtimeSettings, config, _status, _heartbeatWriter))
+                if (runtimeSettings?.EnableIngestion != true)
                 {
-                    Logger.Log("Commissioning incomplete; ingestion disabled; service idle.");
+                    _status.CommissioningIngestionEnabled = false;
+                    _status.CommissioningBlockingReasons.Add(
+                        new CommissioningReason("INGESTION_DISABLED",
+                            "Runtime setting EnableIngestion is false. Use 'set-ingestion --enabled true' to enable."));
+                    WriteHeartbeat(_status, _heartbeatWriter);
+                    Logger.Log("Ingestion disabled in settings; service idle. Use 'set-ingestion --enabled true' then restart.");
                     return;
                 }
+
+                _status.CommissioningIngestionEnabled = true;
 
                 _runnerTask = Task.Run(async () =>
                 {
@@ -99,7 +106,7 @@ namespace SizerDataCollector.Service
                     }
                 });
 
-                Logger.Log("Service started.");
+                Logger.Log("Service started. Ingestion enabled; runner will connect to Sizer when available.");
             }
             catch (Exception ex)
             {
@@ -141,49 +148,6 @@ namespace SizerDataCollector.Service
                 _cts = null;
 
                 Logger.Log("Service stopped.");
-            }
-        }
-
-        private static bool IsIngestionEnabled(CollectorRuntimeSettings runtimeSettings, CollectorConfig config, CollectorStatus status, HeartbeatWriter heartbeatWriter)
-        {
-            status.CommissioningSerial = string.Empty;
-            status.CommissioningBlockingReasons.Clear();
-
-            if (runtimeSettings?.EnableIngestion != true)
-            {
-                status.CommissioningIngestionEnabled = false;
-                status.CommissioningBlockingReasons.Add(new CommissioningReason("INGESTION_DISABLED", "Runtime setting EnableIngestion is false."));
-                WriteHeartbeat(status, heartbeatWriter);
-                return false;
-            }
-
-            try
-            {
-                using (var sizerClient = new SizerClient(config))
-                {
-                    var serial = sizerClient.GetSerialNoAsync(CancellationToken.None).GetAwaiter().GetResult();
-                    if (string.IsNullOrWhiteSpace(serial))
-                    {
-                        Logger.Log("Commissioning check: Sizer serial number unavailable; disabling ingestion.");
-                        status.CommissioningBlockingReasons.Add(new CommissioningReason("SIZER_UNAVAILABLE", "Sizer serial number unavailable."));
-                        status.CommissioningIngestionEnabled = false;
-                        WriteHeartbeat(status, heartbeatWriter);
-                        return false;
-                    }
-
-                    status.CommissioningSerial = serial;
-                    status.CommissioningIngestionEnabled = true;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Log("Commissioning check failed; disabling ingestion.", ex);
-                status.CommissioningIngestionEnabled = false;
-                status.CommissioningBlockingReasons.Add(new CommissioningReason("COMMISSIONING_CHECK_FAILED", "Commissioning check failed (see logs)."));
-                WriteHeartbeat(status, heartbeatWriter);
-                return false;
             }
         }
 

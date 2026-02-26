@@ -26,7 +26,7 @@ For a deeper design overview, see **[DESIGN.md](./DESIGN.md)**.
 - Network access to the Compac Sizer WCF endpoint
 - Network access to a TimescaleDB/Postgres instance
 
-> The console project is intended to run side‑by‑side with the service/WPF components on Windows. The codebase is maintained here under WSL for development, but builds/run happen on a Windows host with .NET 4.8 installed.
+> The CLI, Windows Service, and WPF configuration UI run side‑by‑side on Windows. .NET Framework 4.8 must be installed on the target machine.
 
 ---
 
@@ -37,6 +37,16 @@ Runtime settings are loaded from:
 1. `App.config` (defaults)
 2. `%ProgramData%\Opti-Fresh\SizerDataCollector\collector_config.json` (overrides)
 3. Legacy fallback: `collector_config.json` next to `SizerDataCollector.exe`
+
+All runtime data is stored under `%ProgramData%\Opti-Fresh\` (typically `C:\ProgramData\Opti-Fresh\`):
+
+| Purpose | Path |
+|---|---|
+| Config | `%ProgramData%\Opti-Fresh\SizerDataCollector\collector_config.json` |
+| Logs | `%ProgramData%\Opti-Fresh\SizerDataCollector\logs\` |
+| Shared data (heartbeat etc.) | `%ProgramData%\Opti-Fresh\SizerCollector\` |
+
+> The `LogDirectory` key in `App.config` can override the log path if needed. When empty (default), logs go to the ProgramData path above.
 
 Core settings:
 
@@ -55,9 +65,35 @@ You normally set initial defaults in `App.config`, then manage site‑specific o
 
 ---
 
-## CLI Overview
+## Getting Started (Production Install)
 
-After building `SizerDataCollector.csproj`, you can invoke the CLI directly:
+After installing via the OPTI-FRESH installer, the CLI is located at:
+
+```
+C:\Program Files (x86)\OPTI-FRESH\CollectorAgent\SizerDataCollector.exe
+```
+
+**Option A — Open CMD and navigate to the install folder:**
+
+```cmd
+cd "C:\Program Files (x86)\OPTI-FRESH\CollectorAgent"
+SizerDataCollector help
+SizerDataCollector config show
+SizerDataCollector preflight --format=text
+```
+
+**Option B — Use the full path directly from any CMD window:**
+
+```cmd
+"C:\Program Files (x86)\OPTI-FRESH\CollectorAgent\SizerDataCollector.exe" help
+"C:\Program Files (x86)\OPTI-FRESH\CollectorAgent\SizerDataCollector.exe" config show
+```
+
+> **Tip:** Quotes around the path are required because it contains spaces. No admin/elevation is needed for read-only commands (`config show`, `status`, `help`). Commands that write config (`config set`) require write access to `%ProgramData%\Opti-Fresh\SizerDataCollector\`.
+
+---
+
+## CLI Overview
 
 ```bash
 SizerDataCollector <command> [subcommand] [options]
@@ -70,6 +106,9 @@ Supported commands:
 - `db` – health checks and migrations
 - `collector` – run ingestion
 - `discovery` – Sizer endpoint probe/scan and endpoint apply
+- `status` – runtime status and heartbeat info
+- `preflight` – validate installation prerequisites
+- `commissioning` – manage machine commissioning
 - `probe`, `single-poll` – legacy harness entrypoints (backwards compatible)
 
 Run with no arguments or `help` to see a usage summary.

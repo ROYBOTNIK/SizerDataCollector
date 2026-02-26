@@ -37,12 +37,12 @@ namespace SizerDataCollector.Core.Logging
 
 			if (string.IsNullOrWhiteSpace(configuredDir))
 			{
-				string exeDir = AppDomain.CurrentDomain.BaseDirectory;
-				_logDirectory = Path.Combine(exeDir, "logs");
+				var commonAppData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+				_logDirectory = Path.Combine(commonAppData, "Opti-Fresh", "SizerDataCollector", "logs");
 			}
 			else
 			{
-				_logDirectory = configuredDir;
+				_logDirectory = Environment.ExpandEnvironmentVariables(configuredDir);
 			}
 
 			_minimumLevel = ParseLogLevel(ConfigurationManager.AppSettings["LogLevel"], LogLevel.Info);

@@ -44,6 +44,14 @@ If invoked without arguments or with `help`, the CLI prints a concise usage summ
 
 Configuration is stored in `%ProgramData%\Opti-Fresh\SizerDataCollector\collector_config.json` (via `CollectorSettingsProvider`) with defaults from `App.config`. A legacy file next to the executable is still read as a fallback.
 
+All runtime data lives under `%ProgramData%\Opti-Fresh\` to avoid write-permission issues when the application is installed under `Program Files`:
+
+- **Config**: `%ProgramData%\Opti-Fresh\SizerDataCollector\collector_config.json`
+- **Logs**: `%ProgramData%\Opti-Fresh\SizerDataCollector\logs\`
+- **Shared data**: `%ProgramData%\Opti-Fresh\SizerCollector\` (heartbeat, etc.)
+
+The `LogDirectory` key in `App.config` can override the log path; when empty (default) the ProgramData location above is used.
+
 ### `config show`
 
 Prints the effective runtime settings as key=value pairs:

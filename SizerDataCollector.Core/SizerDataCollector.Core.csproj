@@ -100,6 +100,7 @@
     <Compile Include="Collector\HeartbeatWriter.cs" />
     <Compile Include="..\Collector\CollectorStatus.cs" />
     <Compile Include="..\Db\DbBootstrapper.cs" />
+    <Compile Include="..\Db\SqlDefinitionRunner.cs" />
     <Compile Include="..\Db\MachineDiscoveryRepository.cs" />
     <Compile Include="..\Config\CollectorConfig.cs" />
     <Compile Include="..\Config\CollectorRuntimeSettings.cs" />

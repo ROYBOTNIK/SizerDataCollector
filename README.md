@@ -16,8 +16,8 @@ SizerDataCollector is part of the **OPTI-FRESH OEE Suite**. It provides:
 - **`SizerDataCollector.Service`**: Windows service executable and CLI entry point.
 - **`SizerDataCollector.Core`**: shared domain logic (config, DB access, OEE repositories, Sizer API client).
 - **`SizerDataCollector`**: legacy console probe.
-- **`Installer_SizerDataCollector`**: installer project for the Windows service.
-- **`SizerDataCollector.GUI.WPF`**: legacy WPF UI (decoupled; not required for normal operation).
+- **`SizerDataCollector.Setup`**: Visual Studio Installer project (vdproj; expected beside this repo when building installers).
+- **`SizerDataCollector.GUI.WPF`**: WPF UI (optional; not required for normal service operation).
 
 ### Requirements
 
@@ -152,6 +152,9 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
   - The Windows service no longer fails or idles at startup if the Sizer API is unreachable.
   - Instead, it starts normally and the internal `CollectorRunner` uses robust retry-with-backoff logic to connect when the network/API becomes available.
 
-- **WPF UI status**
-  - The WPF project (`SizerDataCollector.GUI.WPF`) remains in the repository for reference but is **not required** for normal installation, configuration, or operation.
+- **WPF UI**
+  - The WPF project (`SizerDataCollector.GUI.WPF`) is optional for installation, configuration, and headless service operation.
 
+### Additional documentation
+
+- **`DESIGN.md`**: design notes for the console `SizerDataCollector` CLI and automation-oriented workflows merged from `master`.

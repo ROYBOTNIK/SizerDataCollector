@@ -10,37 +10,30 @@ namespace SizerDataCollector.Core.Config
 	public sealed class CollectorSettingsProvider
 	{
 		private const string RuntimeConfigFileName = "collector_config.json";
+		private const string RuntimeConfigFolderName = "SizerDataCollector";
 
 		public CollectorRuntimeSettings Load()
 		{
-			var path = GetRuntimeSettingsPath();
-			Logger.Log($"CollectorSettingsProvider: Attempting to load runtime settings from '{path}'.");
+			var preferredPath = GetRuntimeSettingsPath();
+			var legacyPath = GetLegacyRuntimeSettingsPath();
 
-			if (File.Exists(path))
+			if (TryLoadFromPath(preferredPath, out var preferredSettings))
 			{
-				try
-				{
-					var defaults = BuildFromCollectorConfig();
-					var fallbackMetrics = defaults.EnabledMetrics?.ToList() ?? new List<string>();
-					defaults.EnabledMetrics = null;
-
-					var json = File.ReadAllText(path);
-					JsonConvert.PopulateObject(json, defaults);
-
-					defaults.EnabledMetrics = NormalizeMetrics(defaults.EnabledMetrics ?? fallbackMetrics);
-					defaults.SharedDataDirectory = NormalizeSharedDirectory(defaults.SharedDataDirectory);
-
-					return defaults;
-				}
-				catch (Exception ex)
-				{
-					Logger.Log($"CollectorSettingsProvider: Failed to load runtime settings from '{path}'. Falling back to App.config.", ex);
-				}
+				return preferredSettings;
 			}
-			else
+
+			if (!string.Equals(preferredPath, legacyPath, StringComparison.OrdinalIgnoreCase) &&
+				TryLoadFromPath(legacyPath, out var legacySettings))
 			{
-				Logger.Log($"CollectorSettingsProvider: Runtime settings file '{path}' not found. Falling back to App.config.");
+				Logger.Log(
+					$"CollectorSettingsProvider: Loaded runtime settings from legacy location '{legacyPath}'. " +
+					$"Run 'config set' to persist to '{preferredPath}'.");
+				return legacySettings;
 			}
+
+			Logger.Log(
+				$"CollectorSettingsProvider: Runtime settings file not found at '{preferredPath}' " +
+				$"or legacy path '{legacyPath}'. Falling back to App.config.");
 
 			return BuildFromCollectorConfig();
 		}
@@ -57,6 +50,11 @@ namespace SizerDataCollector.Core.Config
 
 			var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
 			var path = GetRuntimeSettingsPath();
+			var directory = Path.GetDirectoryName(path);
+			if (!string.IsNullOrWhiteSpace(directory))
+			{
+				Directory.CreateDirectory(directory);
+			}
 
 			File.WriteAllText(path, json);
 			Logger.Log($"CollectorSettingsProvider: Saved runtime settings to '{path}'.");
@@ -64,7 +62,44 @@ namespace SizerDataCollector.Core.Config
 
 		private static string GetRuntimeSettingsPath()
 		{
+			var commonAppData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+			return Path.Combine(commonAppData, "Opti-Fresh", RuntimeConfigFolderName, RuntimeConfigFileName);
+		}
+
+		private static string GetLegacyRuntimeSettingsPath()
+		{
 			return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, RuntimeConfigFileName);
+		}
+
+		private static bool TryLoadFromPath(string path, out CollectorRuntimeSettings settings)
+		{
+			settings = null;
+			Logger.Log($"CollectorSettingsProvider: Attempting to load runtime settings from '{path}'.");
+			if (!File.Exists(path))
+			{
+				return false;
+			}
+
+			try
+			{
+				var defaults = BuildFromCollectorConfig();
+				var fallbackMetrics = defaults.EnabledMetrics?.ToList() ?? new List<string>();
+				defaults.EnabledMetrics = null;
+
+				var json = File.ReadAllText(path);
+				JsonConvert.PopulateObject(json, defaults);
+
+				defaults.EnabledMetrics = NormalizeMetrics(defaults.EnabledMetrics ?? fallbackMetrics);
+				defaults.SharedDataDirectory = NormalizeSharedDirectory(defaults.SharedDataDirectory);
+
+				settings = defaults;
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Logger.Log($"CollectorSettingsProvider: Failed to load runtime settings from '{path}'.", ex);
+				return false;
+			}
 		}
 
 		private static CollectorRuntimeSettings BuildFromCollectorConfig()
@@ -84,7 +119,14 @@ namespace SizerDataCollector.Core.Config
 				PollIntervalSeconds = config.PollIntervalSeconds,
 				InitialBackoffSeconds = config.InitialBackoffSeconds,
 				MaxBackoffSeconds = config.MaxBackoffSeconds,
-				SharedDataDirectory = GetDefaultSharedDataDirectory()
+				SharedDataDirectory = GetDefaultSharedDataDirectory(),
+				LogLevel = config.LogLevel,
+				DiagnosticMode = config.DiagnosticMode,
+				DiagnosticUntilUtc = config.DiagnosticUntilUtc,
+				LogAsJson = config.LogAsJson,
+				LogMaxFileBytes = config.LogMaxFileBytes,
+				LogRetentionDays = config.LogRetentionDays,
+				LogMaxFiles = config.LogMaxFiles
 			};
 		}
 

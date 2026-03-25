@@ -23,6 +23,8 @@ namespace SizerDataCollector.Core.Collector
 		public bool CommissioningIngestionEnabled { get; set; }
 		public string CommissioningSerial { get; set; }
 		public System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason> CommissioningBlockingReasons { get; set; } = new System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason>();
+		public string ServiceState { get; set; }
+		public string ServiceStateReason { get; set; }
 
 		internal object SyncRoot => _syncRoot;
 
@@ -48,7 +50,9 @@ namespace SizerDataCollector.Core.Collector
 					MachineName = MachineName,
 					CommissioningIngestionEnabled = CommissioningIngestionEnabled,
 					CommissioningSerial = CommissioningSerial,
-					CommissioningBlockingReasons = CommissioningBlockingReasons == null ? null : new System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason>(CommissioningBlockingReasons)
+					CommissioningBlockingReasons = CommissioningBlockingReasons == null ? null : new System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason>(CommissioningBlockingReasons),
+					ServiceState = ServiceState,
+					ServiceStateReason = ServiceStateReason
 				};
 			}
 		}
@@ -73,6 +77,8 @@ namespace SizerDataCollector.Core.Collector
 		public bool CommissioningIngestionEnabled { get; set; }
 		public System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason> CommissioningBlockingReasons { get; set; }
 		public string CommissioningSerial { get; set; }
+		public string ServiceState { get; set; }
+		public string ServiceStateReason { get; set; }
 	}
 }
 

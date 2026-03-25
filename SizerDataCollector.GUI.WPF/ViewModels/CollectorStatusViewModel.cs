@@ -314,7 +314,7 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 				var updatedSettings = ToRuntimeSettings(_currentSettings);
 				_settingsProvider.Save(updatedSettings);
 				_currentSettings = updatedSettings;
-				Logger.Log("CollectorStatusViewModel: Settings saved to collector_config.json.");
+				Logger.Log("CollectorStatusViewModel: Settings saved via CollectorSettingsProvider.");
 				if (showNotification)
 				{
 					ShowMessage?.Invoke("Settings saved successfully.", "Settings", MessageBoxImage.Information);

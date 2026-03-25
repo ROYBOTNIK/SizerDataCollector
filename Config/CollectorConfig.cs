@@ -24,6 +24,10 @@ namespace SizerDataCollector.Core.Config
 		private const int DefaultPollIntervalSeconds = 60;
 		private const int DefaultInitialBackoffSeconds = 10;
 		private const int DefaultMaxBackoffSeconds = 300;
+		private const string DefaultLogLevel = "Info";
+		private const long DefaultLogMaxFileBytes = 10L * 1024L * 1024L;
+		private const int DefaultLogRetentionDays = 14;
+		private const int DefaultLogMaxFiles = 100;
 
 		public string SizerHost { get; }
 		public int SizerPort { get; }
@@ -42,6 +46,20 @@ namespace SizerDataCollector.Core.Config
 		public int InitialBackoffSeconds { get; }
 
 		public int MaxBackoffSeconds { get; }
+
+		public string LogLevel { get; }
+
+		public bool DiagnosticMode { get; }
+
+		public DateTimeOffset? DiagnosticUntilUtc { get; }
+
+		public bool LogAsJson { get; }
+
+		public long LogMaxFileBytes { get; }
+
+		public int LogRetentionDays { get; }
+
+		public int LogMaxFiles { get; }
 
 		public CollectorConfig()
 			: this(BuildRuntimeSettingsFromAppConfig())
@@ -79,6 +97,13 @@ namespace SizerDataCollector.Core.Config
 			PollIntervalSeconds = pollInterval;
 			InitialBackoffSeconds = initialBackoff;
 			MaxBackoffSeconds = maxBackoff;
+			LogLevel = string.IsNullOrWhiteSpace(runtimeSettings.LogLevel) ? DefaultLogLevel : runtimeSettings.LogLevel.Trim();
+			DiagnosticMode = runtimeSettings.DiagnosticMode;
+			DiagnosticUntilUtc = runtimeSettings.DiagnosticUntilUtc;
+			LogAsJson = runtimeSettings.LogAsJson;
+			LogMaxFileBytes = EnsureMinimumLong("LogMaxFileBytes", runtimeSettings.LogMaxFileBytes, 1024L, DefaultLogMaxFileBytes);
+			LogRetentionDays = EnsureMinimum("LogRetentionDays", runtimeSettings.LogRetentionDays, 1, DefaultLogRetentionDays);
+			LogMaxFiles = EnsureMinimum("LogMaxFiles", runtimeSettings.LogMaxFiles, 1, DefaultLogMaxFiles);
 		}
 
 		private static CollectorRuntimeSettings BuildRuntimeSettingsFromAppConfig()
@@ -95,7 +120,14 @@ namespace SizerDataCollector.Core.Config
 				EnableIngestion = GetBool("EnableIngestion", false),
 				PollIntervalSeconds = GetIntWithMinimum("PollIntervalSeconds", MinPollIntervalSeconds, DefaultPollIntervalSeconds),
 				InitialBackoffSeconds = GetIntWithMinimum("InitialBackoffSeconds", MinInitialBackoffSeconds, DefaultInitialBackoffSeconds),
-				MaxBackoffSeconds = GetIntWithMinimum("MaxBackoffSeconds", MinInitialBackoffSeconds, DefaultMaxBackoffSeconds)
+				MaxBackoffSeconds = GetIntWithMinimum("MaxBackoffSeconds", MinInitialBackoffSeconds, DefaultMaxBackoffSeconds),
+				LogLevel = GetString("LogLevel", DefaultLogLevel),
+				DiagnosticMode = GetBool("DiagnosticMode", false),
+				DiagnosticUntilUtc = GetDateTimeOffset("DiagnosticUntilUtc"),
+				LogAsJson = GetBool("LogAsJson", false),
+				LogMaxFileBytes = GetLongWithMinimum("LogMaxFileBytes", 1024L, DefaultLogMaxFileBytes),
+				LogRetentionDays = GetIntWithMinimum("LogRetentionDays", 1, DefaultLogRetentionDays),
+				LogMaxFiles = GetIntWithMinimum("LogMaxFiles", 1, DefaultLogMaxFiles)
 			};
 		}
 
@@ -141,6 +173,24 @@ namespace SizerDataCollector.Core.Config
 			return cs?.ConnectionString ?? string.Empty;
 		}
 
+		private static DateTimeOffset? GetDateTimeOffset(string key)
+		{
+			var raw = ConfigurationManager.AppSettings[key];
+			if (string.IsNullOrWhiteSpace(raw))
+			{
+				return null;
+			}
+
+			DateTimeOffset parsed;
+			if (DateTimeOffset.TryParse(raw, out parsed))
+			{
+				return parsed;
+			}
+
+			Logger.Log($"CollectorConfig: {key} value '{raw}' is not a valid DateTimeOffset.");
+			return null;
+		}
+
 		private static IReadOnlyList<string> GetEnabledMetrics()
 		{
 			var raw = ConfigurationManager.AppSettings["EnabledMetrics"];
@@ -173,7 +223,36 @@ namespace SizerDataCollector.Core.Config
 			return EnsureMinimum(key, value, minimum, defaultValue);
 		}
 
+		private static long GetLongWithMinimum(string key, long minimum, long defaultValue)
+		{
+			var raw = ConfigurationManager.AppSettings[key];
+			if (string.IsNullOrWhiteSpace(raw))
+			{
+				return defaultValue;
+			}
+
+			long value;
+			if (!long.TryParse(raw, out value))
+			{
+				Logger.Log($"CollectorConfig: {key} value '{raw}' is not a valid long integer. Using default {defaultValue}.");
+				return defaultValue;
+			}
+
+			return EnsureMinimumLong(key, value, minimum, defaultValue);
+		}
+
 		private static int EnsureMinimum(string key, int value, int minimum, int defaultValue)
+		{
+			if (value < minimum)
+			{
+				Logger.Log($"CollectorConfig: {key} value {value} is below minimum {minimum}. Using default {defaultValue}.");
+				return defaultValue;
+			}
+
+			return value;
+		}
+
+		private static long EnsureMinimumLong(string key, long value, long minimum, long defaultValue)
 		{
 			if (value < minimum)
 			{

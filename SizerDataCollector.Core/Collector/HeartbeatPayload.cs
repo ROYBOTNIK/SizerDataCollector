@@ -17,6 +17,8 @@ namespace SizerDataCollector.Core.Collector
 		public bool? CommissioningIngestionEnabled { get; set; }
 		public string CommissioningSerial { get; set; }
 		public System.Collections.Generic.List<SizerDataCollector.Core.Commissioning.CommissioningReason> CommissioningBlockingReasons { get; set; }
+		public string ServiceState { get; set; }
+		public string ServiceStateReason { get; set; }
 	}
 }
 

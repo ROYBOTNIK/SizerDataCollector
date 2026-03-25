@@ -312,7 +312,7 @@ INNER JOIN sys.schemas rs ON rs.schema_id = rt.schema_id
 INNER JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id
 ORDER BY fk.name, fkc.constraint_column_id;";
 
-			var foreignKeys = new Dictionary<string, ForeignKeyDefinition>(StringComparer.OrdinalIgnoreCase);
+			var foreignKeys = new Dictionary<string, ForeignKeyAccumulator>(StringComparer.OrdinalIgnoreCase);
 			using (var command = new SqlCommand(sql, connection))
 			{
 				using (var reader = command.ExecuteReader())
@@ -327,27 +327,34 @@ ORDER BY fk.name, fkc.constraint_column_id;";
 						var referencedTable = reader.GetString(5);
 						var referencedColumn = reader.GetString(6);
 
-						if (!foreignKeys.TryGetValue(constraintName, out var fk))
+						if (!foreignKeys.TryGetValue(constraintName, out var acc))
 						{
-							fk = new ForeignKeyDefinition(
-								new TableIdentifier(referencingSchema, referencingTable),
-								new TableIdentifier(referencedSchema, referencedTable),
-								new List<string>(),
-								new List<string>())
+							acc = new ForeignKeyAccumulator
 							{
-								Name = constraintName
+								Name = constraintName,
+								ReferencingTable = new TableIdentifier(referencingSchema, referencingTable),
+								ReferencedTable = new TableIdentifier(referencedSchema, referencedTable)
 							};
-							foreignKeys[constraintName] = fk;
+							foreignKeys[constraintName] = acc;
 						}
 
-						((List<string>)fk.ReferencingColumns).Add(referencingColumn);
-						((List<string>)fk.ReferencedColumns).Add(referencedColumn);
+						acc.ReferencingColumns.Add(referencingColumn);
+						acc.ReferencedColumns.Add(referencedColumn);
 					}
 				}
 			}
 
-			foreach (var fk in foreignKeys.Values)
+			foreach (var acc in foreignKeys.Values)
 			{
+				var fk = new ForeignKeyDefinition(
+					acc.ReferencingTable,
+					acc.ReferencedTable,
+					acc.ReferencingColumns,
+					acc.ReferencedColumns)
+				{
+					Name = acc.Name
+				};
+
 				var table = map.GetOrAddTable(fk.ReferencingTable.Schema, fk.ReferencingTable.Name);
 				table.AddForeignKey(fk);
 				var count = Math.Min(fk.ReferencingColumns.Count, fk.ReferencedColumns.Count);
@@ -378,6 +385,15 @@ ORDER BY fk.name, fkc.constraint_column_id;";
 					map.Warnings.Add($"Foreign key references missing table: {fk.ReferencedTable.FullName}");
 				}
 			}
+		}
+
+		private sealed class ForeignKeyAccumulator
+		{
+			public string Name { get; set; }
+			public TableIdentifier ReferencingTable { get; set; }
+			public TableIdentifier ReferencedTable { get; set; }
+			public List<string> ReferencingColumns { get; } = new List<string>();
+			public List<string> ReferencedColumns { get; } = new List<string>();
 		}
 
 		private static string BuildSqlServerType(string dataType, short maxLength, byte precision, byte scale)

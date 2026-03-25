@@ -20,7 +20,7 @@ namespace SizerDataCollector.Service
             _serviceInstaller = new ServiceInstaller
             {
                 ServiceName = "SizerDataCollectorService",
-                DisplayName = "Opti-Fresh Sizer Data Collector",
+                DisplayName = "OPTI-FRESH Sizer Data Collector",
                 StartType = ServiceStartMode.Automatic,
                 DelayedAutoStart = true
             };

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.IO;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -584,13 +585,23 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				try
 				{
-					var bootstrapper = new DbBootstrapper(ConnectionString);
-					await bootstrapper.EnsureSqlFolderAsync(CancellationToken.None).ConfigureAwait(false);
-					StatusMessage = "SQL folder initialized (if missing).";
+					var settings = _settingsProvider.Load();
+					if (!string.IsNullOrWhiteSpace(settings.SharedDataDirectory))
+					{
+						var definitions = Path.Combine(settings.SharedDataDirectory, "sql", "definitions");
+						Directory.CreateDirectory(definitions);
+						StatusMessage = $"Ensured definition folder exists: {definitions}";
+					}
+					else
+					{
+						StatusMessage = "No Shared Data Directory set. SQL definitions load from the service executable folder (sql\\definitions).";
+					}
+
+					await Task.CompletedTask.ConfigureAwait(false);
 				}
 				catch (Exception ex)
 				{
-					StatusMessage = $"Failed to initialize SQL folder: {ex.Message}";
+					StatusMessage = $"Failed to prepare SQL folder: {ex.Message}";
 				}
 			}
 		}
@@ -602,26 +613,23 @@ namespace SizerDataCollector.GUI.WPF.ViewModels
 			{
 				try
 				{
-					var bootstrapper = new DbBootstrapper(ConnectionString);
-					var result = await bootstrapper.BootstrapAsync(CancellationToken.None).ConfigureAwait(false);
-					var applied = 0;
-					var skipped = 0;
-					var failed = 0;
-					foreach (var m in result.Migrations)
+					var settings = _settingsProvider.Load();
+					var runner = new SqlDefinitionRunner(ConnectionString, settings.SharedDataDirectory);
+					var files = new[] { "schema.sql", "functions.sql", "continuous_aggregates.sql", "views.sql" };
+					var errors = new List<string>();
+
+					foreach (var fileName in files)
 					{
-						if (m.Status == MigrationStatus.Applied) applied++;
-						else if (m.Status == MigrationStatus.Skipped) skipped++;
-						else failed++;
+						var result = await runner.ApplyAsync(fileName, CancellationToken.None).ConfigureAwait(false);
+						if (!result.Succeeded)
+						{
+							errors.Add($"{fileName}: {result.ErrorMessage}");
+						}
 					}
 
-					if (result.Success)
-					{
-						StatusMessage = $"Bootstrap complete. Applied {applied}, skipped {skipped}.";
-					}
-					else
-					{
-						StatusMessage = $"Bootstrap completed with issues. Applied {applied}, skipped {skipped}, failed {failed}. {result.ErrorMessage}";
-					}
+					StatusMessage = errors.Count == 0
+						? "Database definitions applied successfully (schema, functions, CAGGs, views)."
+						: "Apply finished with errors: " + string.Join(" ", errors);
 				}
 				catch (Exception ex)
 				{

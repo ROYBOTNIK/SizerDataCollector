@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using SizerDataCollector.Core.AnomalyDetection;
 using SizerDataCollector.Core.Collector;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
@@ -151,9 +153,59 @@ namespace SizerDataCollector.Service
 
                     using (var sizerClient = new SizerClient(config))
                     {
-                        var engine = new CollectorEngine(config, repository, sizerClient);
+                        AnomalyDetector anomalyDetector = null;
+                        IAlarmSink alarmSink = null;
+
+                        if (config.EnableAnomalyDetection)
+                        {
+                            var detectorConfig = new AnomalyDetectorConfig(config);
+                            anomalyDetector = new AnomalyDetector(detectorConfig);
+
+                            var sinks = new List<IAlarmSink>();
+                            sinks.Add(new LogAlarmSink());
+
+                            if (!string.IsNullOrWhiteSpace(config.TimescaleConnectionString))
+                                sinks.Add(new DatabaseAlarmSink(config.TimescaleConnectionString));
+
+                            if (config.EnableSizerAlarm)
+                                sinks.Add(new SizerAlarmSink(config.SizerHost, config.SizerPort, config.SendTimeoutSec));
+
+                            IAlarmSink compositeSink = new CompositeAlarmSink(sinks);
+
+                            if (config.EnableLlmEnrichment && !string.IsNullOrWhiteSpace(config.LlmEndpoint))
+                                compositeSink = new LlmEnricher(compositeSink, config.LlmEndpoint);
+
+                            alarmSink = compositeSink;
+                            Logger.Log(config.EnableSizerAlarm
+                                ? "Anomaly detection enabled (Sizer alarm delivery ON)."
+                                : "Anomaly detection enabled (Sizer alarm delivery OFF).");
+                        }
+
+                        var engine = new CollectorEngine(config, repository, sizerClient, anomalyDetector, alarmSink);
                         var runner = new CollectorRunner(config, engine, _status, _heartbeatWriter);
+
+                        Task sizeTask = Task.CompletedTask;
+                        if (config.EnableSizeAnomalyDetection && !string.IsNullOrWhiteSpace(config.TimescaleConnectionString))
+                        {
+                            var sizeConfig = new SizeAnomalyConfig(config);
+                            var sizeEvaluator = new SizeAnomalyEvaluator(sizeConfig, config.TimescaleConnectionString);
+                            var sizeDbSink = new SizeDatabaseAlarmSink(config.TimescaleConnectionString);
+                            SizerAlarmSink sizeSizerSink = null;
+                            if (config.EnableSizerSizeAlarm)
+                                sizeSizerSink = new SizerAlarmSink(config.SizerHost, config.SizerPort, config.SendTimeoutSec);
+
+                            sizeTask = RunSizeEvaluatorLoopAsync(
+                                sizeEvaluator, sizeDbSink, sizeSizerSink,
+                                sizeConfig, _status, cancellationToken);
+                            Logger.Log(string.Format(
+                                "Size anomaly detection enabled (interval={0}min, window={1}h, z-gate={2}, pctDevMin={3}%, Sizer alarm {4}).",
+                                sizeConfig.EvalIntervalMinutes, sizeConfig.WindowHours,
+                                sizeConfig.ZGate, sizeConfig.PctDevMin,
+                                config.EnableSizerSizeAlarm ? "ON" : "OFF"));
+                        }
+
                         await runner.RunAsync(cancellationToken).ConfigureAwait(false);
+                        await sizeTask.ConfigureAwait(false);
                     }
 
                     if (!cancellationToken.IsCancellationRequested)
@@ -182,6 +234,70 @@ namespace SizerDataCollector.Service
                     {
                         break;
                     }
+                }
+            }
+        }
+
+        private static async Task RunSizeEvaluatorLoopAsync(
+            SizeAnomalyEvaluator evaluator,
+            SizeDatabaseAlarmSink dbSink,
+            SizerAlarmSink sizerSink,
+            SizeAnomalyConfig sizeConfig,
+            CollectorStatus status,
+            CancellationToken cancellationToken)
+        {
+            var delay = TimeSpan.FromMinutes(sizeConfig.EvalIntervalMinutes);
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+
+                    var serialNo = status?.MachineSerial;
+                    if (string.IsNullOrWhiteSpace(serialNo))
+                    {
+                        Logger.Log("Size evaluator skipped: machine serial not yet known.", level: LogLevel.Debug);
+                        continue;
+                    }
+
+                    var now = DateTimeOffset.UtcNow;
+                    var events = await evaluator.EvaluateAsync(serialNo, now, cancellationToken).ConfigureAwait(false);
+
+                    foreach (var evt in events)
+                    {
+                        Logger.Log(string.Format("[{0,7}] {1}", evt.Severity, evt.AlarmDetails));
+
+                        var sinks = new List<string> { "log" };
+
+                        await dbSink.DeliverAsync(evt, cancellationToken).ConfigureAwait(false);
+                        sinks.Add("db");
+
+                        if (sizerSink != null)
+                        {
+                            try
+                            {
+                                await sizerSink.DeliverAsync(evt.AlarmTitle, evt.AlarmDetails, evt.Severity, cancellationToken).ConfigureAwait(false);
+                                sinks.Add("sizer");
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Log("Size alarm delivery to Sizer failed.", ex, LogLevel.Warn);
+                            }
+                        }
+
+                        evt.DeliveredTo = string.Join(",", sinks);
+                    }
+
+                    if (events.Count > 0)
+                        Logger.Log(string.Format("Size evaluation complete: {0} alarm(s) fired.", events.Count), level: LogLevel.Info);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Size evaluator cycle failed.", ex, LogLevel.Warn);
                 }
             }
         }

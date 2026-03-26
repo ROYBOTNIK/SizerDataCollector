@@ -29,6 +29,14 @@ namespace SizerDataCollector.Core.Config
 		private const int DefaultLogRetentionDays = 14;
 		private const int DefaultLogMaxFiles = 100;
 
+		private const int DefaultAnomalyWindowMinutes = 60;
+		private const double DefaultAnomalyZGate = 2.0;
+		private const double DefaultBandLowMin = 5.0;
+		private const double DefaultBandLowMax = 10.0;
+		private const double DefaultBandMediumMax = 20.0;
+		private const int DefaultAlarmCooldownSeconds = 300;
+		private const string DefaultRecycleGradeKey = "RCY";
+
 		public string SizerHost { get; }
 		public int SizerPort { get; }
 		public int OpenTimeoutSec { get; }
@@ -60,6 +68,26 @@ namespace SizerDataCollector.Core.Config
 		public int LogRetentionDays { get; }
 
 		public int LogMaxFiles { get; }
+
+		public bool EnableAnomalyDetection { get; }
+		public int AnomalyWindowMinutes { get; }
+		public double AnomalyZGate { get; }
+		public double BandLowMin { get; }
+		public double BandLowMax { get; }
+		public double BandMediumMax { get; }
+		public int AlarmCooldownSeconds { get; }
+		public string RecycleGradeKey { get; }
+		public bool EnableSizerAlarm { get; }
+		public bool EnableLlmEnrichment { get; }
+		public string LlmEndpoint { get; }
+
+		public bool EnableSizeAnomalyDetection { get; }
+		public bool EnableSizerSizeAlarm { get; }
+		public int SizeEvalIntervalMinutes { get; }
+		public int SizeWindowHours { get; }
+		public double SizeZGate { get; }
+		public double SizePctDevMin { get; }
+		public int SizeCooldownMinutes { get; }
 
 		public CollectorConfig()
 			: this(BuildRuntimeSettingsFromAppConfig())
@@ -104,6 +132,26 @@ namespace SizerDataCollector.Core.Config
 			LogMaxFileBytes = EnsureMinimumLong("LogMaxFileBytes", runtimeSettings.LogMaxFileBytes, 1024L, DefaultLogMaxFileBytes);
 			LogRetentionDays = EnsureMinimum("LogRetentionDays", runtimeSettings.LogRetentionDays, 1, DefaultLogRetentionDays);
 			LogMaxFiles = EnsureMinimum("LogMaxFiles", runtimeSettings.LogMaxFiles, 1, DefaultLogMaxFiles);
+
+			EnableAnomalyDetection = runtimeSettings.EnableAnomalyDetection;
+			AnomalyWindowMinutes = EnsureMinimum("AnomalyWindowMinutes", runtimeSettings.AnomalyWindowMinutes, 1, DefaultAnomalyWindowMinutes);
+			AnomalyZGate = runtimeSettings.AnomalyZGate > 0 ? runtimeSettings.AnomalyZGate : DefaultAnomalyZGate;
+			BandLowMin = runtimeSettings.BandLowMin > 0 ? runtimeSettings.BandLowMin : DefaultBandLowMin;
+			BandLowMax = runtimeSettings.BandLowMax > 0 ? runtimeSettings.BandLowMax : DefaultBandLowMax;
+			BandMediumMax = runtimeSettings.BandMediumMax > 0 ? runtimeSettings.BandMediumMax : DefaultBandMediumMax;
+			AlarmCooldownSeconds = EnsureMinimum("AlarmCooldownSeconds", runtimeSettings.AlarmCooldownSeconds, 0, DefaultAlarmCooldownSeconds);
+			RecycleGradeKey = string.IsNullOrWhiteSpace(runtimeSettings.RecycleGradeKey) ? DefaultRecycleGradeKey : runtimeSettings.RecycleGradeKey.Trim();
+			EnableSizerAlarm = runtimeSettings.EnableSizerAlarm;
+			EnableLlmEnrichment = runtimeSettings.EnableLlmEnrichment;
+			LlmEndpoint = runtimeSettings.LlmEndpoint ?? string.Empty;
+
+			EnableSizeAnomalyDetection = runtimeSettings.EnableSizeAnomalyDetection;
+			EnableSizerSizeAlarm = runtimeSettings.EnableSizerSizeAlarm;
+			SizeEvalIntervalMinutes = EnsureMinimum("SizeEvalIntervalMinutes", runtimeSettings.SizeEvalIntervalMinutes, 1, 30);
+			SizeWindowHours = EnsureMinimum("SizeWindowHours", runtimeSettings.SizeWindowHours, 1, 24);
+			SizeZGate = runtimeSettings.SizeZGate > 0 ? runtimeSettings.SizeZGate : 2.0;
+			SizePctDevMin = runtimeSettings.SizePctDevMin > 0 ? runtimeSettings.SizePctDevMin : 3.0;
+			SizeCooldownMinutes = EnsureMinimum("SizeCooldownMinutes", runtimeSettings.SizeCooldownMinutes, 0, 240);
 		}
 
 		private static CollectorRuntimeSettings BuildRuntimeSettingsFromAppConfig()
@@ -127,7 +175,25 @@ namespace SizerDataCollector.Core.Config
 				LogAsJson = GetBool("LogAsJson", false),
 				LogMaxFileBytes = GetLongWithMinimum("LogMaxFileBytes", 1024L, DefaultLogMaxFileBytes),
 				LogRetentionDays = GetIntWithMinimum("LogRetentionDays", 1, DefaultLogRetentionDays),
-				LogMaxFiles = GetIntWithMinimum("LogMaxFiles", 1, DefaultLogMaxFiles)
+				LogMaxFiles = GetIntWithMinimum("LogMaxFiles", 1, DefaultLogMaxFiles),
+				EnableAnomalyDetection = GetBool("EnableAnomalyDetection", false),
+				AnomalyWindowMinutes = GetIntWithMinimum("AnomalyWindowMinutes", 1, DefaultAnomalyWindowMinutes),
+				AnomalyZGate = GetDouble("AnomalyZGate", DefaultAnomalyZGate),
+				BandLowMin = GetDouble("BandLowMin", DefaultBandLowMin),
+				BandLowMax = GetDouble("BandLowMax", DefaultBandLowMax),
+				BandMediumMax = GetDouble("BandMediumMax", DefaultBandMediumMax),
+				AlarmCooldownSeconds = GetIntWithMinimum("AlarmCooldownSeconds", 0, DefaultAlarmCooldownSeconds),
+				RecycleGradeKey = GetString("RecycleGradeKey", DefaultRecycleGradeKey),
+				EnableSizerAlarm = GetBool("EnableSizerAlarm", true),
+				EnableLlmEnrichment = GetBool("EnableLlmEnrichment", false),
+				LlmEndpoint = GetString("LlmEndpoint", string.Empty),
+				EnableSizeAnomalyDetection = GetBool("EnableSizeAnomalyDetection", false),
+				EnableSizerSizeAlarm = GetBool("EnableSizerSizeAlarm", false),
+				SizeEvalIntervalMinutes = GetIntWithMinimum("SizeEvalIntervalMinutes", 1, 30),
+				SizeWindowHours = GetIntWithMinimum("SizeWindowHours", 1, 24),
+				SizeZGate = GetDouble("SizeZGate", 2.0),
+				SizePctDevMin = GetDouble("SizePctDevMin", 3.0),
+				SizeCooldownMinutes = GetIntWithMinimum("SizeCooldownMinutes", 0, 240)
 			};
 		}
 
@@ -141,6 +207,15 @@ namespace SizerDataCollector.Core.Config
 		{
 			var value = ConfigurationManager.AppSettings[key];
 			if (int.TryParse(value, out int result))
+				return result;
+
+			return defaultValue;
+		}
+
+		private static double GetDouble(string key, double defaultValue)
+		{
+			var value = ConfigurationManager.AppSettings[key];
+			if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double result))
 				return result;
 
 			return defaultValue;

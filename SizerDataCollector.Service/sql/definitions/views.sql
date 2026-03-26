@@ -643,9 +643,44 @@ SELECT t.day,
 FROM t
 LEFT JOIN o ON (o.day = t.day AND o.serial_no = t.serial_no);
 
+-- Per-minute z-score vs other lanes on the same sizer (serial_no). Filter in dashboards: WHERE serial_no = '...'
+CREATE OR REPLACE VIEW public.lane_size_anomaly AS
+SELECT minute_ts,
+       serial_no,
+       lane_idx,
+       avg_size,
+       avg(avg_size) OVER (PARTITION BY minute_ts, serial_no) AS mean_size,
+       stddev_pop(avg_size) OVER (PARTITION BY minute_ts, serial_no) AS sd_size,
+       ((avg_size - avg(avg_size) OVER (PARTITION BY minute_ts, serial_no))
+         / NULLIF(stddev_pop(avg_size) OVER (PARTITION BY minute_ts, serial_no), (0)::double precision)) AS z_score
+FROM public.cagg_lane_size_minute;
+
+CREATE OR REPLACE VIEW public.lane_size_health_24h AS
+WITH windowed AS (
+        SELECT lane_size_anomaly.serial_no,
+               lane_size_anomaly.lane_idx,
+               (abs(lane_size_anomaly.z_score) >= (2)::double precision) AS out_spec,
+               (lane_size_anomaly.z_score > (2)::double precision) AS oversize,
+               (lane_size_anomaly.z_score < ('-2'::integer)::double precision) AS undersize
+        FROM public.lane_size_anomaly
+        WHERE lane_size_anomaly.minute_ts >= (now() - '24:00:00'::interval)
+)
+SELECT serial_no,
+       (lane_idx + 1) AS lane,
+       count(*) AS total_min,
+       count(*) FILTER (WHERE out_spec) AS out_min,
+       count(*) FILTER (WHERE oversize) AS over_min,
+       count(*) FILTER (WHERE undersize) AS under_min,
+       round(((100.0 * (count(*) FILTER (WHERE oversize))::numeric) / (count(*))::numeric), 1) AS pct_over,
+       round(((100.0 * (count(*) FILTER (WHERE undersize))::numeric) / (count(*))::numeric), 1) AS pct_under
+FROM windowed
+GROUP BY serial_no, lane_idx
+ORDER BY serial_no, (lane_idx + 1);
+
 CREATE OR REPLACE VIEW public.lane_size_health_season AS
 WITH unpack AS (
         SELECT public.time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
+               m.serial_no,
                (lane.ord - 1) AS lane_idx,
                v.key AS label,
                (v.value)::integer AS fruit_cnt
@@ -653,36 +688,41 @@ WITH unpack AS (
         CROSS JOIN LATERAL jsonb_array_elements(m.value_json) WITH ORDINALITY lane(lane_json, ord)
         CROSS JOIN LATERAL jsonb_each_text(lane.lane_json) v(key, value)
         WHERE m.metric = 'lanes_size_fpm'::text
-          AND m.serial_no = '140578'::text
+          AND jsonb_typeof(lane.lane_json) = 'object'
 ), lane_minute AS (
         SELECT unpack.minute_ts,
+               unpack.serial_no,
                unpack.lane_idx,
-               (sum(((unpack.fruit_cnt)::double precision * public.size_group_value(unpack.label))) / (NULLIF(sum(unpack.fruit_cnt), 0))::double precision) AS avg_size
+               (sum(((unpack.fruit_cnt)::double precision * public.size_group_value(unpack.label)))
+                 / (NULLIF(sum(unpack.fruit_cnt), 0))::double precision) AS avg_size
         FROM unpack
-        GROUP BY unpack.minute_ts, unpack.lane_idx
+        GROUP BY unpack.minute_ts, unpack.serial_no, unpack.lane_idx
 ), stats AS (
         SELECT lane_minute.minute_ts,
+               lane_minute.serial_no,
                lane_minute.lane_idx,
                lane_minute.avg_size,
-               avg(lane_minute.avg_size) OVER (PARTITION BY lane_minute.minute_ts) AS "æ",
-               stddev_pop(lane_minute.avg_size) OVER (PARTITION BY lane_minute.minute_ts) AS "å"
+               avg(lane_minute.avg_size) OVER (PARTITION BY lane_minute.minute_ts, lane_minute.serial_no) AS cross_lane_mean,
+               stddev_pop(lane_minute.avg_size) OVER (PARTITION BY lane_minute.minute_ts, lane_minute.serial_no) AS cross_lane_sd
         FROM lane_minute
 ), flags AS (
         SELECT stats.lane_idx,
+               stats.serial_no,
                CASE
-                   WHEN (stats."å" = (0)::double precision OR stats.avg_size IS NULL) THEN (0)::double precision
-                   ELSE ((stats.avg_size - stats."æ") / stats."å")
+                   WHEN (stats.cross_lane_sd = (0)::double precision OR stats.avg_size IS NULL) THEN (0)::double precision
+                   ELSE ((stats.avg_size - stats.cross_lane_mean) / stats.cross_lane_sd)
                END AS z
         FROM stats
 )
-SELECT (lane_idx + 1) AS lane,
+SELECT serial_no,
+       (lane_idx + 1) AS lane,
        count(*) AS total_min,
        count(*) FILTER (WHERE (abs(z) >= (2)::double precision)) AS out_min,
        round(((100.0 * (count(*) FILTER (WHERE (z >= (2)::double precision)))::numeric) / (count(*))::numeric), 2) AS pct_over,
        round(((100.0 * (count(*) FILTER (WHERE (z <= ('-2'::integer)::double precision)))::numeric) / (count(*))::numeric), 2) AS pct_under
 FROM flags
-GROUP BY lane_idx
-ORDER BY (lane_idx + 1);
+GROUP BY serial_no, lane_idx
+ORDER BY serial_no, (lane_idx + 1);
 
 CREATE OR REPLACE VIEW public.v_throughput_daily AS
 SELECT day,

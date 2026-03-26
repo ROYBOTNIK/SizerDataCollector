@@ -6,8 +6,10 @@ using System.Linq;
 using System.Reflection;
 using System.ServiceProcess;
 using System.Threading;
+using SizerDataCollector.Core.AnomalyDetection;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
+using SizerDataCollector.Core.Logging;
 using SizerDataCollector.Core.Sizer;
 using SizerDataCollector.Service.Commands;
 
@@ -67,6 +69,18 @@ namespace SizerDataCollector.Service
 					return DbCommands.Run(args.Skip(1).ToArray());
 				case "machine":
 					return MachineCommands.Run(args.Skip(1).ToArray(), options);
+				case "set-anomaly":
+					return SetAnomaly(options);
+				case "set-sizer-alarm":
+					return SetSizerAlarm(options);
+				case "replay-anomaly":
+					return ReplayAnomaly(options);
+				case "set-size-anomaly":
+					return SetSizeAnomaly(options);
+				case "size-health":
+					return SizeHealth(options);
+				case "test-alarm":
+					return TestAlarm(options);
 				default:
 					Console.WriteLine($"Unknown command '{command}'.");
 					ShowUsage();
@@ -115,6 +129,27 @@ namespace SizerDataCollector.Service
 			Console.WriteLine($"  Enable Ingestion:      {settings.EnableIngestion}");
 			Console.WriteLine($"  Shared Data Directory: {settings.SharedDataDirectory}");
 			Console.WriteLine($"  Enabled Metrics:       {string.Join(", ", settings.EnabledMetrics ?? new List<string>())}");
+			Console.WriteLine();
+			Console.WriteLine("  Anomaly Detection:");
+			Console.WriteLine($"    Enabled:             {settings.EnableAnomalyDetection}");
+			Console.WriteLine($"    Window (min):        {settings.AnomalyWindowMinutes}");
+			Console.WriteLine($"    Z-Gate:              {settings.AnomalyZGate}");
+			Console.WriteLine($"    Bands (Low/Med):     {settings.BandLowMin}-{settings.BandLowMax}% / {settings.BandLowMax}-{settings.BandMediumMax}% / {settings.BandMediumMax}%+");
+			Console.WriteLine($"    Cooldown (sec):      {settings.AlarmCooldownSeconds}");
+			Console.WriteLine($"    Recycle Grade Key:   {settings.RecycleGradeKey}");
+			Console.WriteLine($"    Sizer Alarm:         {settings.EnableSizerAlarm}");
+			Console.WriteLine($"    LLM Enrichment:      {settings.EnableLlmEnrichment}");
+			if (settings.EnableLlmEnrichment)
+				Console.WriteLine($"    LLM Endpoint:        {settings.LlmEndpoint}");
+			Console.WriteLine();
+			Console.WriteLine("  Size Anomaly Detection:");
+			Console.WriteLine($"    Enabled:             {settings.EnableSizeAnomalyDetection}");
+			Console.WriteLine($"    Eval Interval (min): {settings.SizeEvalIntervalMinutes}");
+			Console.WriteLine($"    Window (hours):      {settings.SizeWindowHours}");
+			Console.WriteLine($"    Z-Gate:              {settings.SizeZGate}");
+			Console.WriteLine($"    PctDev Min:          {settings.SizePctDevMin}%");
+			Console.WriteLine($"    Cooldown (min):      {settings.SizeCooldownMinutes}");
+			Console.WriteLine($"    Sizer Alarm:         {settings.EnableSizerSizeAlarm}");
 			return 0;
 		}
 
@@ -511,6 +546,438 @@ namespace SizerDataCollector.Service
 			}
 		}
 
+		private static int SetAnomaly(Dictionary<string, string> options)
+		{
+			if (options.Count == 0)
+			{
+				Console.WriteLine("Usage: set-anomaly --enabled true|false [--window <min>] [--z-gate <val>]");
+				Console.WriteLine("       [--band-low-min <pct>] [--band-low-max <pct>] [--band-medium-max <pct>]");
+				Console.WriteLine("       [--cooldown <sec>] [--recycle-key <name>]");
+				Console.WriteLine("       [--llm true|false] [--llm-endpoint <url>]");
+				return 1;
+			}
+
+			var provider = new CollectorSettingsProvider();
+			var settings = provider.Load();
+			bool changed = false;
+
+			if (options.TryGetValue("enabled", out var enabledRaw) && bool.TryParse(enabledRaw, out var enabled))
+			{
+				settings.EnableAnomalyDetection = enabled;
+				Console.WriteLine($"  EnableAnomalyDetection = {enabled}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("window", out var windowRaw) && int.TryParse(windowRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var window) && window >= 1)
+			{
+				settings.AnomalyWindowMinutes = window;
+				Console.WriteLine($"  AnomalyWindowMinutes = {window}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("z-gate", out var zgRaw) && double.TryParse(zgRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var zg) && zg > 0)
+			{
+				settings.AnomalyZGate = zg;
+				Console.WriteLine($"  AnomalyZGate = {zg}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("band-low-min", out var blmRaw) && double.TryParse(blmRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var blm) && blm > 0)
+			{
+				settings.BandLowMin = blm;
+				Console.WriteLine($"  BandLowMin = {blm}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("band-low-max", out var blxRaw) && double.TryParse(blxRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var blx) && blx > 0)
+			{
+				settings.BandLowMax = blx;
+				Console.WriteLine($"  BandLowMax = {blx}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("band-medium-max", out var bmmRaw) && double.TryParse(bmmRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var bmm) && bmm > 0)
+			{
+				settings.BandMediumMax = bmm;
+				Console.WriteLine($"  BandMediumMax = {bmm}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("cooldown", out var cdRaw) && int.TryParse(cdRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var cd) && cd >= 0)
+			{
+				settings.AlarmCooldownSeconds = cd;
+				Console.WriteLine($"  AlarmCooldownSeconds = {cd}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("recycle-key", out var rk) && !string.IsNullOrWhiteSpace(rk))
+			{
+				settings.RecycleGradeKey = rk.Trim();
+				Console.WriteLine($"  RecycleGradeKey = {settings.RecycleGradeKey}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("llm", out var llmRaw) && bool.TryParse(llmRaw, out var llm))
+			{
+				settings.EnableLlmEnrichment = llm;
+				Console.WriteLine($"  EnableLlmEnrichment = {llm}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("llm-endpoint", out var llmEp) && !string.IsNullOrWhiteSpace(llmEp))
+			{
+				settings.LlmEndpoint = llmEp.Trim();
+				Console.WriteLine($"  LlmEndpoint = {settings.LlmEndpoint}");
+				changed = true;
+			}
+
+			if (!changed)
+			{
+				Console.WriteLine("No valid options provided. Run 'set-anomaly' without arguments for usage.");
+				return 1;
+			}
+
+			provider.Save(settings);
+			Console.WriteLine("Anomaly detection settings updated. Restart the service for changes to take effect.");
+			return 0;
+		}
+
+		private static int SetSizerAlarm(Dictionary<string, string> options)
+		{
+			if (!options.TryGetValue("enabled", out var enabledRaw) || !bool.TryParse(enabledRaw, out var enabled))
+			{
+				Console.WriteLine("Missing or invalid option. Use: set-sizer-alarm --enabled true|false");
+				return 1;
+			}
+
+			var provider = new CollectorSettingsProvider();
+			var settings = provider.Load();
+			settings.EnableSizerAlarm = enabled;
+			provider.Save(settings);
+
+			Console.WriteLine($"EnableSizerAlarm set to {enabled}. Restart the service for changes to take effect.");
+			return 0;
+		}
+
+		private static int ReplayAnomaly(Dictionary<string, string> options)
+		{
+			if (!options.TryGetValue("serial", out var serial) || string.IsNullOrWhiteSpace(serial))
+			{
+				Console.WriteLine("Missing required option: --serial <serial_no>");
+				Console.WriteLine("Usage: replay-anomaly --serial <sn> --from <yyyy-MM-dd> --to <yyyy-MM-dd> [--persist]");
+				return 1;
+			}
+
+			if (!options.TryGetValue("from", out var fromRaw) || !DateTimeOffset.TryParse(fromRaw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var fromTs))
+			{
+				Console.WriteLine("Missing or invalid option: --from <yyyy-MM-dd>");
+				return 1;
+			}
+
+			if (!options.TryGetValue("to", out var toRaw) || !DateTimeOffset.TryParse(toRaw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var toTs))
+			{
+				Console.WriteLine("Missing or invalid option: --to <yyyy-MM-dd>");
+				return 1;
+			}
+
+			var persist = options.ContainsKey("persist");
+
+			var provider = new CollectorSettingsProvider();
+			var runtimeSettings = provider.Load();
+			var config = new CollectorConfig(runtimeSettings);
+
+			if (string.IsNullOrWhiteSpace(config.TimescaleConnectionString))
+			{
+				Console.WriteLine("No TimescaleDB connection string configured. Run 'set-db' first.");
+				return 1;
+			}
+
+			Console.WriteLine($"Replaying anomaly detection for serial '{serial}' from {fromTs:O} to {toTs:O}...");
+			Console.WriteLine();
+
+			var detectorConfig = new AnomalyDetectorConfig(config);
+			var detector = new AnomalyDetector(detectorConfig);
+			var replaySource = new ReplayDataSource(config.TimescaleConnectionString);
+
+			var rows = replaySource.LoadAsync(serial, fromTs, toTs, CancellationToken.None).GetAwaiter().GetResult();
+			if (rows.Count == 0)
+			{
+				Console.WriteLine("No lanes_grade_fpm rows found for the specified range.");
+				return 0;
+			}
+
+			Console.WriteLine($"Loaded {rows.Count} data points.");
+			Console.WriteLine();
+
+			var allEvents = new List<AnomalyEvent>();
+			long previousBatch = 0;
+
+			foreach (var row in rows)
+			{
+				if (row.BatchRecordId != previousBatch && previousBatch != 0)
+				{
+					Console.WriteLine($"  [Batch change at {row.Ts:HH:mm:ss}: {previousBatch} -> {row.BatchRecordId}, detector reset]");
+					detector.Reset();
+				}
+				previousBatch = row.BatchRecordId;
+
+				var matrix = GradeMatrixParser.Parse(row.ValueJson);
+				if (matrix == null) continue;
+
+				var events = detector.Update(matrix, row.Ts, row.SerialNo, (int)row.BatchRecordId);
+				foreach (var evt in events)
+				{
+					evt.ModelVersion = "replay-v1";
+					evt.DeliveredTo = persist ? "replay" : "console";
+					allEvents.Add(evt);
+					Console.WriteLine($"  {evt.EventTs:yyyy-MM-dd HH:mm:ss} [{evt.Severity,6}] {evt.AlarmDetails}");
+				}
+			}
+
+			Console.WriteLine();
+			Console.WriteLine($"Replay complete. {allEvents.Count} anomaly events detected across {rows.Count} data points.");
+
+			if (allEvents.Count > 0)
+			{
+				var byseverity = allEvents.GroupBy(e => e.Severity).OrderBy(g => g.Key);
+				foreach (var group in byseverity)
+				{
+					Console.WriteLine($"  {group.Key}: {group.Count()}");
+				}
+			}
+
+			if (persist && allEvents.Count > 0)
+			{
+				Console.WriteLine();
+				Console.WriteLine("Persisting replay events to oee.grade_lane_anomalies...");
+				var dbSink = new DatabaseAlarmSink(config.TimescaleConnectionString);
+				foreach (var evt in allEvents)
+				{
+					dbSink.DeliverAsync(evt, CancellationToken.None).GetAwaiter().GetResult();
+				}
+				Console.WriteLine($"Persisted {allEvents.Count} events.");
+			}
+
+			return 0;
+		}
+
+		private static int SetSizeAnomaly(Dictionary<string, string> options)
+		{
+			if (options.Count == 0)
+			{
+				Console.WriteLine("Usage: set-size-anomaly --enabled true|false [--interval <min>] [--window <hours>]");
+				Console.WriteLine("       [--z-gate <val>] [--pct-dev-min <val>] [--cooldown <min>]");
+				Console.WriteLine("       [--sizer-alarm true|false]");
+				return 1;
+			}
+
+			var provider = new CollectorSettingsProvider();
+			var settings = provider.Load();
+			bool changed = false;
+
+			if (options.TryGetValue("enabled", out var enabledRaw) && bool.TryParse(enabledRaw, out var enabled))
+			{
+				settings.EnableSizeAnomalyDetection = enabled;
+				Console.WriteLine($"  EnableSizeAnomalyDetection = {enabled}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("interval", out var intRaw) && int.TryParse(intRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var interval) && interval >= 1)
+			{
+				settings.SizeEvalIntervalMinutes = interval;
+				Console.WriteLine($"  SizeEvalIntervalMinutes = {interval}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("window", out var winRaw) && int.TryParse(winRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var window) && window >= 1)
+			{
+				settings.SizeWindowHours = window;
+				Console.WriteLine($"  SizeWindowHours = {window}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("z-gate", out var zgRaw) && double.TryParse(zgRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var zg) && zg > 0)
+			{
+				settings.SizeZGate = zg;
+				Console.WriteLine($"  SizeZGate = {zg}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("pct-dev-min", out var pdRaw) && double.TryParse(pdRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var pd) && pd > 0)
+			{
+				settings.SizePctDevMin = pd;
+				Console.WriteLine($"  SizePctDevMin = {pd}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("cooldown", out var cdRaw) && int.TryParse(cdRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var cd) && cd >= 0)
+			{
+				settings.SizeCooldownMinutes = cd;
+				Console.WriteLine($"  SizeCooldownMinutes = {cd}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("sizer-alarm", out var saRaw) && bool.TryParse(saRaw, out var sa))
+			{
+				settings.EnableSizerSizeAlarm = sa;
+				Console.WriteLine($"  EnableSizerSizeAlarm = {sa}");
+				changed = true;
+			}
+
+			if (!changed)
+			{
+				Console.WriteLine("No valid options provided. Run 'set-size-anomaly' without arguments for usage.");
+				return 1;
+			}
+
+			provider.Save(settings);
+			Console.WriteLine("Size anomaly detection settings updated. Restart the service for changes to take effect.");
+			return 0;
+		}
+
+		private static int SizeHealth(Dictionary<string, string> options)
+		{
+			var provider = new CollectorSettingsProvider();
+			var runtimeSettings = provider.Load();
+			var config = new CollectorConfig(runtimeSettings);
+
+			if (string.IsNullOrWhiteSpace(config.TimescaleConnectionString))
+			{
+				Console.WriteLine("No TimescaleDB connection string configured. Run 'set-db' first.");
+				return 1;
+			}
+
+			string serial;
+			if (options.TryGetValue("serial", out var s) && !string.IsNullOrWhiteSpace(s))
+			{
+				serial = s.Trim();
+			}
+			else
+			{
+				Console.WriteLine("Missing required option: --serial <serial_no>");
+				Console.WriteLine("Usage: size-health --serial <sn> [--hours <h>]");
+				Console.WriteLine("       size-health --serial <sn> --from <yyyy-MM-dd> --to <yyyy-MM-dd>");
+				return 1;
+			}
+
+			DateTimeOffset fromTs, toTs;
+			if (options.TryGetValue("from", out var fromRaw) &&
+				DateTimeOffset.TryParse(fromRaw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out fromTs) &&
+				options.TryGetValue("to", out var toRaw) &&
+				DateTimeOffset.TryParse(toRaw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out toTs))
+			{
+			}
+			else
+			{
+				int hours = 24;
+				if (options.TryGetValue("hours", out var hRaw) && int.TryParse(hRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var h) && h >= 1)
+					hours = h;
+				toTs = DateTimeOffset.UtcNow;
+				fromTs = toTs.AddHours(-hours);
+			}
+
+			Console.WriteLine($"Querying lane size health for {serial} from {fromTs:yyyy-MM-dd HH:mm} to {toTs:yyyy-MM-dd HH:mm} ...");
+			Console.WriteLine();
+
+			var sizeConfig = new SizeAnomalyConfig(config);
+			var evaluator = new SizeAnomalyEvaluator(sizeConfig, config.TimescaleConnectionString);
+			var report = evaluator.EvaluateRangeAsync(serial, fromTs, toTs, CancellationToken.None).GetAwaiter().GetResult();
+
+			if (report.Rows == null || report.Rows.Count == 0)
+			{
+				Console.WriteLine("No size data found for the specified range.");
+				return 0;
+			}
+
+			var windowLabel = (toTs - fromTs).TotalHours >= 24
+				? string.Format("{0:F0} days", (toTs - fromTs).TotalDays)
+				: string.Format("{0:F0}h", (toTs - fromTs).TotalHours);
+			Console.WriteLine(string.Format("Lane size health for {0} ({1}, machine avg = {2:F1}mm)", serial, windowLabel, report.MachineAvg));
+			Console.WriteLine();
+
+			Console.WriteLine("Lane | Avg Size | vs Machine |  pctDev  |  z-score | Status");
+			Console.WriteLine("-----|----------|------------|----------|----------|--------");
+			foreach (var row in report.Rows)
+			{
+				var diffStr = string.Format("{0:+0.0;-0.0}mm", row.Diff);
+				var pctStr = string.Format("{0:+0.0;-0.0}%", row.PctDev);
+				var zStr = string.Format("{0:+0.0;-0.0}", row.ZScore);
+				Console.WriteLine(string.Format(" {0,3} | {1,6:F1}mm | {2,10} | {3,8} | {4,8} | {5}",
+					row.LaneNo, row.AvgSize, diffStr, pctStr, zStr, row.Status));
+			}
+
+			Console.WriteLine();
+			return 0;
+		}
+
+		private static int TestAlarm(Dictionary<string, string> options)
+		{
+			var provider = new CollectorSettingsProvider();
+			var runtimeSettings = provider.Load();
+			var config = new CollectorConfig(runtimeSettings);
+
+			string type = "both";
+			if (options.TryGetValue("type", out var t) && !string.IsNullOrWhiteSpace(t))
+				type = t.Trim().ToLowerInvariant();
+
+			string severity = "Low";
+			if (options.TryGetValue("severity", out var sev) && !string.IsNullOrWhiteSpace(sev))
+			{
+				var s = sev.Trim();
+				if (s.Equals("medium", StringComparison.OrdinalIgnoreCase)) severity = "Medium";
+				else if (s.Equals("high", StringComparison.OrdinalIgnoreCase)) severity = "High";
+			}
+
+			Console.WriteLine($"Connecting to Sizer API at {config.SizerHost}:{config.SizerPort} ...");
+
+			var sink = new SizerAlarmSink(config.SizerHost, config.SizerPort, config.SendTimeoutSec);
+			var ts = DateTime.Now.ToString("HH:mm:ss");
+			bool anyFailed = false;
+
+			if (type == "grade" || type == "both")
+			{
+				var title = "TEST Grade Alarm";
+				var details = string.Format("[{0}] Test grade anomaly alarm ({1} priority). If you see this on the Sizer screen, alarm delivery is working.", ts, severity);
+				Console.WriteLine($"  Sending grade test alarm ({severity}) ...");
+				try
+				{
+					sink.SendTestAlarmAsync(title, details, severity, CancellationToken.None).GetAwaiter().GetResult();
+					Console.WriteLine("  Grade test alarm delivered successfully.");
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"  Grade test alarm FAILED: {ex.Message}");
+					anyFailed = true;
+				}
+			}
+
+			if (type == "size" || type == "both")
+			{
+				var title = "TEST Size Alarm";
+				var details = string.Format("[{0}] Test size anomaly alarm ({1} priority). If you see this on the Sizer screen, alarm delivery is working.", ts, severity);
+				Console.WriteLine($"  Sending size test alarm ({severity}) ...");
+				try
+				{
+					sink.SendTestAlarmAsync(title, details, severity, CancellationToken.None).GetAwaiter().GetResult();
+					Console.WriteLine("  Size test alarm delivered successfully.");
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"  Size test alarm FAILED: {ex.Message}");
+					anyFailed = true;
+				}
+			}
+
+			if (type != "grade" && type != "size" && type != "both")
+			{
+				Console.WriteLine("Invalid --type. Use: grade, size, or both (default).");
+				Console.WriteLine("Usage: test-alarm [--type grade|size|both] [--severity low|medium|high]");
+				return 1;
+			}
+
+			return anyFailed ? 1 : 0;
+		}
+
 		private static void ShowUsage()
 		{
 			Console.WriteLine("SizerDataCollector.Service CLI");
@@ -523,6 +990,7 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("      [--open-timeout <sec>] [--send-timeout <sec>] [--receive-timeout <sec>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-db --connection \"Host=...;Database=...;Username=...;Password=...\"");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-ingestion --enabled true|false");
+			Console.WriteLine("  SizerDataCollector.Service.exe set-anomaly --enabled true|false");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-shared-dir --path \"C:\\ProgramData\\Opti-Fresh\\SizerCollector\"");
 			Console.WriteLine("  SizerDataCollector.Service.exe test-connections");
 			Console.WriteLine();
@@ -562,6 +1030,23 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("  SizerDataCollector.Service.exe machine show-bands          --serial <sn>");
 			Console.WriteLine("  SizerDataCollector.Service.exe machine set-band            --serial <sn> --band <name> --lower <v> --upper <v>");
 			Console.WriteLine("  SizerDataCollector.Service.exe machine remove-band         --serial <sn> --band <name>");
+			Console.WriteLine();
+			Console.WriteLine("Grade anomaly detection:");
+			Console.WriteLine("  SizerDataCollector.Service.exe set-anomaly --enabled true|false [--window <min>] [--z-gate <val>]");
+			Console.WriteLine("      [--band-low-min <pct>] [--band-low-max <pct>] [--band-medium-max <pct>]");
+			Console.WriteLine("      [--cooldown <sec>] [--recycle-key <name>] [--llm true|false] [--llm-endpoint <url>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe set-sizer-alarm --enabled true|false");
+			Console.WriteLine("  SizerDataCollector.Service.exe replay-anomaly --serial <sn> --from <date> --to <date> [--persist]");
+			Console.WriteLine();
+			Console.WriteLine("Size anomaly detection:");
+			Console.WriteLine("  SizerDataCollector.Service.exe set-size-anomaly --enabled true|false [--interval <min>]");
+			Console.WriteLine("      [--window <hours>] [--z-gate <val>] [--pct-dev-min <val>] [--cooldown <min>]");
+			Console.WriteLine("      [--sizer-alarm true|false]");
+			Console.WriteLine("  SizerDataCollector.Service.exe size-health --serial <sn> [--hours <h>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe size-health --serial <sn> --from <date> --to <date>");
+			Console.WriteLine();
+			Console.WriteLine("Alarm testing:");
+			Console.WriteLine("  SizerDataCollector.Service.exe test-alarm [--type grade|size|both] [--severity low|medium|high]");
 		}
 	}
 }

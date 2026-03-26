@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SizerDataCollector.Core.AnomalyDetection;
 using SizerDataCollector.Core.Config;
 using SizerDataCollector.Core.Db;
 using SizerDataCollector.Core.Logging;
@@ -11,18 +13,28 @@ namespace SizerDataCollector.Core.Collector
 {
 	public sealed class CollectorEngine
 	{
+		private const string GradeFpmMetric = "lanes_grade_fpm";
+
 		private readonly CollectorConfig _config;
 		private readonly ITimescaleRepository _repository;
 		private readonly ISizerClient _sizerClient;
+		private readonly AnomalyDetector _anomalyDetector;
+		private readonly IAlarmSink _alarmSink;
+
+		private long _previousBatchRecordId;
 
 		public CollectorEngine(
 			CollectorConfig config,
 			ITimescaleRepository repository,
-			ISizerClient sizerClient)
+			ISizerClient sizerClient,
+			AnomalyDetector anomalyDetector = null,
+			IAlarmSink alarmSink = null)
 		{
 			_config = config ?? throw new ArgumentNullException(nameof(config));
 			_repository = repository ?? throw new ArgumentNullException(nameof(repository));
 			_sizerClient = sizerClient ?? throw new ArgumentNullException(nameof(sizerClient));
+			_anomalyDetector = anomalyDetector;
+			_alarmSink = alarmSink;
 		}
 
 		public async Task RunSinglePollAsync(CollectorStatus status, CancellationToken cancellationToken)
@@ -203,11 +215,61 @@ namespace SizerDataCollector.Core.Collector
 				throw;
 			}
 
+			await RunAnomalyDetectionAsync(metricRows, serialNo, batchRecordId, cancellationToken).ConfigureAwait(false);
+
 			lock (status.SyncRoot)
 			{
 				status.LastSuccessUtc = DateTime.UtcNow;
 				status.LastPollCompletedUtc = DateTime.UtcNow;
 				status.LastErrorMessage = null;
+			}
+		}
+
+		private async Task RunAnomalyDetectionAsync(
+			List<MetricRow> metricRows,
+			string serialNo,
+			long batchRecordId,
+			CancellationToken cancellationToken)
+		{
+			if (_anomalyDetector == null || _alarmSink == null)
+				return;
+
+			if (batchRecordId != _previousBatchRecordId && _previousBatchRecordId != 0)
+			{
+				Logger.Log($"Batch change detected ({_previousBatchRecordId} -> {batchRecordId}). Resetting anomaly detector.");
+				_anomalyDetector.Reset();
+			}
+			_previousBatchRecordId = batchRecordId;
+
+			var gradeFpmRow = metricRows.FirstOrDefault(
+				r => string.Equals(r.MetricName, GradeFpmMetric, StringComparison.OrdinalIgnoreCase));
+
+			if (gradeFpmRow == null || string.IsNullOrWhiteSpace(gradeFpmRow.JsonPayload))
+				return;
+
+			try
+			{
+				var matrix = GradeMatrixParser.Parse(gradeFpmRow.JsonPayload);
+				if (matrix == null)
+				{
+					Logger.Log("Anomaly detection: failed to parse lanes_grade_fpm payload.", level: LogLevel.Debug);
+					return;
+				}
+
+				var events = _anomalyDetector.Update(
+					matrix,
+					DateTimeOffset.UtcNow,
+					serialNo,
+					(int)batchRecordId);
+
+				foreach (var evt in events)
+				{
+					await _alarmSink.DeliverAsync(evt, cancellationToken).ConfigureAwait(false);
+				}
+			}
+			catch (Exception ex) when (!(ex is OperationCanceledException))
+			{
+				Logger.Log("Anomaly detection cycle failed (non-fatal).", ex, LogLevel.Warn);
 			}
 		}
 	}

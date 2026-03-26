@@ -536,6 +536,40 @@ SELECT add_continuous_aggregate_policy('oee.cagg_quality_cat_daily_batch',
     if_not_exists => true);
 
 -- ============================================================================
+-- 4b. LANE SIZE (public schema, cross-lane size comparison)
+-- One row per (minute, serial_no, lane). Serial is required so machines never
+-- share the same aggregate (avoids mixing lanes across sizers).
+--
+-- If upgrading from an older definition without serial_no, drop and recreate:
+--   DROP MATERIALIZED VIEW IF EXISTS public.cagg_lane_size_minute CASCADE;
+-- then run db apply-caggs and refresh_continuous_aggregate for the needed range.
+-- ============================================================================
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.cagg_lane_size_minute
+WITH (timescaledb.continuous) AS
+SELECT time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
+       m.serial_no,
+       (lane.ord - 1)                          AS lane_idx,
+       sum((v.value)::integer)                 AS fruit_cnt,
+       sum(((v.value)::integer)::double precision
+           * COALESCE(public.size_group_value(v.key), 0))
+         / NULLIF(sum((v.value)::integer), 0)::double precision AS avg_size
+FROM   public.metrics m
+CROSS JOIN LATERAL jsonb_array_elements(m.value_json)
+     WITH ORDINALITY lane(lane_json, ord)
+CROSS JOIN LATERAL jsonb_each_text(lane.lane_json) v(key, value)
+WHERE  m.metric = 'lanes_size_fpm'
+  AND  jsonb_typeof(lane.lane_json) = 'object'
+GROUP  BY time_bucket('00:01:00'::interval, m.ts), m.serial_no, (lane.ord - 1)
+WITH NO DATA;
+
+SELECT add_continuous_aggregate_policy('public.cagg_lane_size_minute',
+    start_offset => '00:02:00'::interval,
+    end_offset   => '00:00:00'::interval,
+    schedule_interval => '00:01:00'::interval,
+    if_not_exists => true);
+
+-- ============================================================================
 -- 5. CUSTOM JOBS
 -- ============================================================================
 

@@ -128,6 +128,25 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="AnomalyDetection\AnomalyDetector.cs" />
+    <Compile Include="AnomalyDetection\AnomalyDetectorConfig.cs" />
+    <Compile Include="AnomalyDetection\AnomalyEvent.cs" />
+    <Compile Include="AnomalyDetection\CooldownTracker.cs" />
+    <Compile Include="AnomalyDetection\CompositeAlarmSink.cs" />
+    <Compile Include="AnomalyDetection\DatabaseAlarmSink.cs" />
+    <Compile Include="AnomalyDetection\GradeMatrix.cs" />
+    <Compile Include="AnomalyDetection\GradeMatrixParser.cs" />
+    <Compile Include="AnomalyDetection\IAlarmSink.cs" />
+    <Compile Include="AnomalyDetection\LlmEnricher.cs" />
+    <Compile Include="AnomalyDetection\LogAlarmSink.cs" />
+    <Compile Include="AnomalyDetection\NarrativeBuilder.cs" />
+    <Compile Include="AnomalyDetection\PriorityClassifier.cs" />
+    <Compile Include="AnomalyDetection\ReplayDataSource.cs" />
+    <Compile Include="AnomalyDetection\SizerAlarmSink.cs" />
+    <Compile Include="AnomalyDetection\SizeAnomalyConfig.cs" />
+    <Compile Include="AnomalyDetection\SizeAnomalyEvent.cs" />
+    <Compile Include="AnomalyDetection\SizeAnomalyEvaluator.cs" />
+    <Compile Include="AnomalyDetection\SizeDatabaseAlarmSink.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

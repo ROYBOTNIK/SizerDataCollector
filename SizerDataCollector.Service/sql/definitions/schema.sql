@@ -177,6 +177,20 @@ CREATE TABLE IF NOT EXISTS oee.grade_lane_anomalies (
     delivered_to    text NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS oee.lane_size_anomalies (
+    event_ts         timestamptz NOT NULL,
+    serial_no        text NOT NULL,
+    lane_no          smallint NOT NULL,
+    window_hours     integer NOT NULL,
+    lane_avg_size    double precision NOT NULL,
+    machine_avg_size double precision NOT NULL,
+    pct_deviation    double precision NOT NULL,
+    z_score          double precision NOT NULL,
+    severity         text NOT NULL,
+    model_version    text NOT NULL,
+    delivered_to     text NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS oee.etl_watermarks (
     key     text NOT NULL PRIMARY KEY,
     last_ts timestamptz NOT NULL

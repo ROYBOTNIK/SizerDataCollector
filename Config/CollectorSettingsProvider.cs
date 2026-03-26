@@ -126,7 +126,25 @@ namespace SizerDataCollector.Core.Config
 				LogAsJson = config.LogAsJson,
 				LogMaxFileBytes = config.LogMaxFileBytes,
 				LogRetentionDays = config.LogRetentionDays,
-				LogMaxFiles = config.LogMaxFiles
+				LogMaxFiles = config.LogMaxFiles,
+				EnableAnomalyDetection = config.EnableAnomalyDetection,
+				AnomalyWindowMinutes = config.AnomalyWindowMinutes,
+				AnomalyZGate = config.AnomalyZGate,
+				BandLowMin = config.BandLowMin,
+				BandLowMax = config.BandLowMax,
+				BandMediumMax = config.BandMediumMax,
+				AlarmCooldownSeconds = config.AlarmCooldownSeconds,
+				RecycleGradeKey = config.RecycleGradeKey,
+				EnableSizerAlarm = config.EnableSizerAlarm,
+				EnableLlmEnrichment = config.EnableLlmEnrichment,
+				LlmEndpoint = config.LlmEndpoint,
+				EnableSizeAnomalyDetection = config.EnableSizeAnomalyDetection,
+				EnableSizerSizeAlarm = config.EnableSizerSizeAlarm,
+				SizeEvalIntervalMinutes = config.SizeEvalIntervalMinutes,
+				SizeWindowHours = config.SizeWindowHours,
+				SizeZGate = config.SizeZGate,
+				SizePctDevMin = config.SizePctDevMin,
+				SizeCooldownMinutes = config.SizeCooldownMinutes
 			};
 		}
 

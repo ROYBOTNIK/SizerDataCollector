@@ -41,18 +41,18 @@ namespace SizerDataCollector.Core.Sizer.Discovery
 			DeriveLaneConfidence(summary);
 
 			if (summary.OutletCount == null &&
-			    summary.OutletNames == null &&
-			    summary.LaneViewCount == null &&
-			    summary.GradeLaneArrayLength == null &&
-			    summary.SizeLaneArrayLength == null &&
-			    summary.LastNonNullGradeLaneIndex == null &&
-			    summary.LastNonNullSizeLaneIndex == null &&
-			    summary.DerivedLaneCountCandidate == null &&
-			    summary.LaneCountConfidence == null &&
-			    summary.DistinctGradeKeys == null &&
-			    summary.DistinctSizeKeys == null &&
-			    summary.DistinctGradeKeysSample == null &&
-			    summary.DistinctSizeKeysSample == null)
+				summary.OutletNames == null &&
+				summary.LaneViewCount == null &&
+				summary.GradeLaneArrayLength == null &&
+				summary.SizeLaneArrayLength == null &&
+				summary.LastNonNullGradeLaneIndex == null &&
+				summary.LastNonNullSizeLaneIndex == null &&
+				summary.DerivedLaneCountCandidate == null &&
+				summary.LaneCountConfidence == null &&
+				summary.DistinctGradeKeys == null &&
+				summary.DistinctSizeKeys == null &&
+				summary.DistinctGradeKeysSample == null &&
+				summary.DistinctSizeKeysSample == null)
 			{
 				return null;
 			}

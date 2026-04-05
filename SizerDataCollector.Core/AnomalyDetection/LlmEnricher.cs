@@ -55,8 +55,8 @@ namespace SizerDataCollector.Core.AnomalyDetection
 		private async Task<string> EnrichAsync(AnomalyEvent evt, CancellationToken cancellationToken)
 		{
 			var prompt = $"Summarize this sizer anomaly alert in one sentence for a fruit packing line operator: " +
-			             $"{evt.AlarmTitle}. {evt.AlarmDetails}. Severity: {evt.Severity}. " +
-			             $"Lane {evt.LaneNo}, grade {evt.GradeKey}, deviation {evt.Pct:F1}%.";
+						 $"{evt.AlarmTitle}. {evt.AlarmDetails}. Severity: {evt.Severity}. " +
+						 $"Lane {evt.LaneNo}, grade {evt.GradeKey}, deviation {evt.Pct:F1}%.";
 
 			var payload = JsonConvert.SerializeObject(new { prompt });
 			var content = new StringContent(payload, Encoding.UTF8, "application/json");

@@ -32,23 +32,23 @@ namespace SizerDataCollector.Service.Commands
 					return SetSettings(options);
 				case "grade-map":
 					return GradeMap(options);
-			case "commission":
-				return Commission(options);
-			case "show-quality-params":
-				return ShowQualityParams(options);
-			case "set-quality-params":
-				return SetQualityParams(options);
-			case "show-perf-params":
-				return ShowPerfParams(options);
-			case "set-perf-params":
-				return SetPerfParams(options);
-			case "show-bands":
-				return ShowBands(options);
-			case "set-band":
-				return SetBand(options);
-			case "remove-band":
-				return RemoveBand(options);
-			default:
+				case "commission":
+					return Commission(options);
+				case "show-quality-params":
+					return ShowQualityParams(options);
+				case "set-quality-params":
+					return SetQualityParams(options);
+				case "show-perf-params":
+					return ShowPerfParams(options);
+				case "set-perf-params":
+					return SetPerfParams(options);
+				case "show-bands":
+					return ShowBands(options);
+				case "set-band":
+					return SetBand(options);
+				case "remove-band":
+					return RemoveBand(options);
+				default:
 					ShowMachineUsage();
 					return 1;
 			}
@@ -364,15 +364,15 @@ namespace SizerDataCollector.Service.Commands
 			var repo = new OeeParamsRepository(config.TimescaleConnectionString);
 			var existing = repo.GetQualityParamsAsync(serial, CancellationToken.None).GetAwaiter().GetResult();
 
-			var tgtGood    = ParseDecimalOpt(options, "tgt-good",    existing?.TgtGood    ?? 0.75m);
+			var tgtGood = ParseDecimalOpt(options, "tgt-good", existing?.TgtGood ?? 0.75m);
 			var tgtPeddler = ParseDecimalOpt(options, "tgt-peddler", existing?.TgtPeddler ?? 0.15m);
-			var tgtBad     = ParseDecimalOpt(options, "tgt-bad",     existing?.TgtBad     ?? 0.05m);
+			var tgtBad = ParseDecimalOpt(options, "tgt-bad", existing?.TgtBad ?? 0.05m);
 			var tgtRecycle = ParseDecimalOpt(options, "tgt-recycle", existing?.TgtRecycle ?? 0.05m);
-			var wGood      = ParseDecimalOpt(options, "w-good",      existing?.WGood      ?? 0.40m);
-			var wPeddler   = ParseDecimalOpt(options, "w-peddler",   existing?.WPeddler   ?? 0.20m);
-			var wBad       = ParseDecimalOpt(options, "w-bad",       existing?.WBad       ?? 0.20m);
-			var wRecycle   = ParseDecimalOpt(options, "w-recycle",   existing?.WRecycle   ?? 0.20m);
-			var sigK       = ParseDecimalOpt(options, "sig-k",       existing?.SigK       ?? 4.0m);
+			var wGood = ParseDecimalOpt(options, "w-good", existing?.WGood ?? 0.40m);
+			var wPeddler = ParseDecimalOpt(options, "w-peddler", existing?.WPeddler ?? 0.20m);
+			var wBad = ParseDecimalOpt(options, "w-bad", existing?.WBad ?? 0.20m);
+			var wRecycle = ParseDecimalOpt(options, "w-recycle", existing?.WRecycle ?? 0.20m);
+			var sigK = ParseDecimalOpt(options, "sig-k", existing?.SigK ?? 4.0m);
 
 			repo.UpsertQualityParamsAsync(serial, tgtGood, tgtPeddler, tgtBad, tgtRecycle,
 				wGood, wPeddler, wBad, wRecycle, sigK, CancellationToken.None).GetAwaiter().GetResult();
@@ -414,9 +414,9 @@ namespace SizerDataCollector.Service.Commands
 			var repo = new OeeParamsRepository(config.TimescaleConnectionString);
 			var existing = repo.GetPerfParamsAsync(serial, CancellationToken.None).GetAwaiter().GetResult();
 
-			var minEff   = ParseDecimalOpt(options, "min-effective",  existing?.MinEffectiveFpm   ?? 3m);
-			var lowRatio = ParseDecimalOpt(options, "low-ratio",      existing?.LowRatioThreshold ?? 0.5m);
-			var capAsym  = ParseDecimalOpt(options, "cap-asymptote",  existing?.CapAsymptote      ?? 0.2m);
+			var minEff = ParseDecimalOpt(options, "min-effective", existing?.MinEffectiveFpm ?? 3m);
+			var lowRatio = ParseDecimalOpt(options, "low-ratio", existing?.LowRatioThreshold ?? 0.5m);
+			var capAsym = ParseDecimalOpt(options, "cap-asymptote", existing?.CapAsymptote ?? 0.2m);
 
 			repo.UpsertPerfParamsAsync(serial, minEff, lowRatio, capAsym, CancellationToken.None).GetAwaiter().GetResult();
 

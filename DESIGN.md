@@ -443,7 +443,7 @@ This makes it straightforward for agents and schedulers to:
 
 ## Commissioning (`commissioning`)
 
-The commissioning CLI exposes key steps of the commissioning workflow that were previously only available via the WPF UI.
+The commissioning CLI exposes key steps of the commissioning workflow that historically lived in a desktop UI; they are now CLI-only.
 
 ```bash
 SizerDataCollector commissioning <subcommand> [options]
@@ -604,7 +604,7 @@ MESSAGE=Commissioning notes updated.
 SizerDataCollector commissioning reset --serial=ABC123
 ```
 
-Uses `CommissioningRepository.ResetAsync(serial, notes)` to clear commissioning timestamps/flags while preserving the row. Notes are left NULL by the CLI (WPF may choose to set its own).
+Uses `CommissioningRepository.ResetAsync(serial, notes)` to clear commissioning timestamps/flags while preserving the row. Notes are left NULL by the CLI.
 
 Output:
 
@@ -642,7 +642,7 @@ CATEGORY=2 NAME=Bad
 CATEGORY=3 NAME=Recycle
 ```
 
-The mapping is maintained in a small in‑code dictionary, derived from the SQL grade bands (`good`, `peddler`, `bad`, `recycle`) and the WPF UI’s category labels.
+The mapping is maintained in a small in‑code dictionary, derived from the SQL grade bands (`good`, `peddler`, `bad`, `recycle`) and the CLI’s category labels.
 
 ### `grades resolve`
 

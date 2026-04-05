@@ -67,6 +67,15 @@ BEGIN
 END;
 $$;
 
+-- oee.calc_perf_ratio — float8 overload (public views use double precision aggregates)
+CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(total_fpm double precision, missed_fpm double precision, recycle_fpm double precision, target_fpm double precision) RETURNS numeric
+    LANGUAGE sql
+    IMMUTABLE
+    PARALLEL SAFE
+AS $$
+SELECT oee.calc_perf_ratio(total_fpm::numeric, missed_fpm::numeric, recycle_fpm::numeric, target_fpm::numeric);
+$$;
+
 
 -- oee.calc_perf_ratio (serial-aware) — reads from oee.perf_params, falls back to defaults
 CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(p_serial_no text, total_fpm numeric, missed_fpm numeric, recycle_fpm numeric, target_fpm numeric) RETURNS numeric
@@ -169,6 +178,15 @@ BEGIN
          + part_bad     * w_bad
          + part_recycle * w_recycle;
 END;
+$$;
+
+-- oee.calc_quality_ratio_qv1 — float8 overload (views aggregate double precision; delegates to numeric core)
+CREATE OR REPLACE FUNCTION oee.calc_quality_ratio_qv1(good_qty double precision, peddler_qty double precision, bad_qty double precision, recycle_qty double precision) RETURNS numeric
+    LANGUAGE sql
+    IMMUTABLE
+    PARALLEL SAFE
+AS $$
+SELECT oee.calc_quality_ratio_qv1(good_qty::numeric, peddler_qty::numeric, bad_qty::numeric, recycle_qty::numeric);
 $$;
 
 
@@ -442,29 +460,30 @@ IMMUTABLE
 AS $$ SELECT oee.grade_to_cat(NULL, p_grade); $$;
 
 
--- oee.grade_qty(grade_json, desired_cat) — V002 (single-arg, uses oee.grade_to_cat(key))
+-- oee.grade_qty(j, desired_cat) — V002 (single-arg, uses oee.grade_to_cat(key))
+-- DROP required: return type changed from integer to numeric; CREATE OR REPLACE cannot alter it.
 DROP FUNCTION IF EXISTS oee.grade_qty(jsonb, integer);
 
-CREATE OR REPLACE FUNCTION oee.grade_qty(grade_json jsonb, desired_cat integer)
-RETURNS integer
+CREATE OR REPLACE FUNCTION oee.grade_qty(j jsonb, desired_cat integer)
+RETURNS numeric
 LANGUAGE plpgsql
 IMMUTABLE
 AS $$
 DECLARE
-  total integer := 0;
+  total numeric := 0;
   kv record;
-  v_int integer;
+  v_num numeric;
 BEGIN
-  IF grade_json IS NULL THEN
+  IF j IS NULL OR jsonb_typeof(j) <> 'object' THEN
     RETURN 0;
   END IF;
 
-  FOR kv IN SELECT key, value FROM jsonb_each_text(grade_json)
+  FOR kv IN SELECT key, value FROM jsonb_each_text(j)
   LOOP
-    v_int := COALESCE(NULLIF(kv.value, '')::integer, 0);
+    v_num := COALESCE(NULLIF(kv.value, '')::numeric, 0);
 
     IF oee.grade_to_cat(kv.key) = desired_cat THEN
-      total := total + v_int;
+      total := total + v_num;
     END IF;
   END LOOP;
 
@@ -484,7 +503,7 @@ DECLARE
   kv record;
   v_int integer;
 BEGIN
-  IF grade_json IS NULL THEN
+  IF grade_json IS NULL OR jsonb_typeof(grade_json) <> 'object' THEN
     RETURN 0;
   END IF;
 
@@ -508,9 +527,14 @@ CREATE OR REPLACE FUNCTION oee.grade_qty(p_serial_no text, j jsonb, desired_cat 
 AS $$
 SELECT COALESCE(
          SUM((kv.value)::numeric), 0)
-FROM   jsonb_array_elements(j)               AS lane(lj)
-       CROSS JOIN LATERAL jsonb_each_text(lj) AS kv(key,value)
-WHERE  oee.grade_to_cat(p_serial_no, kv.key) = desired_cat;
+FROM   jsonb_array_elements(
+         CASE WHEN jsonb_typeof(j) = 'array' THEN j ELSE '[]'::jsonb END
+       ) AS lane(lj)
+       CROSS JOIN LATERAL jsonb_each_text(
+         CASE WHEN jsonb_typeof(lj) = 'object' THEN lj ELSE '{}'::jsonb END
+       ) AS kv(key,value)
+WHERE  jsonb_typeof(lj) = 'object'
+  AND  oee.grade_to_cat(p_serial_no, kv.key) = desired_cat;
 $$;
 
 

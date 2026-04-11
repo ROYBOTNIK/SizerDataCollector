@@ -276,6 +276,14 @@ END $$;
 -- ============================================================================
 -- 3. GRADE / QUALITY
 -- ============================================================================
+--
+-- Retired (not created here; may still exist on old DBs): public.cagg_lane_grade_minute
+--   Direct-from-metrics aggregate; breaks on bad lanes_grade_fpm array elements. Canonical
+--   path is oee.lane_grade_minute (see oee.refresh_lane_grade_minute job) and the
+--   oee.cagg_lane_grade_qty_* / oee.cagg_grade_qty_* CAGGs below. Do not add it back.
+--   db list-caggs omits it unless --include-legacy.
+--
+-- ============================================================================
 
 -- 3a. oee.cagg_lane_grade_qty_minute_batch  (_direct_view_50)
 DO $$

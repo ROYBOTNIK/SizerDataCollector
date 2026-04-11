@@ -1010,8 +1010,8 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("  SizerDataCollector.Service.exe db apply-views");
 			Console.WriteLine("  SizerDataCollector.Service.exe db apply-all");
 			Console.WriteLine("  SizerDataCollector.Service.exe db list-functions");
-			Console.WriteLine("  SizerDataCollector.Service.exe db list-views");
-			Console.WriteLine("  SizerDataCollector.Service.exe db list-caggs");
+			Console.WriteLine("  SizerDataCollector.Service.exe db list-views   [--include-legacy]");
+			Console.WriteLine("  SizerDataCollector.Service.exe db list-caggs   [--include-legacy]");
 			Console.WriteLine();
 			Console.WriteLine("Machine setup:");
 			Console.WriteLine("  SizerDataCollector.Service.exe machine list");

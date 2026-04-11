@@ -121,8 +121,10 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
   - `SizerDataCollector.Service.exe db apply-views`
   - `SizerDataCollector.Service.exe db apply-all`
   - `SizerDataCollector.Service.exe db list-functions`
-  - `SizerDataCollector.Service.exe db list-views`
-  - `SizerDataCollector.Service.exe db list-caggs`
+  - `SizerDataCollector.Service.exe db list-views`  
+    Optional `--include-legacy` lists retired `public.cagg_lane_grade_minute` and `public.v_quality_minute_filled` if they still exist.
+  - `SizerDataCollector.Service.exe db list-caggs`  
+    Optional `--include-legacy` lists retired `public.cagg_lane_grade_minute` if it still exists.
 
 - **Machine / OEE configuration**
   - `SizerDataCollector.Service.exe machine list`

@@ -205,19 +205,25 @@ FROM timescaledb_information.continuous_aggregates;";
 				}
 			}
 
+			var foundRequiredCaggs = 0;
 			foreach (var cagg in RequiredCaggs)
 			{
 				if (!existingViews.Contains(cagg.QualifiedName))
 				{
 					report.MissingContinuousAggregates.Add(cagg.QualifiedName);
 				}
-				else if (matMap.TryGetValue(cagg.QualifiedName, out var matName))
+				else
 				{
-					report.MaterializationHypertables[cagg.QualifiedName] = matName;
+					foundRequiredCaggs++;
+					if (matMap.TryGetValue(cagg.QualifiedName, out var matName))
+					{
+						report.MaterializationHypertables[cagg.QualifiedName] = matName;
+					}
 				}
 			}
 
-			report.ContinuousAggregateCount = existingViews.Count;
+			// Report canonical CAGG coverage only; older DBs may still contain retired aggregates.
+			report.ContinuousAggregateCount = foundRequiredCaggs;
 		}
 
 		private static async Task CheckRefreshPoliciesAsync(NpgsqlConnection connection, DbHealthReport report, CancellationToken cancellationToken)
@@ -270,7 +276,7 @@ ORDER BY ca.view_schema, ca.view_name;";
 			}
 
 			report.ExpectedPolicies = RequiredCaggs.Length;
-			report.FoundPolicies = policyMap.Count;
+			report.FoundPolicies = RequiredCaggs.Count(cagg => policyMap.Contains(cagg.QualifiedName));
 
 			foreach (var cagg in RequiredCaggs)
 			{

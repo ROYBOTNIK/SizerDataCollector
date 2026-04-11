@@ -58,7 +58,7 @@ flowchart TD
 - **Database CLI commands**
   - `SizerDataCollector.Service/Commands/DbCommands.cs`
     - `db status`, `db init`, `db apply-functions`, `db apply-caggs`, `db apply-views`, `db apply-all`,
-      `db list-functions`, `db list-views`, `db list-caggs`.
+      `db list-functions`, `db list-views`, `db list-caggs` (optional `--include-legacy` on the two list commands).
 - **Machine / OEE configuration CLI**
   - `SizerDataCollector.Service/Commands/MachineCommands.cs`
     - `machine list`, `register`, `status`, `set-thresholds`, `set-settings`, `grade-map`, `commission`,
@@ -309,6 +309,7 @@ All schema-level database changes should be made in **four authoritative files**
     - Refresh policies and any custom jobs.
   - CAGGs are created inside `DO $$` blocks with `IF NOT EXISTS` checks against `timescaledb_information.continuous_aggregates`.
   - Refresh policies use `if_not_exists => true` to avoid duplication.
+  - **Legacy (intentionally absent):** `public.cagg_lane_grade_minute` is **not** defined here. Older databases may still have it; it reads `lanes_grade_fpm` directly and refresh can fail on bad JSON. The supported path is `oee.lane_grade_minute` (via the `oee.refresh_lane_grade_minute` job) and the `oee.cagg_lane_grade_qty_*` / `oee.cagg_grade_qty_*` CAGGs. **`db list-caggs`** and **`db list-views`** omit that legacy CAGG and `public.v_quality_minute_filled` unless **`--include-legacy`**. Do not add `CALL refresh_continuous_aggregate('public.cagg_lane_grade_minute', …)` to normal runbooks.
 
 - `SizerDataCollector.Service/sql/definitions/views.sql`
   - All user-facing **views**, including the higher-level OEE rollups and reporting views that match production.
@@ -371,8 +372,10 @@ All commands are executed against `SizerDataCollector.Service.exe` from the serv
   - `SizerDataCollector.Service.exe db apply-all`
 - Introspection (read-only):
   - `SizerDataCollector.Service.exe db list-functions`
-  - `SizerDataCollector.Service.exe db list-views`
-  - `SizerDataCollector.Service.exe db list-caggs`
+  - `SizerDataCollector.Service.exe db list-views`  
+    Append `--include-legacy` to list retired `public.cagg_lane_grade_minute` and `public.v_quality_minute_filled` when they still exist.
+  - `SizerDataCollector.Service.exe db list-caggs`  
+    Append `--include-legacy` to list retired `public.cagg_lane_grade_minute` when it still exists.
 
 #### Machine / OEE configuration
 

@@ -67,13 +67,13 @@ BEGIN
 END;
 $$;
 
--- oee.calc_perf_ratio — float8 overload (public views use double precision aggregates)
-CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(total_fpm double precision, missed_fpm double precision, recycle_fpm double precision, target_fpm double precision) RETURNS numeric
+-- oee.calc_perf_ratio — float8 overload (preserves legacy double precision return type)
+CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(total_fpm double precision, missed_fpm double precision, recycle_fpm double precision, target_fpm double precision) RETURNS double precision
     LANGUAGE sql
     IMMUTABLE
     PARALLEL SAFE
 AS $$
-SELECT oee.calc_perf_ratio(total_fpm::numeric, missed_fpm::numeric, recycle_fpm::numeric, target_fpm::numeric);
+SELECT (oee.calc_perf_ratio(total_fpm::numeric, missed_fpm::numeric, recycle_fpm::numeric, target_fpm::numeric))::double precision;
 $$;
 
 
@@ -115,6 +115,21 @@ BEGIN
 
     RETURN LEAST(1, GREATEST(0, ratio));
 END;
+$$;
+
+-- oee.calc_perf_ratio (serial-aware float8 overload) — delegates to numeric implementation
+CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(p_serial_no text, total_fpm double precision, missed_fpm double precision, recycle_fpm double precision, target_fpm double precision) RETURNS numeric
+    LANGUAGE sql
+    STABLE
+    PARALLEL SAFE
+AS $$
+SELECT oee.calc_perf_ratio(
+    p_serial_no,
+    total_fpm::numeric,
+    missed_fpm::numeric,
+    recycle_fpm::numeric,
+    target_fpm::numeric
+);
 $$;
 
 
@@ -180,13 +195,13 @@ BEGIN
 END;
 $$;
 
--- oee.calc_quality_ratio_qv1 — float8 overload (views aggregate double precision; delegates to numeric core)
-CREATE OR REPLACE FUNCTION oee.calc_quality_ratio_qv1(good_qty double precision, peddler_qty double precision, bad_qty double precision, recycle_qty double precision) RETURNS numeric
+-- oee.calc_quality_ratio_qv1 — float8 overload (preserves legacy double precision return type)
+CREATE OR REPLACE FUNCTION oee.calc_quality_ratio_qv1(good_qty double precision, peddler_qty double precision, bad_qty double precision, recycle_qty double precision) RETURNS double precision
     LANGUAGE sql
     IMMUTABLE
     PARALLEL SAFE
 AS $$
-SELECT oee.calc_quality_ratio_qv1(good_qty::numeric, peddler_qty::numeric, bad_qty::numeric, recycle_qty::numeric);
+SELECT (oee.calc_quality_ratio_qv1(good_qty::numeric, peddler_qty::numeric, bad_qty::numeric, recycle_qty::numeric))::double precision;
 $$;
 
 
@@ -268,6 +283,21 @@ BEGIN
          + part_bad     * v_w_bad
          + part_recycle * v_w_recycle;
 END;
+$$;
+
+-- oee.calc_quality_ratio_qv1 (serial-aware float8 overload) — delegates to numeric implementation
+CREATE OR REPLACE FUNCTION oee.calc_quality_ratio_qv1(p_serial_no text, good_qty double precision, peddler_qty double precision, bad_qty double precision, recycle_qty double precision) RETURNS numeric
+    LANGUAGE sql
+    STABLE
+    PARALLEL SAFE
+AS $$
+SELECT oee.calc_quality_ratio_qv1(
+    p_serial_no,
+    good_qty::numeric,
+    peddler_qty::numeric,
+    bad_qty::numeric,
+    recycle_qty::numeric
+);
 $$;
 
 

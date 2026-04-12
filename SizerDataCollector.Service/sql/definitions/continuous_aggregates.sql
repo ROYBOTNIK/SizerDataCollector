@@ -228,6 +228,7 @@ BEGIN
             + oee.outlet_recycle_fpm((max((m.value_json)::text) FILTER (WHERE (m.metric = 'outlets_details'::text)))::jsonb, ms.recycle_outlet)) AS combined_recycle_fpm,
            ((((ms.target_machine_speed * (ms.lane_count)::double precision) * ms.target_percentage) / (100.0)::double precision))::numeric AS target_throughput,
            oee.calc_perf_ratio(
+               m.serial_no,
                oee.num((max((m.value_json)::text) FILTER (WHERE (m.metric = 'machine_total_fpm'::text)))::jsonb),
                oee.num((max((m.value_json)::text) FILTER (WHERE (m.metric = 'machine_missed_fpm'::text)))::jsonb),
                (oee.num((max((m.value_json)::text) FILTER (WHERE (m.metric = 'machine_recycle_fpm'::text)))::jsonb)
@@ -266,7 +267,7 @@ BEGIN
            avg(cupfill_pct) AS cupfill_pct,
            avg(tph) AS tph,
            avg(target_throughput) AS target_throughput,
-           oee.calc_perf_ratio(avg(total_fpm), avg(missed_fpm), avg(combined_recycle_fpm), avg(target_throughput)) AS throughput_ratio
+           oee.calc_perf_ratio(serial_no, avg(total_fpm), avg(missed_fpm), avg(combined_recycle_fpm), avg(target_throughput)) AS throughput_ratio
     FROM oee.cagg_throughput_minute_batch
     GROUP BY public.time_bucket('1 day'::interval, minute_ts), serial_no, batch_record_id
     WITH NO DATA;

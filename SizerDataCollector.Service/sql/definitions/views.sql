@@ -37,12 +37,13 @@ SELECT c.minute_ts,
                WHEN (c.cat = 3) THEN (c.sum_qty / (NULLIF(c.sample_ct, 0))::double precision)
                ELSE (0)::double precision
            END) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(
+       (oee.calc_quality_ratio_qv1(
+           c.serial_no,
            COALESCE(sum(CASE WHEN (c.cat = 0) THEN (c.sum_qty / (NULLIF(c.sample_ct, 0))::double precision) ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (c.cat = 1) THEN (c.sum_qty / (NULLIF(c.sample_ct, 0))::double precision) ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (c.cat = 2) THEN (c.sum_qty / (NULLIF(c.sample_ct, 0))::double precision) ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (c.cat = 3) THEN (c.sum_qty / (NULLIF(c.sample_ct, 0))::double precision) ELSE (0)::double precision END), (0)::double precision)
-       ) AS quality_ratio,
+       ))::double precision AS quality_ratio,
        min(b.grower_code) AS lot,
        min(b.comments) AS variety
 FROM oee.cagg_grade_minute_batch c
@@ -60,7 +61,7 @@ SELECT a.minute_ts,
        COALESCE(a.lot, t.lot, q.lot) AS lot,
        COALESCE(a.variety, t.variety, q.variety) AS variety
 FROM oee.cagg_availability_minute_batch a
-JOIN oee.cagg_throughput_minute_batch t
+JOIN oee.v_throughput_minute_batch t
      ON (t.minute_ts = a.minute_ts AND t.serial_no = a.serial_no AND t.batch_record_id = a.batch_record_id)
 JOIN oee.v_quality_minute_batch q
      ON (q.minute_ts = a.minute_ts AND q.serial_no = a.serial_no AND q.batch_record_id = a.batch_record_id);
@@ -89,7 +90,7 @@ SELECT a.minute_ts,
        (q.quality_ratio)::numeric AS quality_ratio,
        ((a.availability * t.throughput_ratio) * (q.quality_ratio)::numeric) AS oee_score
 FROM oee.cagg_availability_minute_batch a
-JOIN oee.cagg_throughput_minute_batch t
+JOIN oee.v_throughput_minute_batch t
      ON (t.minute_ts = a.minute_ts AND t.serial_no = a.serial_no AND t.batch_record_id = a.batch_record_id)
 JOIN oee.v_quality_minute_batch q
      ON (q.minute_ts = a.minute_ts AND q.serial_no = a.serial_no AND q.batch_record_id = a.batch_record_id);
@@ -429,12 +430,13 @@ SELECT batch_record_id AS batch_id,
        sum(COALESCE(peddler_qty, (0)::double precision)) AS peddler_qty,
        sum(COALESCE(bad_qty, (0)::double precision)) AS bad_qty,
        sum(COALESCE(recycle_qty, (0)::double precision)) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(
+       (oee.calc_quality_ratio_qv1(
+           serial_no,
            sum(COALESCE(good_qty, (0)::double precision)),
            sum(COALESCE(peddler_qty, (0)::double precision)),
            sum(COALESCE(bad_qty, (0)::double precision)),
            sum(COALESCE(recycle_qty, (0)::double precision))
-       ) AS quality_ratio,
+       ))::double precision AS quality_ratio,
        min(lot) AS lot,
        min(variety) AS variety
 FROM oee.v_quality_minute_batch
@@ -449,12 +451,13 @@ SELECT c.day,
        sum(CASE WHEN (c.cat = 1) THEN c.qty ELSE (0)::double precision END) AS peddler_qty,
        sum(CASE WHEN (c.cat = 2) THEN c.qty ELSE (0)::double precision END) AS bad_qty,
        sum(CASE WHEN (c.cat = 3) THEN c.qty ELSE (0)::double precision END) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(
+       (oee.calc_quality_ratio_qv1(
+           c.serial_no,
            COALESCE(sum(CASE WHEN (c.cat = 0) THEN c.qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (c.cat = 1) THEN c.qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (c.cat = 2) THEN c.qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (c.cat = 3) THEN c.qty ELSE (0)::double precision END), (0)::double precision)
-       ) AS quality_ratio,
+       ))::double precision AS quality_ratio,
        min(b.grower_code) AS lot,
        min(b.comments) AS variety
 FROM oee.cagg_quality_cat_daily_batch c
@@ -467,12 +470,13 @@ SELECT (day)::date AS day,
        sum(CASE WHEN (cat = 1) THEN qty ELSE (0)::double precision END) AS peddler_qty,
        sum(CASE WHEN (cat = 2) THEN qty ELSE (0)::double precision END) AS bad_qty,
        sum(CASE WHEN (cat = 3) THEN qty ELSE (0)::double precision END) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(
+       (oee.calc_quality_ratio_qv1(
+           serial_no,
            COALESCE(sum(CASE WHEN (cat = 0) THEN qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 1) THEN qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 2) THEN qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 3) THEN qty ELSE (0)::double precision END), (0)::double precision)
-       ) AS quality_ratio,
+       ))::double precision AS quality_ratio,
        serial_no
 FROM oee.cagg_quality_cat_daily_batch c
 GROUP BY (day)::date, serial_no;
@@ -483,12 +487,13 @@ SELECT minute_ts AS ts,
        sum(CASE WHEN (cat = 1) THEN qty ELSE (0)::double precision END) AS peddler_qty,
        sum(CASE WHEN (cat = 2) THEN qty ELSE (0)::double precision END) AS bad_qty,
        sum(CASE WHEN (cat = 3) THEN qty ELSE (0)::double precision END) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(
+       (oee.calc_quality_ratio_qv1(
+           serial_no,
            COALESCE(sum(CASE WHEN (cat = 0) THEN qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 1) THEN qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 2) THEN qty ELSE (0)::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 3) THEN qty ELSE (0)::double precision END), (0)::double precision)
-       ) AS quality_ratio,
+       ))::double precision AS quality_ratio,
        serial_no
 FROM oee.cagg_quality_cat_minute_batch c
 GROUP BY minute_ts, serial_no;
@@ -507,7 +512,7 @@ SELECT day,
        cupfill_pct,
        tph,
        target_throughput,
-       throughput_ratio
+       oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, combined_recycle_fpm, target_throughput) AS throughput_ratio
 FROM oee.cagg_throughput_daily_batch;
 
 CREATE OR REPLACE VIEW oee.v_throughput_minute_batch AS
@@ -524,7 +529,7 @@ SELECT minute_ts,
        cupfill_pct,
        tph,
        target_throughput,
-       throughput_ratio
+       oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, combined_recycle_fpm, target_throughput) AS throughput_ratio
 FROM oee.cagg_throughput_minute_batch;
 
 -- ============================================================================
@@ -569,12 +574,13 @@ SELECT ts,
        sum(CASE WHEN (cat = 1) THEN qty ELSE NULL::double precision END) AS peddler_qty,
        sum(CASE WHEN (cat = 2) THEN qty ELSE NULL::double precision END) AS bad_qty,
        sum(CASE WHEN (cat = 3) THEN qty ELSE NULL::double precision END) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(
+       (oee.calc_quality_ratio_qv1(
+           serial_no,
            COALESCE(sum(CASE WHEN (cat = 0) THEN qty ELSE NULL::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 1) THEN qty ELSE NULL::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 2) THEN qty ELSE NULL::double precision END), (0)::double precision),
            COALESCE(sum(CASE WHEN (cat = 3) THEN qty ELSE NULL::double precision END), (0)::double precision)
-       ) AS quality_ratio,
+       ))::double precision AS quality_ratio,
        serial_no
 FROM cats
 GROUP BY ts, serial_no;
@@ -589,7 +595,7 @@ SELECT b.id AS batch_id,
        sum(mv.peddler_qty) AS peddler_qty,
        sum(mv.bad_qty) AS bad_qty,
        sum(mv.recycle_qty) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(sum(mv.good_qty), sum(mv.peddler_qty), sum(mv.bad_qty), sum(mv.recycle_qty)) AS quality_ratio,
+       (oee.calc_quality_ratio_qv1(mv.serial_no, sum(mv.good_qty), sum(mv.peddler_qty), sum(mv.bad_qty), sum(mv.recycle_qty)))::double precision AS quality_ratio,
        mv.serial_no
 FROM public.batches b
 LEFT JOIN public.minute_quality_view_qv1_old mv
@@ -603,7 +609,7 @@ SELECT (ts)::date AS day,
        sum(peddler_qty) AS peddler_qty,
        sum(bad_qty) AS bad_qty,
        sum(recycle_qty) AS recycle_qty,
-       oee.calc_quality_ratio_qv1(sum(good_qty), sum(peddler_qty), sum(bad_qty), sum(recycle_qty)) AS quality_ratio,
+       (oee.calc_quality_ratio_qv1(serial_no, sum(good_qty), sum(peddler_qty), sum(bad_qty), sum(recycle_qty)))::double precision AS quality_ratio,
        serial_no
 FROM public.minute_quality_view_qv1_old mv
 GROUP BY (ts)::date, serial_no;
@@ -638,7 +644,7 @@ SELECT t.day,
        (t.recycle_fpm + COALESCE(o.outlet_recycle_fpm, (0)::double precision)) AS combined_recycle_fpm,
        t.cupfill_pct,
        t.tph,
-       oee.calc_perf_ratio(t.total_fpm, t.missed_fpm, (t.recycle_fpm + COALESCE(o.outlet_recycle_fpm, (0)::double precision)), (oee.get_target_throughput(t.serial_no))::double precision) AS throughput_ratio,
+       (oee.calc_perf_ratio(t.serial_no, t.total_fpm, t.missed_fpm, (t.recycle_fpm + COALESCE(o.outlet_recycle_fpm, (0)::double precision)), (oee.get_target_throughput(t.serial_no))::double precision))::double precision AS throughput_ratio,
        t.serial_no
 FROM t
 LEFT JOIN o ON (o.day = t.day AND o.serial_no = t.serial_no);

@@ -158,3 +158,4 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
 ### Additional documentation
 
 - **`DESIGN.md`**: design notes for the console `SizerDataCollector` CLI and automation-oriented workflows merged from `master`.
+- **`ADAPTIVE_THRESHOLDS_WORKFLOW.md`**: operator and AI-agent workflow for machine-specific quality/performance tuning, validation, and rollback.

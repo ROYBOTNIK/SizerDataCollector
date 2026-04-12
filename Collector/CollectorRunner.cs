@@ -75,7 +75,7 @@ namespace SizerDataCollector.Core.Collector
 		{
 			lock (_status.SyncRoot)
 			{
-				_status.LastPollStartUtc = startUtc;
+				_status.LastPollStartedUtc = startUtc;
 			}
 		}
 
@@ -83,7 +83,7 @@ namespace SizerDataCollector.Core.Collector
 		{
 			lock (_status.SyncRoot)
 			{
-				_status.LastPollEndUtc = endUtc;
+				_status.LastPollCompletedUtc = endUtc;
 				_status.TotalPollsStarted++;
 				_status.TotalPollsSucceeded++;
 				_status.LastPollError = null;
@@ -94,7 +94,7 @@ namespace SizerDataCollector.Core.Collector
 		{
 			lock (_status.SyncRoot)
 			{
-				_status.LastPollEndUtc = endUtc;
+				_status.LastPollCompletedUtc = endUtc;
 				_status.TotalPollsStarted++;
 				_status.TotalPollsFailed++;
 				_status.LastPollError = ex?.Message ?? "Unknown error";

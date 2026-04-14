@@ -83,7 +83,7 @@ flowchart TD
     - See the [Anomaly detection subsystem](#anomaly-detection-subsystem) and [Size anomaly detection subsystem](#size-anomaly-detection-subsystem) sections for the full file tables.
   - Grade detector: wired into `CollectorEngine.RunSinglePollAsync` (inline, zero extra threads).
   - Size evaluator: runs on its own `Task.Delay`-based timer in `SizerCollectorService.RunSupervisedLoopAsync`.
-  - CLI commands: `set-anomaly`, `set-sizer-alarm`, `replay-anomaly`, `set-size-anomaly`, `size-health` in `Program.cs`.
+  - CLI commands: `set-anomaly`, `set-sizer-alarm`, `replay-anomaly`, `set-size-anomaly`, `size-health`, `anomaly offenders`, `anomaly impact`, `anomaly tuning-compare` in `Program.cs`.
 
 When deciding **where to add logic**, prefer:
 
@@ -284,6 +284,11 @@ flowchart TD
 - **`public.cagg_lane_size_minute`** -- TimescaleDB continuous aggregate. Defined in `continuous_aggregates.sql`. One row per `(minute_ts, serial_no, lane_idx)`: weighted-average fruit size from `lanes_size_fpm` for that sizer only. Filters out null JSON array elements. `SizeAnomalyEvaluator` always filters `WHERE serial_no = @serial_no`. If you deployed an older CAGG without `serial_no`, drop it and re-apply (see comment in `continuous_aggregates.sql`), then refresh the aggregate.
 - **`public.lane_size_anomaly`**, **`public.lane_size_health_24h`**, **`public.lane_size_health_season`** -- Defined in `views.sql`. All partition cross-lane stats by `serial_no`. Dashboard SQL should filter `WHERE serial_no = '<sn>'` (replacing any hard-coded serial).
 - **`oee.lane_size_anomalies`** -- Event table. Defined in `schema.sql`. Stores `event_ts`, `serial_no`, `lane_no`, `window_hours`, `lane_avg_size`, `machine_avg_size`, `pct_deviation`, `z_score`, `severity`, `model_version`, `delivered_to`.
+- **`oee.v_grade_anomaly_event_detail`**, **`oee.v_size_anomaly_event_detail`**, **`oee.v_anomaly_event_detail`** -- Normalized reporting inputs for persisted anomaly events.
+- **`oee.v_anomaly_offender_scorecard_daily`** -- Daily recurring-offender rollup over persisted anomaly events.
+- **`oee.v_anomaly_offender_cluster_daily`** -- Daily offender clustering metrics (active minutes, span, direction, runtime share).
+- **`oee.v_grade_anomaly_impact_summary`**, **`oee.v_size_anomaly_impact_summary`**, **`oee.v_anomaly_impact_summary`** -- Reporting views that correlate persisted anomaly events with minute-level throughput, quality, and OEE context.
+- **`oee.v_anomaly_impact_family_summary_daily`** -- Daily family-level post-impact rollup with materiality labels.
 
 ---
 
@@ -465,6 +470,43 @@ All commands are executed against `SizerDataCollector.Service.exe` from the serv
        8 |   25.6mm |     +0.5mm |    +3.5% |     +2.8 | ALARM (oversizing)
     ```
 
+#### Anomaly reporting
+
+- Recurring offender scorecard:
+  - `SizerDataCollector.Service.exe anomaly offenders --serial <sn> --type grade|size|both [--hours <h>]`
+  - `SizerDataCollector.Service.exe anomaly offenders --serial <sn> --from <date> --to <date> [--limit <n>]`
+  - Uses persisted anomaly events from `oee.grade_lane_anomalies` and `oee.lane_size_anomalies`.
+  - Returns lane/grade or lane/window repeat counts, severity mix, and max deviation values.
+  - Run this first when the goal is to identify recurring sources before asking whether they matter operationally.
+  - Treat `repeat_count` as a persistence/recurrence indicator, not a clean count of distinct failures.
+  - Phase 2 output also includes cluster context (`dir`, `activeMin`, `spanMin`, `batches`, `lots`, `runtime`) for better persistence interpretation.
+- Anomaly-to-impact correlation:
+  - `SizerDataCollector.Service.exe anomaly impact --serial <sn> --type grade|size|both [--hours <h>]`
+  - `SizerDataCollector.Service.exe anomaly impact --serial <sn> --from <date> --to <date> [--limit <n>]`
+  - Correlates persisted anomaly events with minute-level throughput, quality, and OEE context.
+  - Grade anomalies join directly by `serial_no`, `batch_record_id`, and event minute. Size anomalies infer batch context from `public.batches` when possible.
+  - Run this after `anomaly offenders` when you need to distinguish meaningful operational issues from detector noise.
+  - Treat the output as temporal association and operational context, not proof that the anomaly caused the metric change.
+- Aggregate impact rollups:
+  - `SizerDataCollector.Service.exe anomaly impact-summary --serial <sn> --type grade|size|both [--hours <h>]`
+  - `SizerDataCollector.Service.exe anomaly impact-summary --serial <sn> --from <date> --to <date> [--limit <n>]`
+  - Ranks anomaly families by average post-event OEE/throughput drift and flags high-severity families with repeated negative post impact.
+  - Includes family-level classification labels: `likely_material`, `mixed_unclear`, `likely_non_material`.
+- Replay/tuning comparison:
+  - `SizerDataCollector.Service.exe anomaly tuning-compare --serial <sn> --type grade|size|both --baseline-from <date> --baseline-to <date> --candidate-from <date> --candidate-to <date> [--limit <n>]`
+  - Compares event count, severity mix, and top offenders across two windows.
+  - Run this only after defining two windows that answer a real before/after question.
+- Recommended CLI order for agents:
+  - `anomaly offenders`
+  - `anomaly impact`
+  - `anomaly impact-summary`
+  - `anomaly tuning-compare` when comparison is needed
+- If reports return no rows:
+  - Do not assume the machine had no anomalies.
+  - First confirm whether anomaly events were persisted for that window.
+  - If needed, seed history for grade anomalies with `replay-anomaly --persist`.
+- For operational usage and future agent routing, read `ANOMALY_REPORTING_WORKFLOW.md` for the decision rubric, duplicate-row troubleshooting, worked examples, and documentation validation checklist.
+
 #### Alarm testing
 
 - Send a test alarm to the Sizer screen to verify WCF connectivity:
@@ -537,6 +579,11 @@ Before making any change:
      - `SizerDataCollector.Service/Program.cs` `ShowUsage()` output.
      - `README.md` CLI usage summary.
      - This `AI_AGENT_GUIDE.md` if the change impacts how agents should operate.
+     - Any repo workflow file that future operators or agents should follow, such as `ADAPTIVE_THRESHOLDS_WORKFLOW.md` or `ANOMALY_REPORTING_WORKFLOW.md`.
+  - If anomaly reporting wording changes, keep all docs aligned on two points:
+    - offender repeats are recurrence indicators, not distinct-failure counts
+    - impact summaries show association/context, not causation proof
+   - Prefer plain CLI examples in markdown files over shell-specific wrappers unless the command truly requires external tooling.
 
 By following this guide, AI assistants can safely modify the system, apply database updates, and reason about configuration without reintroducing legacy migration complexity.
 

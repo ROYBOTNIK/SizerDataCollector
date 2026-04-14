@@ -532,6 +532,472 @@ SELECT minute_ts,
        oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, combined_recycle_fpm, target_throughput) AS throughput_ratio
 FROM oee.cagg_throughput_minute_batch;
 
+CREATE OR REPLACE VIEW oee.v_grade_anomaly_event_detail AS
+SELECT a.event_ts,
+       public.time_bucket('00:01:00'::interval, a.event_ts) AS minute_ts,
+       date_trunc('day'::text, a.event_ts) AS event_day,
+       a.serial_no,
+       (a.batch_record_id)::bigint AS batch_record_id,
+       a.lane_no,
+       a.grade_key,
+       NULL::integer AS window_hours,
+       a.qty,
+       a.pct AS score_pct,
+       a.anomaly_score AS score_z,
+       a.severity,
+       CASE
+           WHEN (a.severity = 'High'::text) THEN 3
+           WHEN (a.severity = 'Medium'::text) THEN 2
+           WHEN (a.severity = 'Low'::text) THEN 1
+           ELSE 0
+       END AS severity_rank,
+       a.model_version,
+       a.delivered_to
+FROM oee.grade_lane_anomalies a;
+
+CREATE OR REPLACE VIEW oee.v_size_anomaly_event_detail AS
+SELECT a.event_ts,
+       public.time_bucket('00:01:00'::interval, a.event_ts) AS minute_ts,
+       date_trunc('day'::text, a.event_ts) AS event_day,
+       a.serial_no,
+       b.id AS batch_record_id,
+       a.lane_no,
+       NULL::text AS grade_key,
+       a.window_hours,
+       NULL::double precision AS qty,
+       a.pct_deviation AS score_pct,
+       a.z_score AS score_z,
+       a.severity,
+       CASE
+           WHEN (a.severity = 'High'::text) THEN 3
+           WHEN (a.severity = 'Medium'::text) THEN 2
+           WHEN (a.severity = 'Low'::text) THEN 1
+           ELSE 0
+       END AS severity_rank,
+       a.model_version,
+       a.delivered_to
+FROM oee.lane_size_anomalies a
+LEFT JOIN LATERAL (
+    SELECT b1.id
+    FROM public.batches b1
+    WHERE b1.serial_no = a.serial_no
+      AND b1.start_ts <= a.event_ts
+      AND (b1.end_ts IS NULL OR b1.end_ts >= a.event_ts)
+    ORDER BY b1.start_ts DESC
+    LIMIT 1
+) b ON true;
+
+CREATE OR REPLACE VIEW oee.v_anomaly_event_detail AS
+SELECT 'grade'::text AS anomaly_type,
+       event_ts,
+       minute_ts,
+       event_day,
+       serial_no,
+       batch_record_id,
+       lane_no,
+       grade_key,
+       window_hours,
+       qty,
+       score_pct,
+       score_z,
+       severity,
+       severity_rank,
+       model_version,
+       delivered_to
+FROM oee.v_grade_anomaly_event_detail
+UNION ALL
+SELECT 'size'::text AS anomaly_type,
+       event_ts,
+       minute_ts,
+       event_day,
+       serial_no,
+       batch_record_id,
+       lane_no,
+       grade_key,
+       window_hours,
+       qty,
+       score_pct,
+       score_z,
+       severity,
+       severity_rank,
+       model_version,
+       delivered_to
+FROM oee.v_size_anomaly_event_detail;
+
+CREATE OR REPLACE VIEW oee.v_anomaly_offender_scorecard_daily AS
+SELECT anomaly_type,
+       event_day,
+       serial_no,
+       batch_record_id,
+       lane_no,
+       grade_key,
+       window_hours,
+       count(*) AS repeat_count,
+       min(event_ts) AS first_event_ts,
+       max(event_ts) AS last_event_ts,
+       count(*) FILTER (WHERE (severity = 'Low'::text)) AS low_count,
+       count(*) FILTER (WHERE (severity = 'Medium'::text)) AS medium_count,
+       count(*) FILTER (WHERE (severity = 'High'::text)) AS high_count,
+       avg(abs(score_pct)) AS avg_abs_pct,
+       max(abs(score_pct)) AS max_abs_pct,
+       avg(abs(score_z)) AS avg_abs_z,
+       max(abs(score_z)) AS max_abs_z
+FROM oee.v_anomaly_event_detail
+GROUP BY anomaly_type, event_day, serial_no, batch_record_id, lane_no, grade_key, window_hours;
+
+CREATE OR REPLACE VIEW oee.v_operational_minute_batch AS
+SELECT o.minute_ts,
+       o.serial_no,
+       o.batch_record_id,
+       o.lot,
+       o.variety,
+       (o.availability_ratio)::double precision AS availability_ratio,
+       (o.throughput_ratio)::double precision AS throughput_ratio,
+       (o.quality_ratio)::double precision AS quality_ratio,
+       (o.oee_score)::double precision AS oee_score,
+       t.total_fpm,
+       t.missed_fpm,
+       t.machine_recycle_fpm,
+       t.outlet_recycle_fpm,
+       t.combined_recycle_fpm,
+       t.cupfill_pct,
+       t.tph,
+       t.target_throughput,
+       q.good_qty,
+       q.peddler_qty,
+       q.bad_qty,
+       q.recycle_qty
+FROM oee.oee_minute_batch o
+LEFT JOIN oee.v_throughput_minute_batch t
+     ON (t.minute_ts = o.minute_ts AND t.serial_no = o.serial_no AND t.batch_record_id = o.batch_record_id)
+LEFT JOIN oee.v_quality_minute_batch q
+     ON (q.minute_ts = o.minute_ts AND q.serial_no = o.serial_no AND q.batch_record_id = o.batch_record_id);
+
+CREATE OR REPLACE VIEW oee.v_grade_anomaly_impact_summary AS
+SELECT 'grade'::text AS anomaly_type,
+       d.event_ts,
+       d.minute_ts,
+       d.event_day,
+       d.serial_no,
+       d.batch_record_id,
+       d.lane_no,
+       d.grade_key,
+       d.window_hours,
+       d.severity,
+       d.score_pct,
+       d.score_z,
+       d.model_version,
+       d.delivered_to,
+       cur.lot,
+       cur.variety,
+       pre.availability_ratio AS pre_availability_ratio,
+       cur.availability_ratio AS event_availability_ratio,
+       post.availability_ratio AS post_availability_ratio,
+       pre.throughput_ratio AS pre_throughput_ratio,
+       cur.throughput_ratio AS event_throughput_ratio,
+       post.throughput_ratio AS post_throughput_ratio,
+       pre.quality_ratio AS pre_quality_ratio,
+       cur.quality_ratio AS event_quality_ratio,
+       post.quality_ratio AS post_quality_ratio,
+       pre.oee_score AS pre_oee_score,
+       cur.oee_score AS event_oee_score,
+       post.oee_score AS post_oee_score,
+       cur.total_fpm AS event_total_fpm,
+       cur.missed_fpm AS event_missed_fpm,
+       cur.combined_recycle_fpm AS event_combined_recycle_fpm,
+       cur.cupfill_pct AS event_cupfill_pct,
+       cur.tph AS event_tph,
+       cur.target_throughput AS event_target_throughput,
+       (cur.oee_score - pre.oee_score) AS delta_oee_from_pre,
+       (post.oee_score - pre.oee_score) AS delta_oee_post_vs_pre,
+       (cur.throughput_ratio - pre.throughput_ratio) AS delta_throughput_from_pre,
+       (post.throughput_ratio - pre.throughput_ratio) AS delta_throughput_post_vs_pre,
+       (cur.quality_ratio - pre.quality_ratio) AS delta_quality_from_pre,
+       (post.quality_ratio - pre.quality_ratio) AS delta_quality_post_vs_pre
+FROM oee.v_grade_anomaly_event_detail d
+LEFT JOIN LATERAL (
+    SELECT o.lot,
+           o.variety,
+           o.availability_ratio,
+           o.throughput_ratio,
+           o.quality_ratio,
+           o.oee_score,
+           o.total_fpm,
+           o.missed_fpm,
+           o.combined_recycle_fpm,
+           o.cupfill_pct,
+           o.tph,
+           o.target_throughput
+    FROM oee.v_operational_minute_batch o
+    WHERE o.serial_no = d.serial_no
+      AND o.batch_record_id = d.batch_record_id
+      AND o.minute_ts = d.minute_ts
+    LIMIT 1
+) cur ON true
+LEFT JOIN LATERAL (
+    SELECT avg(o.availability_ratio) AS availability_ratio,
+           avg(o.throughput_ratio) AS throughput_ratio,
+           avg(o.quality_ratio) AS quality_ratio,
+           avg(o.oee_score) AS oee_score
+    FROM oee.v_operational_minute_batch o
+    WHERE o.serial_no = d.serial_no
+      AND o.batch_record_id = d.batch_record_id
+      AND o.minute_ts >= (d.minute_ts - '00:15:00'::interval)
+      AND o.minute_ts < d.minute_ts
+) pre ON true
+LEFT JOIN LATERAL (
+    SELECT avg(o.availability_ratio) AS availability_ratio,
+           avg(o.throughput_ratio) AS throughput_ratio,
+           avg(o.quality_ratio) AS quality_ratio,
+           avg(o.oee_score) AS oee_score
+    FROM oee.v_operational_minute_batch o
+    WHERE o.serial_no = d.serial_no
+      AND o.batch_record_id = d.batch_record_id
+      AND o.minute_ts > d.minute_ts
+      AND o.minute_ts <= (d.minute_ts + '00:15:00'::interval)
+) post ON true;
+
+CREATE OR REPLACE VIEW oee.v_size_anomaly_impact_summary AS
+SELECT 'size'::text AS anomaly_type,
+       d.event_ts,
+       d.minute_ts,
+       d.event_day,
+       d.serial_no,
+       d.batch_record_id,
+       d.lane_no,
+       d.grade_key,
+       d.window_hours,
+       d.severity,
+       d.score_pct,
+       d.score_z,
+       d.model_version,
+       d.delivered_to,
+       cur.lot,
+       cur.variety,
+       pre.availability_ratio AS pre_availability_ratio,
+       cur.availability_ratio AS event_availability_ratio,
+       post.availability_ratio AS post_availability_ratio,
+       pre.throughput_ratio AS pre_throughput_ratio,
+       cur.throughput_ratio AS event_throughput_ratio,
+       post.throughput_ratio AS post_throughput_ratio,
+       pre.quality_ratio AS pre_quality_ratio,
+       cur.quality_ratio AS event_quality_ratio,
+       post.quality_ratio AS post_quality_ratio,
+       pre.oee_score AS pre_oee_score,
+       cur.oee_score AS event_oee_score,
+       post.oee_score AS post_oee_score,
+       cur.total_fpm AS event_total_fpm,
+       cur.missed_fpm AS event_missed_fpm,
+       cur.combined_recycle_fpm AS event_combined_recycle_fpm,
+       cur.cupfill_pct AS event_cupfill_pct,
+       cur.tph AS event_tph,
+       cur.target_throughput AS event_target_throughput,
+       (cur.oee_score - pre.oee_score) AS delta_oee_from_pre,
+       (post.oee_score - pre.oee_score) AS delta_oee_post_vs_pre,
+       (cur.throughput_ratio - pre.throughput_ratio) AS delta_throughput_from_pre,
+       (post.throughput_ratio - pre.throughput_ratio) AS delta_throughput_post_vs_pre,
+       (cur.quality_ratio - pre.quality_ratio) AS delta_quality_from_pre,
+       (post.quality_ratio - pre.quality_ratio) AS delta_quality_post_vs_pre
+FROM oee.v_size_anomaly_event_detail d
+LEFT JOIN LATERAL (
+    SELECT o.lot,
+           o.variety,
+           o.availability_ratio,
+           o.throughput_ratio,
+           o.quality_ratio,
+           o.oee_score,
+           o.total_fpm,
+           o.missed_fpm,
+           o.combined_recycle_fpm,
+           o.cupfill_pct,
+           o.tph,
+           o.target_throughput
+    FROM oee.v_operational_minute_batch o
+    WHERE o.serial_no = d.serial_no
+      AND (d.batch_record_id IS NULL OR o.batch_record_id = d.batch_record_id)
+      AND o.minute_ts = d.minute_ts
+    ORDER BY o.minute_ts DESC
+    LIMIT 1
+) cur ON true
+LEFT JOIN LATERAL (
+    SELECT avg(o.availability_ratio) AS availability_ratio,
+           avg(o.throughput_ratio) AS throughput_ratio,
+           avg(o.quality_ratio) AS quality_ratio,
+           avg(o.oee_score) AS oee_score
+    FROM oee.v_operational_minute_batch o
+    WHERE o.serial_no = d.serial_no
+      AND (d.batch_record_id IS NULL OR o.batch_record_id = d.batch_record_id)
+      AND o.minute_ts >= (d.minute_ts - '00:15:00'::interval)
+      AND o.minute_ts < d.minute_ts
+) pre ON true
+LEFT JOIN LATERAL (
+    SELECT avg(o.availability_ratio) AS availability_ratio,
+           avg(o.throughput_ratio) AS throughput_ratio,
+           avg(o.quality_ratio) AS quality_ratio,
+           avg(o.oee_score) AS oee_score
+    FROM oee.v_operational_minute_batch o
+    WHERE o.serial_no = d.serial_no
+      AND (d.batch_record_id IS NULL OR o.batch_record_id = d.batch_record_id)
+      AND o.minute_ts > d.minute_ts
+      AND o.minute_ts <= (d.minute_ts + '00:15:00'::interval)
+) post ON true;
+
+CREATE OR REPLACE VIEW oee.v_anomaly_impact_summary AS
+SELECT anomaly_type,
+       event_ts,
+       minute_ts,
+       event_day,
+       serial_no,
+       batch_record_id,
+       lane_no,
+       grade_key,
+       window_hours,
+       severity,
+       score_pct,
+       score_z,
+       model_version,
+       delivered_to,
+       lot,
+       variety,
+       pre_availability_ratio,
+       event_availability_ratio,
+       post_availability_ratio,
+       pre_throughput_ratio,
+       event_throughput_ratio,
+       post_throughput_ratio,
+       pre_quality_ratio,
+       event_quality_ratio,
+       post_quality_ratio,
+       pre_oee_score,
+       event_oee_score,
+       post_oee_score,
+       event_total_fpm,
+       event_missed_fpm,
+       event_combined_recycle_fpm,
+       event_cupfill_pct,
+       event_tph,
+       event_target_throughput,
+       delta_oee_from_pre,
+       delta_oee_post_vs_pre,
+       delta_throughput_from_pre,
+       delta_throughput_post_vs_pre,
+       delta_quality_from_pre,
+       delta_quality_post_vs_pre
+FROM oee.v_grade_anomaly_impact_summary
+UNION ALL
+SELECT anomaly_type,
+       event_ts,
+       minute_ts,
+       event_day,
+       serial_no,
+       batch_record_id,
+       lane_no,
+       grade_key,
+       window_hours,
+       severity,
+       score_pct,
+       score_z,
+       model_version,
+       delivered_to,
+       lot,
+       variety,
+       pre_availability_ratio,
+       event_availability_ratio,
+       post_availability_ratio,
+       pre_throughput_ratio,
+       event_throughput_ratio,
+       post_throughput_ratio,
+       pre_quality_ratio,
+       event_quality_ratio,
+       post_quality_ratio,
+       pre_oee_score,
+       event_oee_score,
+       post_oee_score,
+       event_total_fpm,
+       event_missed_fpm,
+       event_combined_recycle_fpm,
+       event_cupfill_pct,
+       event_tph,
+       event_target_throughput,
+       delta_oee_from_pre,
+       delta_oee_post_vs_pre,
+       delta_throughput_from_pre,
+       delta_throughput_post_vs_pre,
+       delta_quality_from_pre,
+       delta_quality_post_vs_pre
+FROM oee.v_size_anomaly_impact_summary;
+
+CREATE OR REPLACE VIEW oee.v_anomaly_offender_cluster_daily AS
+WITH operational_minutes AS (
+        SELECT date_trunc('day'::text, o.minute_ts) AS event_day,
+               o.serial_no,
+               count(DISTINCT o.minute_ts) AS operational_minutes
+        FROM oee.v_operational_minute_batch o
+        GROUP BY date_trunc('day'::text, o.minute_ts), o.serial_no
+)
+SELECT e.anomaly_type,
+       e.event_day,
+       e.serial_no,
+       e.lane_no,
+       e.grade_key,
+       e.window_hours,
+       count(*) AS repeat_count,
+       min(e.event_ts) AS first_event_ts,
+       max(e.event_ts) AS last_event_ts,
+       (extract(epoch FROM (max(e.event_ts) - min(e.event_ts))) / 60::numeric)::double precision AS span_minutes,
+       count(DISTINCT e.minute_ts) AS active_minutes,
+       count(DISTINCT e.batch_record_id) AS affected_batches,
+       count(DISTINCT COALESCE(b.grower_code, b.comments, '(unknown)'::text)) AS affected_lots,
+       avg(e.score_pct) AS avg_score_pct,
+       avg(e.score_z) AS avg_score_z,
+       max(abs(e.score_pct)) AS max_abs_pct,
+       max(abs(e.score_z)) AS max_abs_z,
+       CASE
+           WHEN (avg(e.score_pct) > 0.25::double precision) THEN 'positive_skew'::text
+           WHEN (avg(e.score_pct) < '-0.25'::double precision) THEN 'negative_skew'::text
+           ELSE 'balanced'::text
+       END AS direction_label,
+       CASE
+           WHEN (COALESCE(op.operational_minutes, 0::bigint) = 0::bigint) THEN NULL::double precision
+           ELSE ((100.0::double precision * (count(DISTINCT e.minute_ts))::double precision) / (op.operational_minutes)::double precision)
+       END AS runtime_share_pct
+FROM oee.v_anomaly_event_detail e
+LEFT JOIN public.batches b
+     ON (b.id = e.batch_record_id)
+LEFT JOIN operational_minutes op
+     ON (op.event_day = e.event_day AND op.serial_no = e.serial_no)
+GROUP BY e.anomaly_type, e.event_day, e.serial_no, e.lane_no, e.grade_key, e.window_hours, op.operational_minutes;
+
+CREATE OR REPLACE VIEW oee.v_anomaly_impact_family_summary_daily AS
+SELECT s.anomaly_type,
+       s.event_day,
+       s.serial_no,
+       s.lane_no,
+       s.grade_key,
+       s.window_hours,
+       count(*) AS event_count,
+       count(*) FILTER (WHERE (s.severity = 'High'::text)) AS high_count,
+       avg(s.delta_oee_post_vs_pre) AS avg_delta_oee_post_vs_pre,
+       avg(s.delta_throughput_post_vs_pre) AS avg_delta_throughput_post_vs_pre,
+       avg(s.delta_quality_post_vs_pre) AS avg_delta_quality_post_vs_pre,
+       count(*) FILTER (WHERE (COALESCE(s.delta_oee_post_vs_pre, (0)::double precision) < '-0.02'::double precision
+                             OR COALESCE(s.delta_throughput_post_vs_pre, (0)::double precision) < '-0.02'::double precision)) AS negative_post_impact_count,
+       count(*) FILTER (WHERE (s.severity = 'High'::text
+                             AND (COALESCE(s.delta_oee_post_vs_pre, (0)::double precision) < '-0.02'::double precision
+                               OR COALESCE(s.delta_throughput_post_vs_pre, (0)::double precision) < '-0.02'::double precision))) AS high_severity_negative_count,
+       CASE
+           WHEN ((count(*) FILTER (WHERE (s.severity = 'High'::text
+                                       AND (COALESCE(s.delta_oee_post_vs_pre, (0)::double precision) < '-0.02'::double precision
+                                         OR COALESCE(s.delta_throughput_post_vs_pre, (0)::double precision) < '-0.02'::double precision))) >= 2)
+              OR (avg(s.delta_oee_post_vs_pre) <= '-0.03'::double precision)) THEN 'likely_material'::text
+           WHEN ((count(*) FILTER (WHERE (COALESCE(s.delta_oee_post_vs_pre, (0)::double precision) < '-0.02'::double precision
+                                       OR COALESCE(s.delta_throughput_post_vs_pre, (0)::double precision) < '-0.02'::double precision)) = 0)
+              AND (COALESCE(avg(s.delta_oee_post_vs_pre), (0)::double precision) >= (0)::double precision)) THEN 'likely_non_material'::text
+           ELSE 'mixed_unclear'::text
+       END AS materiality_label
+FROM oee.v_anomaly_impact_summary s
+GROUP BY s.anomaly_type, s.event_day, s.serial_no, s.lane_no, s.grade_key, s.window_hours;
+
 -- ============================================================================
 -- PUBLIC SCHEMA VIEWS
 -- ============================================================================

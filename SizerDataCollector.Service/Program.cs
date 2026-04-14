@@ -69,6 +69,8 @@ namespace SizerDataCollector.Service
 					return DbCommands.Run(args.Skip(1).ToArray());
 				case "machine":
 					return MachineCommands.Run(args.Skip(1).ToArray(), options);
+				case "anomaly":
+					return AnomalyCommands.Run(args.Skip(1).ToArray(), options);
 				case "set-anomaly":
 					return SetAnomaly(options);
 				case "set-sizer-alarm":
@@ -1037,6 +1039,11 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("      [--cooldown <sec>] [--recycle-key <name>] [--llm true|false] [--llm-endpoint <url>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-sizer-alarm --enabled true|false");
 			Console.WriteLine("  SizerDataCollector.Service.exe replay-anomaly --serial <sn> --from <date> --to <date> [--persist]");
+			Console.WriteLine("  SizerDataCollector.Service.exe anomaly offenders --serial <sn> [--type grade|size|both] [--hours <h>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe anomaly impact --serial <sn> [--type grade|size|both] [--hours <h>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe anomaly impact-summary --serial <sn> [--type grade|size|both] [--hours <h>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe anomaly tuning-compare --serial <sn> [--type grade|size|both]");
+			Console.WriteLine("      --baseline-from <date> --baseline-to <date> --candidate-from <date> --candidate-to <date>");
 			Console.WriteLine();
 			Console.WriteLine("Size anomaly detection:");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-size-anomaly --enabled true|false [--interval <min>]");

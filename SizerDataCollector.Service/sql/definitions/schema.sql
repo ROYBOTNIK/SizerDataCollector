@@ -327,6 +327,12 @@ CREATE INDEX IF NOT EXISTS ix_machine_discovery_snapshots_serial_ts ON oee.machi
 CREATE INDEX IF NOT EXISTS grade_lane_anomalies_batch_record_id_idx ON oee.grade_lane_anomalies USING btree (batch_record_id);
 CREATE INDEX IF NOT EXISTS grade_lane_anomalies_event_ts_idx ON oee.grade_lane_anomalies USING btree (event_ts DESC);
 CREATE INDEX IF NOT EXISTS grade_lane_anomalies_event_ts_severity_idx ON oee.grade_lane_anomalies USING btree (event_ts DESC, severity);
+CREATE INDEX IF NOT EXISTS grade_lane_anomalies_serial_event_ts_idx ON oee.grade_lane_anomalies USING btree (serial_no, event_ts DESC);
+CREATE INDEX IF NOT EXISTS grade_lane_anomalies_serial_lane_grade_event_ts_idx ON oee.grade_lane_anomalies USING btree (serial_no, lane_no, grade_key, event_ts DESC);
+
+CREATE INDEX IF NOT EXISTS lane_size_anomalies_event_ts_idx ON oee.lane_size_anomalies USING btree (event_ts DESC);
+CREATE INDEX IF NOT EXISTS lane_size_anomalies_serial_event_ts_idx ON oee.lane_size_anomalies USING btree (serial_no, event_ts DESC);
+CREATE INDEX IF NOT EXISTS lane_size_anomalies_serial_lane_event_ts_idx ON oee.lane_size_anomalies USING btree (serial_no, lane_no, event_ts DESC);
 
 CREATE INDEX IF NOT EXISTS lane_grade_events_ts_idx ON oee.lane_grade_events USING btree (ts DESC);
 CREATE INDEX IF NOT EXISTS ix_lane_grade_events_batch_ts ON oee.lane_grade_events USING btree (batch_record_id, ts DESC);

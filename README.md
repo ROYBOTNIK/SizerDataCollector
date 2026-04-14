@@ -145,6 +145,22 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
   - `SizerDataCollector.Service.exe machine set-band --serial <sn> --band <name> --lower <val> --upper <val>`
   - `SizerDataCollector.Service.exe machine remove-band --serial <sn> --band <name>`
 
+- **Anomaly reporting**
+  - `SizerDataCollector.Service.exe anomaly offenders --serial <sn> --type grade|size|both [--hours <h>]`
+  - `SizerDataCollector.Service.exe anomaly offenders --serial <sn> --from <date> --to <date> [--limit <n>]`
+  - Use this first to identify recurring lanes, grades, or size windows.
+  - Treat offender repeats as a recurrence signal, not a clean count of distinct failures.
+  - `SizerDataCollector.Service.exe anomaly impact --serial <sn> --type grade|size|both [--hours <h>]`
+  - `SizerDataCollector.Service.exe anomaly impact --serial <sn> --from <date> --to <date> [--limit <n>]`
+  - Use this second to determine whether the top anomaly events had throughput, quality, or OEE impact.
+  - Treat impact output as operational context and temporal association, not proof of causation.
+  - `SizerDataCollector.Service.exe anomaly impact-summary --serial <sn> --type grade|size|both [--hours <h>]`
+  - Use this after `anomaly impact` for family-level ranking by post-event OEE/throughput drift and materiality.
+  - `SizerDataCollector.Service.exe anomaly tuning-compare --serial <sn> --type grade|size|both`
+  - `--baseline-from <date> --baseline-to <date> --candidate-from <date> --candidate-to <date> [--limit <n>]`
+  - Use this third for before/after comparison across two historical windows.
+  - See `ANOMALY_REPORTING_WORKFLOW.md` for CLI-only usage, decision rubric examples, duplicate-row troubleshooting, and what empty results mean.
+
 ### Logs and operational behaviour
 
 - **Log locations**
@@ -159,3 +175,4 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
 
 - **`DESIGN.md`**: design notes for the console `SizerDataCollector` CLI and automation-oriented workflows merged from `master`.
 - **`ADAPTIVE_THRESHOLDS_WORKFLOW.md`**: operator and AI-agent workflow for machine-specific quality/performance tuning, validation, and rollback.
+- **`ANOMALY_REPORTING_WORKFLOW.md`**: operator and AI-agent workflow for recurring offenders, anomaly-to-impact review, replay-based tuning comparison, interpretation guardrails, and documentation validation checks.

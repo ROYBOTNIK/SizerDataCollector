@@ -291,6 +291,24 @@ DO $$ BEGIN
     ALTER TABLE public.machine_settings ADD CONSTRAINT machine_settings_serial_no_fkey FOREIGN KEY (serial_no) REFERENCES public.machines(serial_no);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Ensure one machine_settings row per serial_no so ON CONFLICT (serial_no) upserts work.
+-- Keep the most recent row (highest id) when historical duplicates exist.
+DELETE FROM public.machine_settings ms
+USING (
+    SELECT id
+    FROM (
+        SELECT id,
+               row_number() OVER (PARTITION BY serial_no ORDER BY id DESC) AS rn
+        FROM public.machine_settings
+        WHERE serial_no IS NOT NULL
+    ) d
+    WHERE d.rn > 1
+) drop_rows
+WHERE ms.id = drop_rows.id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_machine_settings_serial_no
+    ON public.machine_settings USING btree (serial_no);
+
 -- ============================================================
 -- Hypertables (TimescaleDB)
 -- ============================================================

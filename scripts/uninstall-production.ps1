@@ -1,7 +1,7 @@
 param(
     [string]$ServiceName = "SizerDataCollectorService",
     [switch]$RemoveInstallFolder,
-    [string]$InstallRoot = "C:\Program Files\Opti-Fresh\SizerDataCollector"
+    [string]$InstallRoot = "C:\Program Files (x86)\OPTI-FRESH\CollectorAgent"
 )
 
 $ErrorActionPreference = "Stop"

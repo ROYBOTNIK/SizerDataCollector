@@ -1115,6 +1115,12 @@ SELECT t.day,
 FROM t
 LEFT JOIN o ON (o.day = t.day AND o.serial_no = t.serial_no);
 
+-- These lane-size views changed shape in serial-aware rollouts.
+-- Drop/recreate to avoid CREATE OR REPLACE column-rename failures on older DBs.
+DROP VIEW IF EXISTS public.lane_size_health_24h;
+DROP VIEW IF EXISTS public.lane_size_health_season;
+DROP VIEW IF EXISTS public.lane_size_anomaly;
+
 -- Per-minute z-score vs other lanes on the same sizer (serial_no). Filter in dashboards: WHERE serial_no = '...'
 CREATE OR REPLACE VIEW public.lane_size_anomaly AS
 SELECT minute_ts,

@@ -36,6 +36,10 @@ namespace SizerDataCollector.Core.Config
 		private const double DefaultBandMediumMax = 20.0;
 		private const int DefaultAlarmCooldownSeconds = 300;
 		private const string DefaultRecycleGradeKey = "RCY";
+		private const double DefaultAnomalyMinLaneFpm = 150.0;
+		private const double DefaultAnomalyMinPeerLaneFpm = 150.0;
+		private const int DefaultAnomalyMinActivePeerLanes = 4;
+		private const int DefaultAnomalyMinConsecutiveWindows = 2;
 
 		public string SizerHost { get; }
 		public int SizerPort { get; }
@@ -77,6 +81,10 @@ namespace SizerDataCollector.Core.Config
 		public double BandMediumMax { get; }
 		public int AlarmCooldownSeconds { get; }
 		public string RecycleGradeKey { get; }
+		public double AnomalyMinLaneFpm { get; }
+		public double AnomalyMinPeerLaneFpm { get; }
+		public int AnomalyMinActivePeerLanes { get; }
+		public int AnomalyMinConsecutiveWindows { get; }
 		public bool EnableSizerAlarm { get; }
 		public bool EnableLlmEnrichment { get; }
 		public string LlmEndpoint { get; }
@@ -141,6 +149,10 @@ namespace SizerDataCollector.Core.Config
 			BandMediumMax = runtimeSettings.BandMediumMax > 0 ? runtimeSettings.BandMediumMax : DefaultBandMediumMax;
 			AlarmCooldownSeconds = EnsureMinimum("AlarmCooldownSeconds", runtimeSettings.AlarmCooldownSeconds, 0, DefaultAlarmCooldownSeconds);
 			RecycleGradeKey = string.IsNullOrWhiteSpace(runtimeSettings.RecycleGradeKey) ? DefaultRecycleGradeKey : runtimeSettings.RecycleGradeKey.Trim();
+			AnomalyMinLaneFpm = runtimeSettings.AnomalyMinLaneFpm > 0 ? runtimeSettings.AnomalyMinLaneFpm : DefaultAnomalyMinLaneFpm;
+			AnomalyMinPeerLaneFpm = runtimeSettings.AnomalyMinPeerLaneFpm > 0 ? runtimeSettings.AnomalyMinPeerLaneFpm : DefaultAnomalyMinPeerLaneFpm;
+			AnomalyMinActivePeerLanes = EnsureMinimum("AnomalyMinActivePeerLanes", runtimeSettings.AnomalyMinActivePeerLanes, 1, DefaultAnomalyMinActivePeerLanes);
+			AnomalyMinConsecutiveWindows = EnsureMinimum("AnomalyMinConsecutiveWindows", runtimeSettings.AnomalyMinConsecutiveWindows, 1, DefaultAnomalyMinConsecutiveWindows);
 			EnableSizerAlarm = runtimeSettings.EnableSizerAlarm;
 			EnableLlmEnrichment = runtimeSettings.EnableLlmEnrichment;
 			LlmEndpoint = runtimeSettings.LlmEndpoint ?? string.Empty;
@@ -184,6 +196,10 @@ namespace SizerDataCollector.Core.Config
 				BandMediumMax = GetDouble("BandMediumMax", DefaultBandMediumMax),
 				AlarmCooldownSeconds = GetIntWithMinimum("AlarmCooldownSeconds", 0, DefaultAlarmCooldownSeconds),
 				RecycleGradeKey = GetString("RecycleGradeKey", DefaultRecycleGradeKey),
+				AnomalyMinLaneFpm = GetDouble("AnomalyMinLaneFpm", DefaultAnomalyMinLaneFpm),
+				AnomalyMinPeerLaneFpm = GetDouble("AnomalyMinPeerLaneFpm", DefaultAnomalyMinPeerLaneFpm),
+				AnomalyMinActivePeerLanes = GetIntWithMinimum("AnomalyMinActivePeerLanes", 1, DefaultAnomalyMinActivePeerLanes),
+				AnomalyMinConsecutiveWindows = GetIntWithMinimum("AnomalyMinConsecutiveWindows", 1, DefaultAnomalyMinConsecutiveWindows),
 				EnableSizerAlarm = GetBool("EnableSizerAlarm", true),
 				EnableLlmEnrichment = GetBool("EnableLlmEnrichment", false),
 				LlmEndpoint = GetString("LlmEndpoint", string.Empty),

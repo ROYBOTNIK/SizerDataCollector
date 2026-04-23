@@ -139,6 +139,10 @@ namespace SizerDataCollector.Service
 			Console.WriteLine($"    Bands (Low/Med):     {settings.BandLowMin}-{settings.BandLowMax}% / {settings.BandLowMax}-{settings.BandMediumMax}% / {settings.BandMediumMax}%+");
 			Console.WriteLine($"    Cooldown (sec):      {settings.AlarmCooldownSeconds}");
 			Console.WriteLine($"    Recycle Grade Key:   {settings.RecycleGradeKey}");
+			Console.WriteLine($"    Min Lane FPM:        {settings.AnomalyMinLaneFpm}");
+			Console.WriteLine($"    Min Peer Lane FPM:   {settings.AnomalyMinPeerLaneFpm}");
+			Console.WriteLine($"    Min Peer Lanes:      {settings.AnomalyMinActivePeerLanes}");
+			Console.WriteLine($"    Consecutive Windows: {settings.AnomalyMinConsecutiveWindows}");
 			Console.WriteLine($"    Sizer Alarm:         {settings.EnableSizerAlarm}");
 			Console.WriteLine($"    LLM Enrichment:      {settings.EnableLlmEnrichment}");
 			if (settings.EnableLlmEnrichment)
@@ -553,8 +557,9 @@ namespace SizerDataCollector.Service
 			if (options.Count == 0)
 			{
 				Console.WriteLine("Usage: set-anomaly --enabled true|false [--window <min>] [--z-gate <val>]");
-				Console.WriteLine("       [--band-low-min <pct>] [--band-low-max <pct>] [--band-medium-max <pct>]");
-				Console.WriteLine("       [--cooldown <sec>] [--recycle-key <name>]");
+				Console.WriteLine("       [--band-low-min <share-pts>] [--band-low-max <share-pts>] [--band-medium-max <share-pts>]");
+				Console.WriteLine("       [--cooldown <sec>] [--recycle-key <name>] [--min-lane-fpm <val>]");
+				Console.WriteLine("       [--min-peer-lane-fpm <val>] [--min-peer-lanes <count>] [--consecutive-windows <count>]");
 				Console.WriteLine("       [--llm true|false] [--llm-endpoint <url>]");
 				return 1;
 			}
@@ -619,6 +624,34 @@ namespace SizerDataCollector.Service
 				changed = true;
 			}
 
+			if (options.TryGetValue("min-lane-fpm", out var minLaneRaw) && double.TryParse(minLaneRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var minLane) && minLane > 0)
+			{
+				settings.AnomalyMinLaneFpm = minLane;
+				Console.WriteLine($"  AnomalyMinLaneFpm = {minLane}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("min-peer-lane-fpm", out var minPeerRaw) && double.TryParse(minPeerRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var minPeer) && minPeer > 0)
+			{
+				settings.AnomalyMinPeerLaneFpm = minPeer;
+				Console.WriteLine($"  AnomalyMinPeerLaneFpm = {minPeer}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("min-peer-lanes", out var minPeersRaw) && int.TryParse(minPeersRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var minPeers) && minPeers >= 1)
+			{
+				settings.AnomalyMinActivePeerLanes = minPeers;
+				Console.WriteLine($"  AnomalyMinActivePeerLanes = {minPeers}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("consecutive-windows", out var consecutiveRaw) && int.TryParse(consecutiveRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var consecutive) && consecutive >= 1)
+			{
+				settings.AnomalyMinConsecutiveWindows = consecutive;
+				Console.WriteLine($"  AnomalyMinConsecutiveWindows = {consecutive}");
+				changed = true;
+			}
+
 			if (options.TryGetValue("llm", out var llmRaw) && bool.TryParse(llmRaw, out var llm))
 			{
 				settings.EnableLlmEnrichment = llm;
@@ -666,7 +699,7 @@ namespace SizerDataCollector.Service
 			if (!options.TryGetValue("serial", out var serial) || string.IsNullOrWhiteSpace(serial))
 			{
 				Console.WriteLine("Missing required option: --serial <serial_no>");
-				Console.WriteLine("Usage: replay-anomaly --serial <sn> --from <yyyy-MM-dd> --to <yyyy-MM-dd> [--persist]");
+				Console.WriteLine("Usage: replay-anomaly --serial <sn> --from <yyyy-MM-dd> --to <yyyy-MM-dd> [--persist] [--diag] [--diag-lane <N>]");
 				return 1;
 			}
 
@@ -683,6 +716,12 @@ namespace SizerDataCollector.Service
 			}
 
 			var persist = options.ContainsKey("persist");
+			var diag = options.ContainsKey("diag");
+			int diagLaneFilter = -1;
+			if (options.TryGetValue("diag-lane", out var laneFilterRaw) && int.TryParse(laneFilterRaw, out var parsedLane))
+			{
+				diagLaneFilter = parsedLane;
+			}
 
 			var provider = new CollectorSettingsProvider();
 			var runtimeSettings = provider.Load();
@@ -709,10 +748,17 @@ namespace SizerDataCollector.Service
 			}
 
 			Console.WriteLine($"Loaded {rows.Count} data points.");
+			if (diag)
+			{
+				Console.WriteLine($"[DIAG] Detector config: Window={detectorConfig.WindowMinutes}min ZGate={detectorConfig.ZGate} BandLowMin={detectorConfig.BandLowMin}pts BandMedMax={detectorConfig.BandMediumMax}pts MinLaneFpm={detectorConfig.MinLaneFpm} MinPeerLaneFpm={detectorConfig.MinPeerLaneFpm} MinActivePeerLanes={detectorConfig.MinActivePeerLanes} MinConsecutiveWindows={detectorConfig.MinConsecutiveWindows}");
+			}
 			Console.WriteLine();
 
 			var allEvents = new List<AnomalyEvent>();
 			long previousBatch = 0;
+			int batchChangeCount = 0;
+			int snapshotCount = 0;
+			bool dumpedRawKeys = false;
 
 			foreach (var row in rows)
 			{
@@ -720,13 +766,27 @@ namespace SizerDataCollector.Service
 				{
 					Console.WriteLine($"  [Batch change at {row.Ts:HH:mm:ss}: {previousBatch} -> {row.BatchRecordId}, detector reset]");
 					detector.Reset();
+					batchChangeCount++;
 				}
 				previousBatch = row.BatchRecordId;
+
+				if (diag && !dumpedRawKeys)
+				{
+					var rawKeys = GradeMatrixParser.GetRawKeys(row.ValueJson, 30);
+					if (rawKeys.Count > 0)
+					{
+						Console.WriteLine($"[DIAG] First snapshot raw payload keys (first {rawKeys.Count}):");
+						foreach (var k in rawKeys)
+							Console.WriteLine($"       {k}");
+						dumpedRawKeys = true;
+					}
+				}
 
 				var matrix = GradeMatrixParser.Parse(row.ValueJson);
 				if (matrix == null) continue;
 
 				var events = detector.Update(matrix, row.Ts, row.SerialNo, (int)row.BatchRecordId);
+				snapshotCount++;
 				foreach (var evt in events)
 				{
 					evt.ModelVersion = "replay-v1";
@@ -734,6 +794,11 @@ namespace SizerDataCollector.Service
 					allEvents.Add(evt);
 					Console.WriteLine($"  {evt.EventTs:yyyy-MM-dd HH:mm:ss} [{evt.Severity,6}] {evt.AlarmDetails}");
 				}
+			}
+
+			if (diag)
+			{
+				DumpReplayDiagnostics(detector, detectorConfig, snapshotCount, batchChangeCount, diagLaneFilter);
 			}
 
 			Console.WriteLine();
@@ -761,6 +826,127 @@ namespace SizerDataCollector.Service
 			}
 
 			return 0;
+		}
+
+		private static void DumpReplayDiagnostics(
+			AnomalyDetector detector,
+			AnomalyDetectorConfig cfg,
+			int snapshotsProcessed,
+			int batchChangeCount,
+			int diagLaneFilter)
+		{
+			Console.WriteLine();
+			Console.WriteLine("========== DIAGNOSTIC DUMP ==========");
+			Console.WriteLine($"Snapshots processed       : {snapshotsProcessed}");
+			Console.WriteLine($"Detector resets (batch)   : {batchChangeCount}");
+			Console.WriteLine($"Final window sample count : {detector.WindowSampleCount}");
+			Console.WriteLine($"Detector lane count       : {detector.LaneCount}");
+			Console.WriteLine($"Detector grade count      : {detector.GradeCount}");
+
+			if (detector.GradeKeys != null && detector.GradeKeys.Count > 0)
+			{
+				Console.WriteLine($"Grade keys (order)        : [{string.Join(", ", detector.GradeKeys)}]");
+			}
+
+			if (detector.LaneCount == 0 || detector.GradeCount == 0
+				|| detector.LaneAverageFpm == null || detector.LaneSharePct == null)
+			{
+				Console.WriteLine("[DIAG] Detector never built stable state (no dims). Check parser / row consistency.");
+				Console.WriteLine("======================================");
+				return;
+			}
+
+			var laneStats = new List<(int lane, double avgFpm, int peers, double skewL1, int consecutive)>();
+			for (int lane = 0; lane < detector.LaneCount; lane++)
+			{
+				double l1 = 0;
+				if (detector.PctDeviation != null && detector.PctDeviation[lane] != null)
+				{
+					for (int g = 0; g < detector.GradeCount; g++)
+						l1 += Math.Abs(detector.PctDeviation[lane][g]);
+					l1 *= 0.5;
+				}
+				laneStats.Add((
+					lane,
+					detector.LaneAverageFpm[lane],
+					detector.EligiblePeerCounts != null ? detector.EligiblePeerCounts[lane] : 0,
+					l1,
+					detector.ConsecutiveLaneSignals != null ? detector.ConsecutiveLaneSignals[lane] : 0));
+			}
+
+			Console.WriteLine();
+			Console.WriteLine("-- Lane summary (sorted by composition skew L1 desc, top 10) --");
+			Console.WriteLine($"  {"Lane#",5} {"AvgFpm",8} {"Peers",5} {"SkewL1",8} {"Cons",4}  {"GuardPass"}");
+
+			IEnumerable<(int lane, double avgFpm, int peers, double skewL1, int consecutive)> rows = laneStats;
+			if (diagLaneFilter > 0)
+			{
+				rows = laneStats; // still print top 10, lane filter just adds a focused dump below
+			}
+
+			var top = laneStats.OrderByDescending(s => s.skewL1).ThenByDescending(s => s.avgFpm).Take(10).ToList();
+			foreach (var s in top)
+			{
+				bool passLaneFpm = s.avgFpm >= cfg.MinLaneFpm;
+				bool passPeers = s.peers >= cfg.MinActivePeerLanes;
+				string guard = (passLaneFpm && passPeers) ? "ok" :
+					(!passLaneFpm && !passPeers ? "LOW_FPM+LOW_PEERS" :
+					 !passLaneFpm ? "LOW_FPM" : "LOW_PEERS");
+				Console.WriteLine($"  {s.lane + 1,5} {s.avgFpm,8:F1} {s.peers,5} {s.skewL1,8:F2} {s.consecutive,4}  {guard}");
+			}
+
+			int focusLane = diagLaneFilter > 0 ? diagLaneFilter - 1 : top.Count > 0 ? top[0].lane : -1;
+			if (focusLane >= 0 && focusLane < detector.LaneCount)
+			{
+				Console.WriteLine();
+				Console.WriteLine($"-- Focus lane {focusLane + 1} grade breakdown --");
+				Console.WriteLine($"  AvgFpm={detector.LaneAverageFpm[focusLane]:F1}  Peers={detector.EligiblePeerCounts[focusLane]}  Consecutive={detector.ConsecutiveLaneSignals[focusLane]}");
+				Console.WriteLine($"  Gates: MinLaneFpm={cfg.MinLaneFpm} MinPeerLaneFpm={cfg.MinPeerLaneFpm} MinActivePeerLanes={cfg.MinActivePeerLanes} MinConsecutiveWindows={cfg.MinConsecutiveWindows}");
+				Console.WriteLine($"  Thresholds: BandLowMin(basePass)={cfg.BandLowMin}pts  ZGate={cfg.ZGate}  BandMediumMax(extremeFallback)={cfg.BandMediumMax}pts");
+				Console.WriteLine();
+				Console.WriteLine($"  {"Grade",-20} {"LanePct",8} {"PeerMed",8} {"DeltaPts",9} {"Score",7} {"Gates"}");
+
+				double skewL1 = 0;
+				var gradeRows = new List<(string key, double lanePct, double peerMed, double delta, double score)>();
+				for (int g = 0; g < detector.GradeCount; g++)
+				{
+					var key = detector.GradeKeys[g];
+					double lanePct = detector.LaneSharePct[focusLane][g];
+					double peerMed = detector.PeerMedianPct[focusLane][g];
+					double delta = detector.PctDeviation[focusLane][g];
+					double score = detector.CurrentZScores[focusLane][g];
+					skewL1 += Math.Abs(delta);
+					gradeRows.Add((key, lanePct, peerMed, delta, score));
+				}
+				skewL1 *= 0.5;
+
+				foreach (var gr in gradeRows.OrderByDescending(r => Math.Abs(r.delta)))
+				{
+					double absDelta = Math.Abs(gr.delta);
+					double absScore = Math.Abs(gr.score);
+					bool baseGate = absDelta >= cfg.BandLowMin;
+					bool zGate = absScore >= cfg.ZGate;
+					bool extremeGate = absDelta >= cfg.BandMediumMax;
+					bool primary = baseGate && (zGate || extremeGate);
+					string gates = $"base={(baseGate ? "Y" : "n")} z={(zGate ? "Y" : "n")} extreme={(extremeGate ? "Y" : "n")} => {(primary ? "TRIGGER" : ".")}";
+					Console.WriteLine($"  {Truncate(gr.key, 20),-20} {gr.lanePct,8:F2} {gr.peerMed,8:F2} {gr.delta,9:F2} {gr.score,7:F2} {gates}");
+				}
+
+				Console.WriteLine();
+				Console.WriteLine($"  Composition skew L1 (sum|delta|/2) = {skewL1:F2}pts  (laneSkewFallback trigger at >= {cfg.BandMediumMax})");
+				if (detector.LaneAverageFpm[focusLane] < cfg.MinLaneFpm)
+					Console.WriteLine($"  [EXCLUDED] AvgFpm {detector.LaneAverageFpm[focusLane]:F1} < MinLaneFpm {cfg.MinLaneFpm}. Lower via: set-anomaly --min-lane-fpm <value>");
+				if (detector.EligiblePeerCounts[focusLane] < cfg.MinActivePeerLanes)
+					Console.WriteLine($"  [EXCLUDED] Peers {detector.EligiblePeerCounts[focusLane]} < MinActivePeerLanes {cfg.MinActivePeerLanes}. Lower via: set-anomaly --min-peer-lanes <value>  or --min-peer-lane-fpm <value>");
+			}
+
+			Console.WriteLine("======================================");
+		}
+
+		private static string Truncate(string value, int length)
+		{
+			if (string.IsNullOrEmpty(value)) return value ?? string.Empty;
+			return value.Length <= length ? value : value.Substring(0, length);
 		}
 
 		private static int SetSizeAnomaly(Dictionary<string, string> options)
@@ -1035,10 +1221,12 @@ namespace SizerDataCollector.Service
 			Console.WriteLine();
 			Console.WriteLine("Grade anomaly detection:");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-anomaly --enabled true|false [--window <min>] [--z-gate <val>]");
-			Console.WriteLine("      [--band-low-min <pct>] [--band-low-max <pct>] [--band-medium-max <pct>]");
-			Console.WriteLine("      [--cooldown <sec>] [--recycle-key <name>] [--llm true|false] [--llm-endpoint <url>]");
+			Console.WriteLine("      [--band-low-min <share-pts>] [--band-low-max <share-pts>] [--band-medium-max <share-pts>]");
+			Console.WriteLine("      [--cooldown <sec>] [--recycle-key <name>] [--min-lane-fpm <val>]");
+			Console.WriteLine("      [--min-peer-lane-fpm <val>] [--min-peer-lanes <count>] [--consecutive-windows <count>]");
+			Console.WriteLine("      [--llm true|false] [--llm-endpoint <url>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-sizer-alarm --enabled true|false");
-			Console.WriteLine("  SizerDataCollector.Service.exe replay-anomaly --serial <sn> --from <date> --to <date> [--persist]");
+			Console.WriteLine("  SizerDataCollector.Service.exe replay-anomaly --serial <sn> --from <date> --to <date> [--persist] [--diag] [--diag-lane <N>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe anomaly offenders --serial <sn> [--type grade|size|both] [--hours <h>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe anomaly impact --serial <sn> [--type grade|size|both] [--hours <h>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe anomaly impact-summary --serial <sn> [--type grade|size|both] [--hours <h>]");

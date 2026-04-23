@@ -33,6 +33,10 @@ namespace SizerDataCollector.Core.Config
 		public double BandMediumMax { get; set; } = 20.0;
 		public int AlarmCooldownSeconds { get; set; } = 300;
 		public string RecycleGradeKey { get; set; } = "RCY";
+		public double AnomalyMinLaneFpm { get; set; } = 150.0;
+		public double AnomalyMinPeerLaneFpm { get; set; } = 150.0;
+		public int AnomalyMinActivePeerLanes { get; set; } = 4;
+		public int AnomalyMinConsecutiveWindows { get; set; } = 2;
 		public bool EnableSizerAlarm { get; set; } = true;
 		public bool EnableLlmEnrichment { get; set; }
 		public string LlmEndpoint { get; set; } = string.Empty;

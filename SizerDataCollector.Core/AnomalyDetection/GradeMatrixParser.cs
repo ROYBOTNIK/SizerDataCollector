@@ -8,10 +8,25 @@ namespace SizerDataCollector.Core.AnomalyDetection
 	/// Parses the raw lanes_grade_fpm JSON payload (as returned by the Sizer WCF API
 	/// and stored in public.metrics.value_json) into a GradeMatrix.
 	///
-	/// The payload is an array of outlets. Each outlet object has keys of the form
-	/// "&lt;lane&gt; &lt;variety&gt; &lt;year&gt; &lt;version&gt;_&lt;GRADE_SUFFIX&gt;" with numeric FPM values.
-	/// The parser extracts the lane number (leading digits) and grade suffix (after the
-	/// last underscore), then aggregates counts across all outlets into a lanes x grades matrix.
+	/// Real payload shape:
+	///   - The top-level JSON value is an ARRAY of outlets.
+	///   - The outlet ARRAY INDEX IS THE LANE (0-based): outlets[0] == lane 1,
+	///     outlets[31] == lane 32, etc. The LaneNo in emitted events is therefore
+	///     `arrayIndex + 1`.
+	///   - Each outlet is an object whose property keys have the form
+	///     "&lt;descriptor&gt;_&lt;GRADE_SUFFIX&gt;" (for example
+	///     "2026 Delta Map_Peddler" or "2026 Delta Map_Cull D/S"). The descriptor
+	///     is a product/map identifier that does NOT encode the lane number -
+	///     only the suffix after the FINAL underscore is the grade.
+	///   - Property values are the grade FPM count for that (lane, grade) cell.
+	///   - An outlet may be empty (<c>{}</c>); that simply means zero FPM across
+	///     all grades for that lane in this snapshot.
+	///
+	/// Historical note: older code attempted to extract the lane number from the
+	/// leading digits of the property name, which on live machines was the YEAR
+	/// (e.g. "2026 Delta Map_..."), producing a bogus 2027-lane matrix and hiding
+	/// every real anomaly. This parser intentionally ignores any numbers inside
+	/// the key and relies solely on array position for lane identity.
 	/// </summary>
 	public static class GradeMatrixParser
 	{
@@ -31,6 +46,42 @@ namespace SizerDataCollector.Core.AnomalyDetection
 			}
 		}
 
+		/// <summary>
+		/// Extract the distinct raw property keys (across all outlets) present in
+		/// the payload. Purely for diagnostic / troubleshooting use.
+		/// </summary>
+		public static List<string> GetRawKeys(string json, int maxKeys = 50)
+		{
+			var keys = new List<string>();
+			if (string.IsNullOrWhiteSpace(json))
+				return keys;
+
+			try
+			{
+				var token = JToken.Parse(json);
+				if (token == null || token.Type != JTokenType.Array)
+					return keys;
+
+				var seen = new HashSet<string>(StringComparer.Ordinal);
+				foreach (var outlet in (JArray)token)
+				{
+					if (outlet == null || outlet.Type != JTokenType.Object)
+						continue;
+					foreach (var prop in ((JObject)outlet).Properties())
+					{
+						if (seen.Add(prop.Name))
+							keys.Add(prop.Name);
+						if (keys.Count >= maxKeys)
+							return keys;
+					}
+				}
+			}
+			catch
+			{
+			}
+			return keys;
+		}
+
 		private static GradeMatrix ParseToken(JToken token)
 		{
 			if (token == null || token.Type != JTokenType.Array)
@@ -40,43 +91,39 @@ namespace SizerDataCollector.Core.AnomalyDetection
 			if (outlets.Count == 0)
 				return null;
 
-			int maxLane = -1;
+			int laneCount = outlets.Count;
 			var suffixOrder = new LinkedHashSet();
 			var cells = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
-			foreach (var outlet in outlets)
+			for (int laneIdx = 0; laneIdx < outlets.Count; laneIdx++)
 			{
+				var outlet = outlets[laneIdx];
 				if (outlet == null || outlet.Type != JTokenType.Object)
 					continue;
 
 				foreach (var prop in ((JObject)outlet).Properties())
 				{
-					if (prop.Value.Type != JTokenType.Integer && prop.Value.Type != JTokenType.Float)
+					if (prop.Value == null
+						|| (prop.Value.Type != JTokenType.Integer && prop.Value.Type != JTokenType.Float))
 						continue;
 
-					int laneNo;
-					string suffix;
-					if (!TryParseKey(prop.Name, out laneNo, out suffix))
+					var suffix = ExtractGradeSuffix(prop.Name);
+					if (suffix == null)
 						continue;
-
-					if (laneNo > maxLane)
-						maxLane = laneNo;
 
 					suffixOrder.Add(suffix);
 
-					string cellKey = laneNo + "\t" + suffix;
+					string cellKey = laneIdx + "\t" + suffix;
 					double existing;
 					cells.TryGetValue(cellKey, out existing);
 					cells[cellKey] = existing + prop.Value.Value<double>();
 				}
 			}
 
-			if (maxLane < 0 || suffixOrder.Count == 0)
+			if (suffixOrder.Count == 0)
 				return null;
 
 			var gradeKeys = suffixOrder.ToList();
-			int laneCount = maxLane + 1;
-
 			var values = new double[laneCount][];
 			for (int lane = 0; lane < laneCount; lane++)
 			{
@@ -94,30 +141,21 @@ namespace SizerDataCollector.Core.AnomalyDetection
 		}
 
 		/// <summary>
-		/// Extracts lane number and grade suffix from a Sizer grade key.
-		/// "7 Dark Cherry 2025 V3_EXP LIGHT" -> lane=7, suffix="EXP LIGHT"
+		/// Extracts the grade suffix from a Sizer outlet property key. The grade is
+		/// everything after the FINAL underscore in the key. Returns null if the
+		/// key has no underscore or the suffix is empty.
 		/// </summary>
-		private static bool TryParseKey(string key, out int laneNo, out string suffix)
+		internal static string ExtractGradeSuffix(string key)
 		{
-			laneNo = -1;
-			suffix = null;
-
 			if (string.IsNullOrEmpty(key))
-				return false;
-
-			int numEnd = 0;
-			while (numEnd < key.Length && char.IsDigit(key[numEnd]))
-				numEnd++;
-
-			if (numEnd == 0 || !int.TryParse(key.Substring(0, numEnd), out laneNo))
-				return false;
+				return null;
 
 			int underscoreIdx = key.LastIndexOf('_');
 			if (underscoreIdx < 0 || underscoreIdx >= key.Length - 1)
-				return false;
+				return null;
 
-			suffix = key.Substring(underscoreIdx + 1);
-			return true;
+			var suffix = key.Substring(underscoreIdx + 1);
+			return string.IsNullOrWhiteSpace(suffix) ? null : suffix;
 		}
 
 		private sealed class LinkedHashSet

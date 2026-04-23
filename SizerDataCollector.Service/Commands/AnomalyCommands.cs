@@ -186,7 +186,7 @@ namespace SizerDataCollector.Service.Commands
 					? row.GradeKey
 					: string.Format("{0}h size", row.WindowHours ?? 0);
 				Console.WriteLine(string.Format(
-					"{0:u} [{1}/{2}] lane {3} {4} pct={5} z={6}",
+					"{0:u} [{1}/{2}] lane {3} {4} score={5} z={6}",
 					row.EventTs.UtcDateTime,
 					row.AnomalyType,
 					row.Severity,
@@ -257,7 +257,7 @@ namespace SizerDataCollector.Service.Commands
 			PrintWindowSummary(report.Baseline);
 			PrintWindowSummary(report.Candidate);
 			Console.WriteLine(string.Format(
-				"Delta events: {0:+#;-#;0}  Delta high: {1:+#;-#;0}  Delta max pct: {2}",
+				"Delta events: {0:+#;-#;0}  Delta high: {1:+#;-#;0}  Delta max score: {2}",
 				report.Candidate.TotalEvents - report.Baseline.TotalEvents,
 				report.Candidate.HighCount - report.Baseline.HighCount,
 				FormatSignedDouble(
@@ -281,7 +281,7 @@ namespace SizerDataCollector.Service.Commands
 				summary.FromTs.UtcDateTime,
 				summary.ToTs.UtcDateTime));
 			Console.WriteLine(string.Format(
-				"  events={0} high={1} medium={2} low={3} maxPct={4} maxZ={5}",
+				"  events={0} high={1} medium={2} low={3} maxScore={4} maxZ={5}",
 				summary.TotalEvents,
 				summary.HighCount,
 				summary.MediumCount,
@@ -304,7 +304,7 @@ namespace SizerDataCollector.Service.Commands
 					? row.GradeKey
 					: string.Format("{0}h window", row.WindowHours ?? 0);
 				Console.WriteLine(string.Format(
-					"  {0} lane {1} {2}: repeats={3} high={4} maxPct={5}",
+					"  {0} lane {1} {2}: repeats={3} high={4} maxScore={5}",
 					row.AnomalyType,
 					row.LaneNo,
 					scope ?? string.Empty,

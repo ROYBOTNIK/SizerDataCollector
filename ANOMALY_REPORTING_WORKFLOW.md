@@ -252,7 +252,7 @@ Look at:
 
 - repeat count
 - severity mix
-- max percent deviation
+- max score
 - max z-score
 - first seen timestamp
 - last seen timestamp
@@ -279,11 +279,11 @@ SizerDataCollector.Service.exe anomaly offenders --serial 140578 --type grade --
 
 Anomaly offenders for '140578' from 2025-12-29 00:00:00Z to 2025-12-31 00:00:00Z
 
-Type  Lane Batch Scope                    Repeats High Med Low MaxPct  MaxZ   First Seen          Last Seen
-----  ---- ----- ------------------------ ------- ---- --- --- ------- ------ ------------------- -------------------
-grad     8  9211 8 RCY                         57   18  21  18    34.7    4.9 2025-12-29 03:11Z  2025-12-30 22:47Z
-grad     1  9211 1 RCY                         42   11  19  12    28.1    4.1 2025-12-29 05:09Z  2025-12-30 21:55Z
-grad     2  9212 2 GATE                        31    8  14   9    22.6    3.8 2025-12-30 01:14Z  2025-12-30 19:06Z
+Type  Lane Batch Scope                    Repeats High Med Low MaxScore MaxZ   First Seen          Last Seen
+----  ---- ----- ------------------------ ------- ---- --- --- -------- ------ ------------------- -------------------
+grad     8  9211 8 RCY                         57   18  21  18     34.7    4.9 2025-12-29 03:11Z  2025-12-30 22:47Z
+grad     1  9211 1 RCY                         42   11  19  12     28.1    4.1 2025-12-29 05:09Z  2025-12-30 21:55Z
+grad     2  9212 2 GATE                        31    8  14   9     22.6    3.8 2025-12-30 01:14Z  2025-12-30 19:06Z
 ```
 
 How to read this:
@@ -354,7 +354,7 @@ Each family also carries a materiality label:
 #### Example 1: likely material
 
 ```text
-2025-12-30 10:18:00Z [grade/High] lane 8 PINK pct=+24.8% z=+4.1
+2025-12-30 10:18:00Z [grade/High] lane 8 PINK score=+24.8 z=+4.1
   OEE 0.742 -> 0.611 -> 0.598  delta(pre)=-0.131 delta(post)=-0.144
   Throughput 0.881 -> 0.701 -> 0.689  Quality 0.954 -> 0.947 -> 0.946
   FPM=196.2 recycle=21.7 cupfill=83.0 tph=14.1 batch=9211 lot=G123 variety=Pink Lady
@@ -369,7 +369,7 @@ Interpretation:
 #### Example 2: mixed / unclear
 
 ```text
-2025-12-30 14:06:00Z [grade/Medium] lane 3 D/S pct=-19.2% z=-3.6
+2025-12-30 14:06:00Z [grade/Medium] lane 3 D/S score=-19.2 z=-3.6
   OEE 0.661 -> 0.676 -> 0.689  delta(pre)=+0.015 delta(post)=+0.028
   Throughput 0.744 -> 0.757 -> 0.762  Quality 0.931 -> 0.928 -> 0.935
   FPM=209.4 recycle=17.1 cupfill=84.6 tph=15.2 batch=9211 lot=G123 variety=Pink Lady
@@ -402,7 +402,7 @@ Compare:
 - total event count
 - high-severity count
 - top offender shifts
-- max percent deviation and z-score
+- max score and z-score
 
 Use this to decide:
 
@@ -425,6 +425,101 @@ If `anomaly tuning-compare` returns zero events in both windows:
 5. If the task is comparative, run `anomaly tuning-compare`.
 6. If all reports are empty, verify event persistence before assuming the detector is healthy.
 7. If grade history is missing but raw `lanes_grade_fpm` data exists, use `replay-anomaly --persist` to seed reportable events.
+
+## Grade composition notes
+
+The grade detector is a **peer-relative lane composition skew detector** (model `composition-mad-v3`). For each lane it compares the lane's rolling grade-share mix against the other lanes' mixes using a peer median + MAD-derived robust spread.
+
+Field semantics for grade events:
+
+- `pct` / `score` (CLI column) = **share delta magnitude in percentage points** versus the peer median (the larger of the dominant-grade |delta| and the overall lane composition distance). Not "percent over expected".
+- `anomaly_score` = the robust (MAD-scaled) score for the dominant grade. Preserved for programmatic consumers and downstream filtering. This is **not** printed in the alarm text anymore.
+- `explanation_json` = structured payload containing dominant / surplus / deficit grades, each with lane share %, peer median %, delta pts, and robust score.
+- `alarm_title` / `alarm_details` = **operator-friendly** text (e.g. "Lane 32: producing mostly PEDDLER (63% vs 18% typical)"). Deliberately free of z-scores, MAD, "peer median", and "composition skew" jargon.
+
+For size anomalies, the existing size path still uses percent-deviation semantics. When comparing mixed `grade` and `size` reports, read `score` as the generic magnitude column and use the anomaly type to decide how to interpret it.
+
+### Canonical dimensions (stability across grade-set fluctuation)
+
+Live machines frequently omit a grade one minute and re-emit it the next. The detector maintains a monotonically-growing set of canonical lane indices and grade keys, so:
+
+- a snapshot that introduces a new grade extends the internal matrices with a zero-padded column (no window wipe)
+- a snapshot that omits a previously-seen grade contributes zero for that grade (no window wipe)
+- lane count is non-decreasing within a batch
+
+Because of this, a stable skew (e.g. lane 32 heavily biased toward `PEDDLER`) still accumulates across the full rolling window even when the emitted grade set changes minute-to-minute.
+
+`AnomalyDetector.Reset()` fully clears the canonical tables and is called on `batch_record_id` change to prevent cross-batch contamination.
+
+### `lanes_grade_fpm` payload format
+
+The raw metric in `public.metrics` has:
+
+- `metric = 'lanes_grade_fpm'`
+- `value_json` = JSON array, one entry per lane; **array index is the lane number (0-based)**. There is no `lane_no` or numeric prefix in the keys.
+- Each entry is an object with keys of the form `"<descriptor>_<grade>"` (e.g. `"2026 Delta Map_Peddler"`). **Only the suffix after the final underscore is the grade.** Descriptors commonly contain the year, so prefix-based parsing is wrong.
+- Empty outlets (`{}`) and missing grade keys are treated as zero.
+
+`GradeMatrixParser` is the single source of truth for interpreting this shape (live and replay). `GradeMatrixParser.GetRawKeys(valueJson)` returns the distinct raw keys seen in a payload and is used by the diagnostic replay mode.
+
+### Grade replay validation
+
+Standard replay (no persistence, quick sanity check):
+
+```text
+SizerDataCollector.Service.exe replay-anomaly --serial 140578 --from "2026-04-23T15:09:00Z" --to "2026-04-23T17:39:00Z"
+```
+
+Persisting results for reporting:
+
+```text
+SizerDataCollector.Service.exe replay-anomaly --serial 140578 --from "2026-04-23T15:09:00Z" --to "2026-04-23T17:39:00Z" --persist
+```
+
+Expected behaviour for a known lane-skew case:
+
+- at least one grade anomaly event is emitted for the skewed lane
+- alarm title reads like `"Lane <N>: producing mostly <GRADE> (X% vs Y% typical)"` or `"Lane <N>: heavy on <POS>, light on <NEG>"`
+- alarm details open with `"Lane <N> is grading differently from the rest of the machine."` and report share percentages with the word `typical` (not "peer median")
+- if zero rows are loaded, treat that as a DB/window mismatch first, not as proof the detector is healthy
+
+### Diagnostic replay (`--diag`)
+
+When a skew that is obvious in the data is not being surfaced, use diagnostic mode to inspect detector state without changing thresholds:
+
+```text
+SizerDataCollector.Service.exe replay-anomaly --serial 140578 --from "<start>" --to "<end>" --diag
+SizerDataCollector.Service.exe replay-anomaly --serial 140578 --from "<start>" --to "<end>" --diag --diag-lane 32
+```
+
+- `--diag` dumps:
+    - the active detector config (window, ZGate, BandLowMin/Max, BandMediumMax, MinLaneFpm, MinPeerLaneFpm, MinActivePeerLanes, MinConsecutiveWindows)
+    - distinct raw keys from the first snapshot's `value_json` (via `GradeMatrixParser.GetRawKeys`)
+    - final-state tables after the replay: canonical lane count, canonical grade list, window sample count, per-lane average FPM, eligible peer counts, consecutive-signal counts, and lane share vs peer median / delta pts for each (lane, grade)
+- `--diag-lane <N>` narrows the per-lane dump to a single **1-based** lane.
+
+Diagnostic output interpretation:
+
+| Symptom | Likely cause | Next action |
+|---------|-------------|-------------|
+| First-snapshot raw keys empty | Payload shape changed or parser regression | Inspect a raw row in `public.metrics`; update `GradeMatrixParser` tests |
+| Canonical grade list empty but raw keys present | `GradeMatrixParser` rejected all values (e.g. non-numeric) | Check that outlet values are numbers, not strings |
+| Lane count smaller than expected | Payload truncated or lanes arrived in later snapshots only | Verify `value_json` length in source rows; check that lane 32 has non-empty outlets in the window |
+| Window sample count very small despite many snapshots | Window was being wiped by grade-set fluctuation (fixed in `composition-mad-v3`); if still seen, investigate `Reset()` calls | Confirm `batch_record_id` didn't change mid-window; check replay range |
+| Per-lane `AvgFpm` below `MinLaneFpm` / `MinPeerLaneFpm` | Guardrails suppressing scoring | Lower `--min-lane-fpm` / `--min-peer-lane-fpm` for the replay only, to confirm the detector would otherwise fire |
+| Share / delta table shows a large delta for the target lane but no event emitted | Score below `ZGate` (broad peer variance) AND delta below `BandMediumMax` | Lower `--z-gate` or `--band-medium-max` to validate; if those trigger, treat as a tuning case |
+| Share / delta table shows small deltas | No real skew in this window | The data simply didn't contain a material skew; widen the window or pick a different time range |
+
+The `--diag` output is designed so that each step of the detection pipeline (parse -> canonical dimensions -> aggregate -> peer stats -> gates) has its own inspectable column.
+
+### Deploying an updated build to another PC
+
+When a fix lands in this repo and needs to be validated on a remote Sizer PC:
+
+1. Build the Release output locally and run the packaging script to produce a bundle zip (`scripts/*` in this repo).
+2. Copy the zip to the target PC.
+3. Run `scripts/install-from-bundle.ps1` on the target PC as Administrator. The script stops the `SizerDataCollector` service before copying files to avoid file-locking, swaps in the new binaries, and restarts the service.
+4. Re-run the replay / diagnostic commands above against the target PC's database to confirm behaviour.
 
 ## Documentation Validation Checklist
 

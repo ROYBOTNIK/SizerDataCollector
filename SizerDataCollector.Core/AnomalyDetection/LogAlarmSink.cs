@@ -11,7 +11,7 @@ namespace SizerDataCollector.Core.AnomalyDetection
 			Logger.Log(
 				$"ANOMALY [{evt.Severity}] {evt.AlarmTitle} | {evt.AlarmDetails} " +
 				$"(lane={evt.LaneNo}, grade={evt.GradeKey}, z={evt.AnomalyScore:F1}, " +
-				$"pct={evt.Pct:F1}%, batch={evt.BatchRecordId})");
+				$"score={evt.Pct:F1}, batch={evt.BatchRecordId})");
 
 			return Task.CompletedTask;
 		}

@@ -95,41 +95,76 @@ When deciding **where to add logic**, prefer:
 
 ### Anomaly detection subsystem
 
-The solution includes a **Pearson chi-squared residual anomaly detector** for lane-by-grade throughput data. It is ported from the original Python prototype in `zzz_Grade_Alarm/monitor/` but reimplemented entirely in C# within the DataCollector solution.
+The solution includes a **peer-relative lane composition skew detector** for lane-by-grade throughput data (current `ModelVersion`: `composition-mad-v3`). It compares each lane's rolling grade-share mix against peer lanes using a leave-one-out peer **median** plus a **MAD-derived robust spread**, so obviously skewed lanes can be detected without hard-coding the detector to any specific grade.
 
-#### How it works
+#### `lanes_grade_fpm` payload format (real shape)
 
-1. Every collector poll cycle, the `CollectorEngine` fetches `lanes_grade_fpm` from the Sizer WCF API and writes the raw JSON to `public.metrics`.
-2. When `EnableAnomalyDetection` is `true`, the engine also parses that same in-memory JSON payload via `GradeMatrixParser` into a `GradeMatrix` (lanes x grades double array).
-3. `AnomalyDetector.Update(matrix)` adds the snapshot to a rolling window (default 60 samples), computes an aggregate, then:
-   - Calculates **expected counts** per cell via the independence model: `E[i,j] = row_sum[i] * col_sum[j] / total`.
-   - Computes **z-scores**: `z = (Observed - Expected) / sqrt(Expected)`.
-   - Computes **percent deviation**: `pct = 100 * (Observed - Expected) / Expected`.
-   - Evaluates alarm rules: `|z| >= z_gate` AND `|pct|` in a severity band (Low/Medium/High).
-   - Applies per-(lane, grade) cooldown to prevent alarm flooding.
-   - Generates human-readable narrative text (special Recycle handling, upgrading/downgrading).
-4. Any detected anomaly events are delivered through the `IAlarmSink` chain:
-   - `LogAlarmSink` -- writes to the collector log.
-   - `DatabaseAlarmSink` -- INSERTs into `oee.grade_lane_anomalies`.
-   - `SizerAlarmSink` -- calls `RaiseAlarmWithPriority` on the Sizer WCF API to show on the operator alarm screen.
-   - `LlmEnricher` (optional) -- decorates the event with an LLM-generated operator-friendly explanation before forwarding.
+The raw metric written to `public.metrics` has:
 
-The detector runs **inline** in the collector poll loop -- zero additional threads, API calls, or DB reads for live operation. If the collector is down, the detector is appropriately idle.
+- `metric = 'lanes_grade_fpm'`
+- `value_json` = **a JSON array with one entry per lane**. The **array index is the lane number** (0-based). So `value_json[0]` is lane 1, `value_json[31]` is lane 32, etc. There is **no** `lane_no` or numeric key prefix -- the lane is strictly implicit from array position.
+- Each entry is an object whose keys look like `"<descriptor>_<grade>"` (e.g. `"2026 Delta Map_Peddler"`, `"2026 Delta Map_D/S"`). Values are fruit-per-minute numbers. **Only the suffix after the final underscore is the grade**; everything before it is a descriptor label (often containing the year, so naive prefix parsing will mis-identify lanes).
+- Empty outlets appear as empty objects (`{}`) and are treated as a zero row for that lane. Missing grade keys in a given minute are treated as zero for that grade.
+
+Example:
+```json
+[
+  { "2026 Delta Map_D1": 15, "2026 Delta Map_Peddler": 20 },
+  { "2026 Delta Map_D1": 18, "2026 Delta Map_Peddler": 12 },
+  {},
+  ...,
+  { "2026 Delta Map_Peddler": 696, "2026 Delta Map_D/S": 66, "2026 Delta Map_Cull": 2 }
+]
+```
+
+`GradeMatrixParser` is the single source of truth for interpreting this shape (live and replay). `GradeMatrixParser.GetRawKeys(valueJson)` returns the distinct raw keys seen in the payload -- useful from diagnostic tools without parsing the full matrix.
+
+#### How detection works
+
+1. Every collector poll cycle, `CollectorEngine` fetches `lanes_grade_fpm` from the Sizer WCF API and writes the raw JSON to `public.metrics`.
+2. When `EnableAnomalyDetection` is `true`, the engine parses that same in-memory JSON via `GradeMatrixParser` into a `GradeMatrix` (lanes x grades double array) using array-index-as-lane and final-underscore-as-grade.
+3. `AnomalyDetector.Update(matrix, ...)` does the following:
+   - **Canonical dimensions**: the detector tracks a monotonically-growing set of lane indices and grade keys. A snapshot that introduces a new grade or higher lane index *extends* the internal matrices with zero-padded columns/rows; a snapshot that omits a previously-seen grade contributes zero for that slot. **The rolling window is never wiped on grade-set fluctuation** -- this is critical on live machines where the emitted grade set changes minute-to-minute.
+   - Adds the snapshot to a rolling window (`AnomalyWindowMinutes`, default 60 samples).
+   - Converts each active lane to **grade-share percentages** over the aggregated window.
+   - For each lane+grade, builds a **peer set that excludes the lane under test** and whose peer lanes pass `AnomalyMinPeerLaneFpm`.
+   - Calculates the **peer median share** and a **MAD-based robust spread** for that grade.
+   - Computes a robust score: `score = (laneSharePct - peerMedianPct) / max(MAD * 1.4826, floor)`.
+   - Gates evaluation on `AnomalyMinLaneFpm`, `AnomalyMinPeerLaneFpm`, and `AnomalyMinActivePeerLanes`.
+   - Emits a lane-level composition-skew event when any grade's share delta AND robust score cross threshold (with a large-delta fallback in case peer variance is unusually broad), sustained for `AnomalyMinConsecutiveWindows`.
+   - Applies per-(lane, grade) cooldown (`AlarmCooldownSeconds`).
+   - Generates an **operator-friendly** narrative via `NarrativeBuilder` (e.g. "Lane 32: producing mostly Peddler (63% vs 18% typical)"). Technical numbers (score, raw deltas, peer medians) are preserved in `AnomalyEvent.ExplanationJson` for programmatic consumers.
+4. Detected events flow through the `IAlarmSink` chain:
+   - `LogAlarmSink` -- collector log.
+   - `DatabaseAlarmSink` -- `oee.grade_lane_anomalies`.
+   - `SizerAlarmSink` -- `RaiseAlarmWithPriority` on the Sizer WCF API (operator screen).
+   - `LlmEnricher` (optional) -- decorates the event with an LLM-generated explanation before forwarding.
+
+The detector runs **inline** in the collector poll loop -- zero extra threads, API calls, or DB reads in live operation. If the collector is down, the detector is idle.
 
 #### Batch-change reset
 
-When the `CollectorEngine` detects that `batch_record_id` has changed between poll cycles, it calls `AnomalyDetector.Reset()` to clear the rolling window. This prevents cross-batch statistical contamination.
+When `CollectorEngine` detects that `batch_record_id` has changed between poll cycles, it calls `AnomalyDetector.Reset()`, which clears the rolling window, cooldowns, per-lane consecutive-signal counters, **and** the canonical grade-key/lane tables. This prevents cross-batch statistical contamination.
+
+#### Diagnostic replay (`replay-anomaly --diag`)
+
+`replay-anomaly` supports a diagnostic mode for inspecting detector state on live data without changing thresholds:
+
+- `--diag` -- on the first snapshot, dumps the raw distinct grade keys seen in `lanes_grade_fpm` (via `GradeMatrixParser.GetRawKeys`) and then, after the final snapshot, dumps detector state (canonical lane count, canonical grade list, rolling window sample count, per-lane average FPM, eligible peer counts, consecutive-signal counters, and (lane, grade) share vs peer-median tables).
+- `--diag-lane <N>` -- focuses the per-lane dump on a specific 1-based lane.
+
+Use this when a skew that's obvious in the data isn't being surfaced: the diagnostic output tells you whether the problem is parsing (wrong lane count / empty grade keys), sample volume (window never filled), guardrails (lane or peer FPM below floor), or scoring (delta/score not crossing thresholds).
 
 #### Key files
 
 | File | Purpose |
 |------|---------|
-| `SizerDataCollector.Core/AnomalyDetection/AnomalyDetector.cs` | Core z-score engine (rolling window, expected/z/pct, alarm evaluation) |
+| `SizerDataCollector.Core/AnomalyDetection/AnomalyDetector.cs` | Core peer-relative composition engine (rolling window, median/MAD scoring, guardrails, alarm evaluation) |
 | `SizerDataCollector.Core/AnomalyDetection/AnomalyDetectorConfig.cs` | Settings POCO built from `CollectorConfig` |
 | `SizerDataCollector.Core/AnomalyDetection/AnomalyEvent.cs` | Event model matching `oee.grade_lane_anomalies` schema |
 | `SizerDataCollector.Core/AnomalyDetection/GradeMatrix.cs` | Immutable lanes x grades double array with grade key labels |
 | `SizerDataCollector.Core/AnomalyDetection/GradeMatrixParser.cs` | Parses raw `lanes_grade_fpm` JSON into `GradeMatrix` (shared by live + replay) |
-| `SizerDataCollector.Core/AnomalyDetection/NarrativeBuilder.cs` | Alarm text generation (Recycle special case, upgrading/downgrading) |
+| `SizerDataCollector.Core/AnomalyDetection/NarrativeBuilder.cs` | Alarm text generation for lane composition skew and peer-share context |
 | `SizerDataCollector.Core/AnomalyDetection/PriorityClassifier.cs` | Band classification (None/Low/Medium/High) and WCF `AlarmPriority` mapping |
 | `SizerDataCollector.Core/AnomalyDetection/CooldownTracker.cs` | Per-(lane, gradeKey) cooldown tracker |
 | `SizerDataCollector.Core/AnomalyDetection/IAlarmSink.cs` | Alarm delivery interface |
@@ -146,12 +181,16 @@ When the `CollectorEngine` detects that `batch_record_id` has changed between po
 |----------|---------|-------------|
 | `EnableAnomalyDetection` | `false` | Master toggle for the anomaly detector |
 | `AnomalyWindowMinutes` | `60` | Rolling window size (number of samples) |
-| `AnomalyZGate` | `2.0` | Minimum |z-score| required to trigger an alarm |
-| `BandLowMin` | `5.0` | Minimum |pct deviation| for any alarm |
+| `AnomalyZGate` | `2.0` | Minimum robust score required to trigger an alarm |
+| `BandLowMin` | `5.0` | Minimum absolute share delta (percentage points vs peer median) for any alarm |
 | `BandLowMax` | `10.0` | Upper bound for Low severity (below this = Low) |
-| `BandMediumMax` | `20.0` | Upper bound for Medium severity (below this = Medium, above = High) |
+| `BandMediumMax` | `20.0` | Upper bound for Medium severity (above this = High) |
 | `AlarmCooldownSeconds` | `300` | Seconds before the same (lane, grade) pair can alarm again |
 | `RecycleGradeKey` | `"RCY"` | Grade key receiving special narrative treatment |
+| `AnomalyMinLaneFpm` | `150.0` | Minimum average lane throughput required before a lane is evaluated |
+| `AnomalyMinPeerLaneFpm` | `150.0` | Minimum average throughput required for a peer lane to be included in the baseline |
+| `AnomalyMinActivePeerLanes` | `4` | Minimum number of eligible peer lanes required before scoring |
+| `AnomalyMinConsecutiveWindows` | `2` | Number of consecutive qualifying windows required before emitting an event |
 | `EnableSizerAlarm` | `true` | Send anomaly alarms to Sizer operator screen (can be toggled independently of detection) |
 | `EnableLlmEnrichment` | `false` | Enable LLM-generated operator explanations |
 | `LlmEndpoint` | `""` | URL of the LLM API for enrichment |
@@ -427,12 +466,16 @@ All commands are executed against `SizerDataCollector.Service.exe` from the serv
   - `SizerDataCollector.Service.exe set-anomaly --enabled true|false`
   - Can also configure individual parameters:
     - `--window <minutes>` -- rolling window size.
-    - `--z-gate <value>` -- z-score threshold (e.g. `2.0`).
-    - `--band-low-min <pct>` -- minimum percent deviation to alarm.
-    - `--band-low-max <pct>` -- Low/Medium boundary.
-    - `--band-medium-max <pct>` -- Medium/High boundary.
+    - `--z-gate <value>` -- robust score threshold (e.g. `2.0`).
+    - `--band-low-min <share-pts>` -- minimum lane-vs-peer share delta to alarm.
+    - `--band-low-max <share-pts>` -- Low/Medium boundary.
+    - `--band-medium-max <share-pts>` -- Medium/High boundary.
     - `--cooldown <seconds>` -- per-(lane, grade) alarm cooldown.
     - `--recycle-key <name>` -- grade key treated as Recycle.
+    - `--min-lane-fpm <value>` -- minimum lane throughput before evaluation.
+    - `--min-peer-lane-fpm <value>` -- minimum peer-lane throughput for baseline inclusion.
+    - `--min-peer-lanes <count>` -- minimum eligible peer count.
+    - `--consecutive-windows <count>` -- qualifying windows required before alerting.
     - `--llm true|false` -- enable LLM enrichment.
     - `--llm-endpoint <url>` -- LLM API endpoint.
 - Enable/disable Sizer alarm screen delivery (independent of detection):

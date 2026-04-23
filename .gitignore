@@ -21,6 +21,8 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Deployment bundles produced by the v6+ remote-install flow
+dist/
 x64/
 x86/
 [Ww][Ii][Nn]32/

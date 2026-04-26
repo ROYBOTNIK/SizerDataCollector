@@ -79,11 +79,12 @@ flowchart TD
 
 - **Anomaly detection**
   - `SizerDataCollector.Core/AnomalyDetection/`
-    - 19 files covering: grade detector, size evaluator, configs, event models, alarm sinks, JSON parsing, replay, narrative generation.
-    - See the [Anomaly detection subsystem](#anomaly-detection-subsystem) and [Size anomaly detection subsystem](#size-anomaly-detection-subsystem) sections for the full file tables.
+    - Core files covering: grade detector, size evaluator, lot-transition throughput detector, configs, event models, alarm sinks, JSON parsing, replay, narrative generation.
+    - See the [Anomaly detection subsystem](#anomaly-detection-subsystem), [Size anomaly detection subsystem](#size-anomaly-detection-subsystem), and [Lot transition throughput subsystem](#lot-transition-throughput-subsystem) sections for the full file lists.
   - Grade detector: wired into `CollectorEngine.RunSinglePollAsync` (inline, zero extra threads).
   - Size evaluator: runs on its own `Task.Delay`-based timer in `SizerCollectorService.RunSupervisedLoopAsync`.
-  - CLI commands: `set-anomaly`, `set-sizer-alarm`, `replay-anomaly`, `set-size-anomaly`, `size-health`, `anomaly offenders`, `anomaly impact`, `anomaly tuning-compare` in `Program.cs`.
+  - Lot transition evaluator: DB-driven timer in `SizerCollectorService.RunSupervisedLoopAsync`, using `machine_total_fpm` plus batch metadata.
+  - CLI commands: `set-anomaly`, `set-sizer-alarm`, `replay-anomaly`, `set-size-anomaly`, `size-health`, `set-lot-transition`, `lot-transition scan`, `lot-transition list`, `lot-transition export`, `anomaly offenders`, `anomaly impact`, `anomaly tuning-compare` in `Program.cs` / command helpers.
 
 When deciding **where to add logic**, prefer:
 
@@ -318,11 +319,57 @@ flowchart TD
     SINK_CHAIN --> SIZER_SINK["SizerAlarmSink\noptional"]
 ```
 
+### Lot transition throughput subsystem
+
+The solution includes a **periodic lot-transition throughput detector** that measures disruption around grower lot or batch changes. It uses `machine_total_fpm` as the primary signal, stores one idempotent event per `(serial_no, incoming_batch_record_id)`, and optionally enriches the event with availability context from OEE minute views.
+
+How it works:
+
+1. The analyzer loads `public.metrics` rows where `metric = 'machine_total_fpm'` for one `serial_no` and a requested time range.
+2. It detects `batch_record_id` changes and joins labels from `public.batches`.
+3. For each transition, it computes outgoing stable FPM, incoming recovered FPM, slowdown start, trough, stable recovery, pre/post peaks, peak-to-peak duration, and estimated fruit opportunity shortfall.
+4. It skips transitions that do not have enough stable pre/post context or do not recover within the search window.
+5. `LotTransitionDatabaseSink` persists rows to `oee.lot_transition_throughput_events` using `ON CONFLICT DO NOTHING`.
+
+Key files:
+
+- `SizerDataCollector.Core/AnomalyDetection/LotTransitionAnalyzer.cs` -- core detector and FPM integration.
+- `SizerDataCollector.Core/AnomalyDetection/LotTransitionConfig.cs` -- runtime configuration extracted from `CollectorConfig`.
+- `SizerDataCollector.Core/AnomalyDetection/LotTransitionModels.cs` -- point, batch, event, and report models.
+- `SizerDataCollector.Core/AnomalyDetection/LotTransitionDatabaseSink.cs` -- DB persistence.
+- `SizerDataCollector.Service/Commands/LotTransitionCommands.cs` -- `scan`, `list`, and `export`.
+- `LOT_TRANSITION_WORKFLOW.md` -- reporting workflow for operators and AI agents.
+
+Configuration properties in `collector_config.json`:
+
+- `EnableLotTransitionDetection` (default `false`) -- master toggle for the background loop.
+- `LotTransitionEvalIntervalMinutes` (default `30`) -- how often the service loop scans.
+- `LotTransitionScanWindowHours` (default `72`) -- sliding scan window used by the service loop.
+- `LotTransitionStableWindowMinutes` (default `10`) -- stable context window before/after transitions.
+- `LotTransitionPeakSearchMinutes` (default `30`) -- bounded peak-to-peak search window.
+- `LotTransitionSlowdownFraction` (default `0.15`) -- material slowdown threshold versus outgoing stable FPM.
+- `LotTransitionRecoveryFraction` (default `0.10`) -- recovered threshold versus incoming stable FPM.
+- `LotTransitionConsecutiveSamplesForSlowdown` (default `1`) and `LotTransitionRecoveryConsecutiveSamples` (default `2`) -- consecutive-sample gates.
+- `LotTransitionMinPreStableSamples` and `LotTransitionMinPostStableSamples` (default `3`) -- minimum stable-context samples.
+- `LotTransitionMinFpmForBaseline` (default `100`) -- low-FPM filter for stable baselines.
+
+Useful CLI commands:
+
+```powershell
+SizerDataCollector.Service.exe set-lot-transition --enabled true --interval 30 --scan-hours 72
+SizerDataCollector.Service.exe lot-transition scan --serial <sn> --day 2026-04-23
+SizerDataCollector.Service.exe lot-transition scan --serial <sn> --hours 72 --no-persist
+SizerDataCollector.Service.exe lot-transition list --serial <sn> --month 2026-04
+SizerDataCollector.Service.exe lot-transition export --serial <sn> --year 2026
+```
+
 #### Database objects
 
 - **`public.cagg_lane_size_minute`** -- TimescaleDB continuous aggregate. Defined in `continuous_aggregates.sql`. One row per `(minute_ts, serial_no, lane_idx)`: weighted-average fruit size from `lanes_size_fpm` for that sizer only. Filters out null JSON array elements. `SizeAnomalyEvaluator` always filters `WHERE serial_no = @serial_no`. If you deployed an older CAGG without `serial_no`, drop it and re-apply (see comment in `continuous_aggregates.sql`), then refresh the aggregate.
 - **`public.lane_size_anomaly`**, **`public.lane_size_health_24h`**, **`public.lane_size_health_season`** -- Defined in `views.sql`. All partition cross-lane stats by `serial_no`. Dashboard SQL should filter `WHERE serial_no = '<sn>'` (replacing any hard-coded serial).
 - **`oee.lane_size_anomalies`** -- Event table. Defined in `schema.sql`. Stores `event_ts`, `serial_no`, `lane_no`, `window_hours`, `lane_avg_size`, `machine_avg_size`, `pct_deviation`, `z_score`, `severity`, `model_version`, `delivered_to`.
+- **`oee.lot_transition_throughput_events`** -- Event table. Defined in `schema.sql`. Stores serial-aware and batch-aware transition timings, FPM baselines, peak-to-peak opportunity loss, availability context, `explanation`, `model_version`, and `delivered_to`.
+- **`oee.v_lot_transition_throughput_event_detail`** -- Reporting view for saved lot transition throughput events.
 - **`oee.v_grade_anomaly_event_detail`**, **`oee.v_size_anomaly_event_detail`**, **`oee.v_anomaly_event_detail`** -- Normalized reporting inputs for persisted anomaly events.
 - **`oee.v_anomaly_offender_scorecard_daily`** -- Daily recurring-offender rollup over persisted anomaly events.
 - **`oee.v_anomaly_offender_cluster_daily`** -- Daily offender clustering metrics (active minutes, span, direction, runtime share).
@@ -512,6 +559,21 @@ All commands are executed against `SizerDataCollector.Service.exe` from the serv
        1 |   25.1mm |     +0.0mm |    +0.0% |     +1.2 |
        8 |   25.6mm |     +0.5mm |    +3.5% |     +2.8 | ALARM (oversizing)
     ```
+
+#### Lot transition throughput detection
+
+- Enable/disable the background scan loop:
+  - `SizerDataCollector.Service.exe set-lot-transition --enabled true|false`
+  - Common tuning options: `--interval <minutes>`, `--scan-hours <hours>`, `--stable-window <minutes>`, `--peak-search <minutes>`, `--slowdown-fraction <0-1>`, `--recovery-fraction <0-1>`, and `--min-fpm <value>`.
+- Scan historical data and persist reportable transitions:
+  - `SizerDataCollector.Service.exe lot-transition scan --serial <sn> [--hours <h>]`
+  - `SizerDataCollector.Service.exe lot-transition scan --serial <sn> --day <yyyy-MM-dd>`
+  - `SizerDataCollector.Service.exe lot-transition scan --serial <sn> --month <yyyy-MM>`
+  - Add `--no-persist` to preview without inserting.
+- List or export saved events:
+  - `SizerDataCollector.Service.exe lot-transition list --serial <sn> --month <yyyy-MM>`
+  - `SizerDataCollector.Service.exe lot-transition export --serial <sn> --year <yyyy>`
+- Use this workflow when the report question is about changeover duration, peak-production minutes lost, or fruit throughput opportunity cost around grower lot changes.
 
 #### Anomaly reporting
 

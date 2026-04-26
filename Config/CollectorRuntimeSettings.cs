@@ -48,6 +48,19 @@ namespace SizerDataCollector.Core.Config
 		public double SizeZGate { get; set; } = 2.0;
 		public double SizePctDevMin { get; set; } = 3.0;
 		public int SizeCooldownMinutes { get; set; } = 240;
+
+		public bool EnableLotTransitionDetection { get; set; }
+		public int LotTransitionEvalIntervalMinutes { get; set; } = 30;
+		public int LotTransitionScanWindowHours { get; set; } = 72;
+		public int LotTransitionStableWindowMinutes { get; set; } = 10;
+		public int LotTransitionPeakSearchMinutes { get; set; } = 30;
+		public double LotTransitionSlowdownFraction { get; set; } = 0.15;
+		public double LotTransitionRecoveryFraction { get; set; } = 0.10;
+		public int LotTransitionConsecutiveSamplesForSlowdown { get; set; } = 1;
+		public int LotTransitionRecoveryConsecutiveSamples { get; set; } = 2;
+		public int LotTransitionMinPreStableSamples { get; set; } = 3;
+		public int LotTransitionMinPostStableSamples { get; set; } = 3;
+		public double LotTransitionMinFpmForBaseline { get; set; } = 100.0;
 	}
 }
 

@@ -148,7 +148,19 @@ namespace SizerDataCollector.Core.Config
 				SizeWindowHours = config.SizeWindowHours,
 				SizeZGate = config.SizeZGate,
 				SizePctDevMin = config.SizePctDevMin,
-				SizeCooldownMinutes = config.SizeCooldownMinutes
+				SizeCooldownMinutes = config.SizeCooldownMinutes,
+				EnableLotTransitionDetection = config.EnableLotTransitionDetection,
+				LotTransitionEvalIntervalMinutes = config.LotTransitionEvalIntervalMinutes,
+				LotTransitionScanWindowHours = config.LotTransitionScanWindowHours,
+				LotTransitionStableWindowMinutes = config.LotTransitionStableWindowMinutes,
+				LotTransitionPeakSearchMinutes = config.LotTransitionPeakSearchMinutes,
+				LotTransitionSlowdownFraction = config.LotTransitionSlowdownFraction,
+				LotTransitionRecoveryFraction = config.LotTransitionRecoveryFraction,
+				LotTransitionConsecutiveSamplesForSlowdown = config.LotTransitionConsecutiveSamplesForSlowdown,
+				LotTransitionRecoveryConsecutiveSamples = config.LotTransitionRecoveryConsecutiveSamples,
+				LotTransitionMinPreStableSamples = config.LotTransitionMinPreStableSamples,
+				LotTransitionMinPostStableSamples = config.LotTransitionMinPostStableSamples,
+				LotTransitionMinFpmForBaseline = config.LotTransitionMinFpmForBaseline
 			};
 		}
 

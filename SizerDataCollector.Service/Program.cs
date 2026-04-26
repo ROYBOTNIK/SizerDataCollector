@@ -71,6 +71,8 @@ namespace SizerDataCollector.Service
 					return MachineCommands.Run(args.Skip(1).ToArray(), options);
 				case "anomaly":
 					return AnomalyCommands.Run(args.Skip(1).ToArray(), options);
+				case "lot-transition":
+					return LotTransitionCommands.Run(args.Skip(1).ToArray(), options);
 				case "set-anomaly":
 					return SetAnomaly(options);
 				case "set-sizer-alarm":
@@ -79,6 +81,8 @@ namespace SizerDataCollector.Service
 					return ReplayAnomaly(options);
 				case "set-size-anomaly":
 					return SetSizeAnomaly(options);
+				case "set-lot-transition":
+					return SetLotTransition(options);
 				case "size-health":
 					return SizeHealth(options);
 				case "test-alarm":
@@ -156,6 +160,19 @@ namespace SizerDataCollector.Service
 			Console.WriteLine($"    PctDev Min:          {settings.SizePctDevMin}%");
 			Console.WriteLine($"    Cooldown (min):      {settings.SizeCooldownMinutes}");
 			Console.WriteLine($"    Sizer Alarm:         {settings.EnableSizerSizeAlarm}");
+			Console.WriteLine();
+			Console.WriteLine("  Lot Transition Detection:");
+			Console.WriteLine($"    Enabled:             {settings.EnableLotTransitionDetection}");
+			Console.WriteLine($"    Eval Interval (min): {settings.LotTransitionEvalIntervalMinutes}");
+			Console.WriteLine($"    Scan Window (hours): {settings.LotTransitionScanWindowHours}");
+			Console.WriteLine($"    Stable Window (min): {settings.LotTransitionStableWindowMinutes}");
+			Console.WriteLine($"    Peak Search (min):   {settings.LotTransitionPeakSearchMinutes}");
+			Console.WriteLine($"    Slowdown Fraction:   {settings.LotTransitionSlowdownFraction}");
+			Console.WriteLine($"    Recovery Fraction:   {settings.LotTransitionRecoveryFraction}");
+			Console.WriteLine($"    Slowdown Samples:    {settings.LotTransitionConsecutiveSamplesForSlowdown}");
+			Console.WriteLine($"    Recovery Samples:    {settings.LotTransitionRecoveryConsecutiveSamples}");
+			Console.WriteLine($"    Min Stable Samples:  {settings.LotTransitionMinPreStableSamples}/{settings.LotTransitionMinPostStableSamples}");
+			Console.WriteLine($"    Min Baseline FPM:    {settings.LotTransitionMinFpmForBaseline}");
 			return 0;
 		}
 
@@ -1098,6 +1115,135 @@ namespace SizerDataCollector.Service
 			return 0;
 		}
 
+		private static int SetLotTransition(Dictionary<string, string> options)
+		{
+			if (options.Count == 0)
+			{
+				Console.WriteLine("Usage: set-lot-transition --enabled true|false [--interval <min>] [--scan-hours <hours>]");
+				Console.WriteLine("       [--stable-window <min>] [--peak-search <min>] [--slowdown-fraction <0-1>]");
+				Console.WriteLine("       [--recovery-fraction <0-1>] [--slowdown-samples <count>] [--recovery-samples <count>]");
+				Console.WriteLine("       [--min-pre-samples <count>] [--min-post-samples <count>] [--min-fpm <value>]");
+				return 1;
+			}
+
+			var provider = new CollectorSettingsProvider();
+			var settings = provider.Load();
+			bool changed = false;
+
+			if (options.TryGetValue("enabled", out var enabledRaw) && bool.TryParse(enabledRaw, out var enabled))
+			{
+				settings.EnableLotTransitionDetection = enabled;
+				Console.WriteLine($"  EnableLotTransitionDetection = {enabled}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "interval", 1, out var interval))
+			{
+				settings.LotTransitionEvalIntervalMinutes = interval;
+				Console.WriteLine($"  LotTransitionEvalIntervalMinutes = {interval}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "scan-hours", 1, out var scanHours))
+			{
+				settings.LotTransitionScanWindowHours = scanHours;
+				Console.WriteLine($"  LotTransitionScanWindowHours = {scanHours}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "stable-window", 1, out var stableWindow))
+			{
+				settings.LotTransitionStableWindowMinutes = stableWindow;
+				Console.WriteLine($"  LotTransitionStableWindowMinutes = {stableWindow}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "peak-search", 1, out var peakSearch))
+			{
+				settings.LotTransitionPeakSearchMinutes = peakSearch;
+				Console.WriteLine($"  LotTransitionPeakSearchMinutes = {peakSearch}");
+				changed = true;
+			}
+
+			if (TryGetFractionOption(options, "slowdown-fraction", out var slowdownFraction))
+			{
+				settings.LotTransitionSlowdownFraction = slowdownFraction;
+				Console.WriteLine($"  LotTransitionSlowdownFraction = {slowdownFraction}");
+				changed = true;
+			}
+
+			if (TryGetFractionOption(options, "recovery-fraction", out var recoveryFraction))
+			{
+				settings.LotTransitionRecoveryFraction = recoveryFraction;
+				Console.WriteLine($"  LotTransitionRecoveryFraction = {recoveryFraction}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "slowdown-samples", 1, out var slowdownSamples))
+			{
+				settings.LotTransitionConsecutiveSamplesForSlowdown = slowdownSamples;
+				Console.WriteLine($"  LotTransitionConsecutiveSamplesForSlowdown = {slowdownSamples}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "recovery-samples", 1, out var recoverySamples))
+			{
+				settings.LotTransitionRecoveryConsecutiveSamples = recoverySamples;
+				Console.WriteLine($"  LotTransitionRecoveryConsecutiveSamples = {recoverySamples}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "min-pre-samples", 1, out var minPreSamples))
+			{
+				settings.LotTransitionMinPreStableSamples = minPreSamples;
+				Console.WriteLine($"  LotTransitionMinPreStableSamples = {minPreSamples}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "min-post-samples", 1, out var minPostSamples))
+			{
+				settings.LotTransitionMinPostStableSamples = minPostSamples;
+				Console.WriteLine($"  LotTransitionMinPostStableSamples = {minPostSamples}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("min-fpm", out var minFpmRaw) &&
+				double.TryParse(minFpmRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var minFpm) &&
+				minFpm > 0)
+			{
+				settings.LotTransitionMinFpmForBaseline = minFpm;
+				Console.WriteLine($"  LotTransitionMinFpmForBaseline = {minFpm}");
+				changed = true;
+			}
+
+			if (!changed)
+			{
+				Console.WriteLine("No valid options provided. Run 'set-lot-transition' without arguments for usage.");
+				return 1;
+			}
+
+			provider.Save(settings);
+			Console.WriteLine("Lot transition detection settings updated. Restart the service for changes to affect the background loop.");
+			return 0;
+		}
+
+		private static bool TryGetIntOption(Dictionary<string, string> options, string key, int minimum, out int value)
+		{
+			value = 0;
+			return options.TryGetValue(key, out var raw)
+				&& int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value)
+				&& value >= minimum;
+		}
+
+		private static bool TryGetFractionOption(Dictionary<string, string> options, string key, out double value)
+		{
+			value = 0;
+			return options.TryGetValue(key, out var raw)
+				&& double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
+				&& value > 0
+				&& value < 1;
+		}
+
 		private static int TestAlarm(Dictionary<string, string> options)
 		{
 			var provider = new CollectorSettingsProvider();
@@ -1239,6 +1385,14 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("      [--sizer-alarm true|false]");
 			Console.WriteLine("  SizerDataCollector.Service.exe size-health --serial <sn> [--hours <h>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe size-health --serial <sn> --from <date> --to <date>");
+			Console.WriteLine();
+			Console.WriteLine("Lot transition throughput detection:");
+			Console.WriteLine("  SizerDataCollector.Service.exe set-lot-transition --enabled true|false [--interval <min>]");
+			Console.WriteLine("      [--scan-hours <hours>] [--stable-window <min>] [--peak-search <min>]");
+			Console.WriteLine("      [--slowdown-fraction <0-1>] [--recovery-fraction <0-1>] [--min-fpm <value>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe lot-transition scan --serial <sn> [--hours <h> | --day <yyyy-MM-dd> | --month <yyyy-MM> | --year <yyyy>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe lot-transition list --serial <sn> [--hours <h> | --day <yyyy-MM-dd> | --month <yyyy-MM> | --year <yyyy>] [--format csv]");
+			Console.WriteLine("  SizerDataCollector.Service.exe lot-transition export --serial <sn> [same window options]");
 			Console.WriteLine();
 			Console.WriteLine("Alarm testing:");
 			Console.WriteLine("  SizerDataCollector.Service.exe test-alarm [--type grade|size|both] [--severity low|medium|high]");

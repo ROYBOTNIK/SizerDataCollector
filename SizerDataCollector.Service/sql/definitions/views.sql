@@ -587,6 +587,41 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) b ON true;
 
+CREATE OR REPLACE VIEW oee.v_lot_transition_throughput_event_detail AS
+SELECT e.transition_ts,
+       public.time_bucket('00:01:00'::interval, e.transition_ts) AS minute_ts,
+       date_trunc('day'::text, e.transition_ts) AS event_day,
+       e.serial_no,
+       e.outgoing_batch_record_id,
+       e.incoming_batch_record_id,
+       e.outgoing_grower_code,
+       e.incoming_grower_code,
+       e.outgoing_label,
+       e.incoming_label,
+       concat_ws(' -> '::text, NULLIF(e.outgoing_label, ''::text), NULLIF(e.incoming_label, ''::text)) AS transition_label,
+       e.disruption_start_ts,
+       e.trough_ts,
+       e.stable_recovery_ts,
+       e.disruption_duration_minutes,
+       e.pre_stable_fpm,
+       e.trough_fpm,
+       e.post_stable_fpm,
+       e.pre_peak_fpm,
+       e.post_peak_fpm,
+       e.opportunity_window_start_ts,
+       e.opportunity_window_end_ts,
+       e.opportunity_window_minutes,
+       e.integrated_fpm_minutes,
+       e.counterfactual_fpm_minutes,
+       e.fruit_opportunity_shortfall,
+       e.availability_avg_during_disruption,
+       e.availability_avg_opportunity_window,
+       e.explanation,
+       e.model_version,
+       e.delivered_to,
+       e.inserted_at
+FROM oee.lot_transition_throughput_events e;
+
 CREATE OR REPLACE VIEW oee.v_anomaly_event_detail AS
 SELECT 'grade'::text AS anomaly_type,
        event_ts,

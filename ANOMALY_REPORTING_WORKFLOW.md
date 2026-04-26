@@ -17,6 +17,8 @@ The reporting flow sits downstream of:
 
 This workflow does not replace anomaly tuning. It complements it by turning anomaly history into repeatable evidence.
 
+For grower lot changeover duration and throughput opportunity loss, use `LOT_TRANSITION_WORKFLOW.md` and the `lot-transition` CLI commands. Those events are stored separately in `oee.lot_transition_throughput_events` because they describe batch transition disruption rather than lane-level grading or sizing anomalies.
+
 ## What These Reports Are Good At
 
 The current reporting layer is already useful for:
@@ -46,6 +48,20 @@ Use this when you want to answer:
 - Which lanes keep reappearing?
 - Which grade keys are repeat offenders?
 - Are the repeats mostly low noise or high-severity events?
+
+### Lot transition throughput events
+
+```text
+SizerDataCollector.Service.exe lot-transition scan --serial <sn> --day "2026-04-23"
+SizerDataCollector.Service.exe lot-transition list --serial <sn> --month "2026-04"
+SizerDataCollector.Service.exe lot-transition export --serial <sn> --year "2026"
+```
+
+Use this when you want to answer:
+
+- How long are grower lot transitions taking?
+- How many peak-production minutes are lost during changeovers?
+- Which incoming batches or grower transitions repeatedly have high opportunity cost?
 
 Interpretation guardrail:
 

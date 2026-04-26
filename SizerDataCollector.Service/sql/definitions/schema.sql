@@ -191,6 +191,38 @@ CREATE TABLE IF NOT EXISTS oee.lane_size_anomalies (
     delivered_to     text NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS oee.lot_transition_throughput_events (
+    transition_ts                         timestamptz NOT NULL,
+    serial_no                             text NOT NULL,
+    outgoing_batch_record_id              bigint NOT NULL,
+    incoming_batch_record_id              bigint NOT NULL,
+    outgoing_grower_code                  text,
+    incoming_grower_code                  text,
+    outgoing_label                        text,
+    incoming_label                        text,
+    disruption_start_ts                   timestamptz NOT NULL,
+    trough_ts                             timestamptz NOT NULL,
+    stable_recovery_ts                    timestamptz NOT NULL,
+    disruption_duration_minutes           double precision NOT NULL,
+    pre_stable_fpm                        double precision NOT NULL,
+    trough_fpm                            double precision NOT NULL,
+    post_stable_fpm                       double precision NOT NULL,
+    pre_peak_fpm                          double precision NOT NULL,
+    post_peak_fpm                         double precision NOT NULL,
+    opportunity_window_start_ts           timestamptz NOT NULL,
+    opportunity_window_end_ts             timestamptz NOT NULL,
+    opportunity_window_minutes            double precision NOT NULL,
+    integrated_fpm_minutes                double precision NOT NULL,
+    counterfactual_fpm_minutes            double precision NOT NULL,
+    fruit_opportunity_shortfall           double precision NOT NULL,
+    availability_avg_during_disruption    double precision,
+    availability_avg_opportunity_window   double precision,
+    explanation                           jsonb,
+    model_version                         text NOT NULL,
+    delivered_to                          text NOT NULL,
+    inserted_at                           timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS oee.etl_watermarks (
     key     text NOT NULL PRIMARY KEY,
     last_ts timestamptz NOT NULL
@@ -351,6 +383,15 @@ CREATE INDEX IF NOT EXISTS grade_lane_anomalies_serial_lane_grade_event_ts_idx O
 CREATE INDEX IF NOT EXISTS lane_size_anomalies_event_ts_idx ON oee.lane_size_anomalies USING btree (event_ts DESC);
 CREATE INDEX IF NOT EXISTS lane_size_anomalies_serial_event_ts_idx ON oee.lane_size_anomalies USING btree (serial_no, event_ts DESC);
 CREATE INDEX IF NOT EXISTS lane_size_anomalies_serial_lane_event_ts_idx ON oee.lane_size_anomalies USING btree (serial_no, lane_no, event_ts DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_lot_transition_events_serial_incoming_batch
+    ON oee.lot_transition_throughput_events USING btree (serial_no, incoming_batch_record_id);
+CREATE INDEX IF NOT EXISTS lot_transition_events_serial_transition_ts_idx
+    ON oee.lot_transition_throughput_events USING btree (serial_no, transition_ts DESC);
+CREATE INDEX IF NOT EXISTS lot_transition_events_incoming_batch_idx
+    ON oee.lot_transition_throughput_events USING btree (incoming_batch_record_id);
+CREATE INDEX IF NOT EXISTS lot_transition_events_outgoing_batch_idx
+    ON oee.lot_transition_throughput_events USING btree (outgoing_batch_record_id);
 
 CREATE INDEX IF NOT EXISTS lane_grade_events_ts_idx ON oee.lane_grade_events USING btree (ts DESC);
 CREATE INDEX IF NOT EXISTS ix_lane_grade_events_batch_ts ON oee.lane_grade_events USING btree (batch_record_id, ts DESC);

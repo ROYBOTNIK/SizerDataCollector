@@ -140,6 +140,10 @@
     <Compile Include="AnomalyDetection\IAlarmSink.cs" />
     <Compile Include="AnomalyDetection\LlmEnricher.cs" />
     <Compile Include="AnomalyDetection\LogAlarmSink.cs" />
+    <Compile Include="AnomalyDetection\LotTransitionAnalyzer.cs" />
+    <Compile Include="AnomalyDetection\LotTransitionConfig.cs" />
+    <Compile Include="AnomalyDetection\LotTransitionDatabaseSink.cs" />
+    <Compile Include="AnomalyDetection\LotTransitionModels.cs" />
     <Compile Include="AnomalyDetection\NarrativeBuilder.cs" />
     <Compile Include="AnomalyDetection\PriorityClassifier.cs" />
     <Compile Include="AnomalyDetection\ReplayDataSource.cs" />

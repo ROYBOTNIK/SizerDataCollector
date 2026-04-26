@@ -97,6 +97,19 @@ namespace SizerDataCollector.Core.Config
 		public double SizePctDevMin { get; }
 		public int SizeCooldownMinutes { get; }
 
+		public bool EnableLotTransitionDetection { get; }
+		public int LotTransitionEvalIntervalMinutes { get; }
+		public int LotTransitionScanWindowHours { get; }
+		public int LotTransitionStableWindowMinutes { get; }
+		public int LotTransitionPeakSearchMinutes { get; }
+		public double LotTransitionSlowdownFraction { get; }
+		public double LotTransitionRecoveryFraction { get; }
+		public int LotTransitionConsecutiveSamplesForSlowdown { get; }
+		public int LotTransitionRecoveryConsecutiveSamples { get; }
+		public int LotTransitionMinPreStableSamples { get; }
+		public int LotTransitionMinPostStableSamples { get; }
+		public double LotTransitionMinFpmForBaseline { get; }
+
 		public CollectorConfig()
 			: this(BuildRuntimeSettingsFromAppConfig())
 		{
@@ -164,6 +177,19 @@ namespace SizerDataCollector.Core.Config
 			SizeZGate = runtimeSettings.SizeZGate > 0 ? runtimeSettings.SizeZGate : 2.0;
 			SizePctDevMin = runtimeSettings.SizePctDevMin > 0 ? runtimeSettings.SizePctDevMin : 3.0;
 			SizeCooldownMinutes = EnsureMinimum("SizeCooldownMinutes", runtimeSettings.SizeCooldownMinutes, 0, 240);
+
+			EnableLotTransitionDetection = runtimeSettings.EnableLotTransitionDetection;
+			LotTransitionEvalIntervalMinutes = EnsureMinimum("LotTransitionEvalIntervalMinutes", runtimeSettings.LotTransitionEvalIntervalMinutes, 1, 30);
+			LotTransitionScanWindowHours = EnsureMinimum("LotTransitionScanWindowHours", runtimeSettings.LotTransitionScanWindowHours, 1, 72);
+			LotTransitionStableWindowMinutes = EnsureMinimum("LotTransitionStableWindowMinutes", runtimeSettings.LotTransitionStableWindowMinutes, 1, 10);
+			LotTransitionPeakSearchMinutes = EnsureMinimum("LotTransitionPeakSearchMinutes", runtimeSettings.LotTransitionPeakSearchMinutes, 1, 30);
+			LotTransitionSlowdownFraction = NormalizeFraction(runtimeSettings.LotTransitionSlowdownFraction, 0.15);
+			LotTransitionRecoveryFraction = NormalizeFraction(runtimeSettings.LotTransitionRecoveryFraction, 0.10);
+			LotTransitionConsecutiveSamplesForSlowdown = EnsureMinimum("LotTransitionConsecutiveSamplesForSlowdown", runtimeSettings.LotTransitionConsecutiveSamplesForSlowdown, 1, 1);
+			LotTransitionRecoveryConsecutiveSamples = EnsureMinimum("LotTransitionRecoveryConsecutiveSamples", runtimeSettings.LotTransitionRecoveryConsecutiveSamples, 1, 2);
+			LotTransitionMinPreStableSamples = EnsureMinimum("LotTransitionMinPreStableSamples", runtimeSettings.LotTransitionMinPreStableSamples, 1, 3);
+			LotTransitionMinPostStableSamples = EnsureMinimum("LotTransitionMinPostStableSamples", runtimeSettings.LotTransitionMinPostStableSamples, 1, 3);
+			LotTransitionMinFpmForBaseline = runtimeSettings.LotTransitionMinFpmForBaseline > 0 ? runtimeSettings.LotTransitionMinFpmForBaseline : 100.0;
 		}
 
 		private static CollectorRuntimeSettings BuildRuntimeSettingsFromAppConfig()
@@ -209,7 +235,19 @@ namespace SizerDataCollector.Core.Config
 				SizeWindowHours = GetIntWithMinimum("SizeWindowHours", 1, 24),
 				SizeZGate = GetDouble("SizeZGate", 2.0),
 				SizePctDevMin = GetDouble("SizePctDevMin", 3.0),
-				SizeCooldownMinutes = GetIntWithMinimum("SizeCooldownMinutes", 0, 240)
+				SizeCooldownMinutes = GetIntWithMinimum("SizeCooldownMinutes", 0, 240),
+				EnableLotTransitionDetection = GetBool("EnableLotTransitionDetection", false),
+				LotTransitionEvalIntervalMinutes = GetIntWithMinimum("LotTransitionEvalIntervalMinutes", 1, 30),
+				LotTransitionScanWindowHours = GetIntWithMinimum("LotTransitionScanWindowHours", 1, 72),
+				LotTransitionStableWindowMinutes = GetIntWithMinimum("LotTransitionStableWindowMinutes", 1, 10),
+				LotTransitionPeakSearchMinutes = GetIntWithMinimum("LotTransitionPeakSearchMinutes", 1, 30),
+				LotTransitionSlowdownFraction = GetDouble("LotTransitionSlowdownFraction", 0.15),
+				LotTransitionRecoveryFraction = GetDouble("LotTransitionRecoveryFraction", 0.10),
+				LotTransitionConsecutiveSamplesForSlowdown = GetIntWithMinimum("LotTransitionConsecutiveSamplesForSlowdown", 1, 1),
+				LotTransitionRecoveryConsecutiveSamples = GetIntWithMinimum("LotTransitionRecoveryConsecutiveSamples", 1, 2),
+				LotTransitionMinPreStableSamples = GetIntWithMinimum("LotTransitionMinPreStableSamples", 1, 3),
+				LotTransitionMinPostStableSamples = GetIntWithMinimum("LotTransitionMinPostStableSamples", 1, 3),
+				LotTransitionMinFpmForBaseline = GetDouble("LotTransitionMinFpmForBaseline", 100.0)
 			};
 		}
 
@@ -352,6 +390,11 @@ namespace SizerDataCollector.Core.Config
 			}
 
 			return value;
+		}
+
+		private static double NormalizeFraction(double value, double defaultValue)
+		{
+			return value > 0 && value < 1 ? value : defaultValue;
 		}
 
 		private static IReadOnlyList<string> NormalizeEnabledMetrics(IEnumerable<string> metrics)

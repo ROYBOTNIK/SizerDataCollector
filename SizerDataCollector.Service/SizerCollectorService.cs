@@ -204,8 +204,31 @@ namespace SizerDataCollector.Service
 								config.EnableSizerSizeAlarm ? "ON" : "OFF"));
 						}
 
+						Task lotTransitionTask = Task.CompletedTask;
+						if (config.EnableLotTransitionDetection && !string.IsNullOrWhiteSpace(config.TimescaleConnectionString))
+						{
+							var lotConfig = new LotTransitionConfig(config);
+							var lotAnalyzer = new LotTransitionAnalyzer(lotConfig, config.TimescaleConnectionString);
+							var lotSink = new LotTransitionDatabaseSink(config.TimescaleConnectionString);
+
+							lotTransitionTask = RunLotTransitionLoopAsync(
+								lotAnalyzer,
+								lotSink,
+								lotConfig,
+								_status,
+								cancellationToken);
+
+							Logger.Log(string.Format(
+								"Lot transition throughput detection enabled (interval={0}min, scanWindow={1}h, stableWindow={2}min, peakSearch={3}min).",
+								lotConfig.EvalIntervalMinutes,
+								lotConfig.ScanWindowHours,
+								lotConfig.StableWindowMinutes,
+								lotConfig.PeakSearchMinutes));
+						}
+
 						await runner.RunAsync(cancellationToken).ConfigureAwait(false);
 						await sizeTask.ConfigureAwait(false);
+						await lotTransitionTask.ConfigureAwait(false);
 					}
 
 					if (!cancellationToken.IsCancellationRequested)
@@ -298,6 +321,60 @@ namespace SizerDataCollector.Service
 				catch (Exception ex)
 				{
 					Logger.Log("Size evaluator cycle failed.", ex, LogLevel.Warn);
+				}
+			}
+		}
+
+		private static async Task RunLotTransitionLoopAsync(
+			LotTransitionAnalyzer analyzer,
+			LotTransitionDatabaseSink dbSink,
+			LotTransitionConfig lotConfig,
+			CollectorStatus status,
+			CancellationToken cancellationToken)
+		{
+			var delay = TimeSpan.FromMinutes(lotConfig.EvalIntervalMinutes);
+			while (!cancellationToken.IsCancellationRequested)
+			{
+				try
+				{
+					await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+
+					var serialNo = status?.MachineSerial;
+					if (string.IsNullOrWhiteSpace(serialNo))
+					{
+						Logger.Log("Lot transition evaluator skipped: machine serial not yet known.", level: LogLevel.Debug);
+						continue;
+					}
+
+					var toTs = DateTimeOffset.UtcNow;
+					var fromTs = toTs.AddHours(-lotConfig.ScanWindowHours);
+					var report = await analyzer.AnalyzeRangeAsync(serialNo, fromTs, toTs, cancellationToken).ConfigureAwait(false);
+					var inserted = 0;
+
+					foreach (var evt in report.Events)
+					{
+						evt.DeliveredTo = "db";
+						if (await dbSink.DeliverAsync(evt, cancellationToken).ConfigureAwait(false))
+							inserted++;
+					}
+
+					if (report.TransitionCandidates > 0 || inserted > 0)
+					{
+						Logger.Log(string.Format(
+							"Lot transition evaluation complete: candidates={0}, reportable={1}, inserted={2}.",
+							report.TransitionCandidates,
+							report.Events.Count,
+							inserted),
+							level: LogLevel.Info);
+					}
+				}
+				catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+				{
+					break;
+				}
+				catch (Exception ex)
+				{
+					Logger.Log("Lot transition evaluator cycle failed.", ex, LogLevel.Warn);
 				}
 			}
 		}

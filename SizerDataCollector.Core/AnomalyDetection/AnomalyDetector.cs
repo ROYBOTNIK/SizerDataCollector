@@ -41,6 +41,10 @@ namespace SizerDataCollector.Core.AnomalyDetection
 
 		private int _lanes;
 		private int _grades;
+		private int[] _snapshotGradeMapping;
+		private int[] _eligiblePeerLanesScratch;
+		private double[] _peerShareScratch;
+		private double[] _peerDeviationScratch;
 		private readonly List<string> _canonicalGradeKeys = new List<string>();
 		private readonly Dictionary<string, int> _canonicalGradeIndex
 			= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -121,6 +125,10 @@ namespace SizerDataCollector.Core.AnomalyDetection
 			_laneAverageFpm = null;
 			_eligiblePeerCounts = null;
 			_consecutiveLaneSignals = null;
+			_snapshotGradeMapping = null;
+			_eligiblePeerLanesScratch = null;
+			_peerShareScratch = null;
+			_peerDeviationScratch = null;
 		}
 
 		/// <summary>
@@ -194,11 +202,11 @@ namespace SizerDataCollector.Core.AnomalyDetection
 				// canonical (lane, canonicalGradeIdx) coordinates. A snapshot that omits
 				// a previously-seen grade simply contributes zero for that canonical slot.
 				var snapKeys = m.GradeKeys;
-				var mapping = new int[snapKeys.Count];
+				EnsureSnapshotMappingCapacity(snapKeys.Count);
 				for (int j = 0; j < snapKeys.Count; j++)
 				{
 					int canonicalIdx;
-					mapping[j] = _canonicalGradeIndex.TryGetValue(snapKeys[j], out canonicalIdx)
+					_snapshotGradeMapping[j] = _canonicalGradeIndex.TryGetValue(snapKeys[j], out canonicalIdx)
 						? canonicalIdx : -1;
 				}
 
@@ -208,7 +216,7 @@ namespace SizerDataCollector.Core.AnomalyDetection
 					var targetRow = _aggregate[lane];
 					for (int j = 0; j < snapKeys.Count; j++)
 					{
-						int canonicalIdx = mapping[j];
+						int canonicalIdx = _snapshotGradeMapping[j];
 						if (canonicalIdx < 0) continue;
 						targetRow[canonicalIdx] += m[lane, j];
 					}
@@ -223,17 +231,20 @@ namespace SizerDataCollector.Core.AnomalyDetection
 			if (_window.Count == 0)
 				return false;
 
-			var laneTotals = RowSums(_aggregate);
 			int sampleCount = _window.Count;
 
 			for (int lane = 0; lane < _lanes; lane++)
 			{
-				_laneAverageFpm[lane] = laneTotals[lane] / sampleCount;
-				if (laneTotals[lane] <= 0)
+				double laneTotal = 0;
+				for (int grade = 0; grade < _grades; grade++)
+					laneTotal += _aggregate[lane][grade];
+
+				_laneAverageFpm[lane] = laneTotal / sampleCount;
+				if (laneTotal <= 0)
 					continue;
 
 				for (int grade = 0; grade < _grades; grade++)
-					_laneSharePct[lane][grade] = 100.0 * _aggregate[lane][grade] / laneTotals[lane];
+					_laneSharePct[lane][grade] = 100.0 * _aggregate[lane][grade] / laneTotal;
 			}
 
 			bool anyComparableLane = false;
@@ -242,20 +253,23 @@ namespace SizerDataCollector.Core.AnomalyDetection
 				if (_laneAverageFpm[lane] < _config.MinLaneFpm)
 					continue;
 
-				var peerLanes = GetEligiblePeerLanes(lane);
-				_eligiblePeerCounts[lane] = peerLanes.Count;
-				if (peerLanes.Count < _config.MinActivePeerLanes)
+				int peerCount = GetEligiblePeerLanes(lane);
+				_eligiblePeerCounts[lane] = peerCount;
+				if (peerCount < _config.MinActivePeerLanes)
 					continue;
 
 				anyComparableLane = true;
 				for (int grade = 0; grade < _grades; grade++)
 				{
-					var peerShares = new List<double>(peerLanes.Count);
-					for (int peerIndex = 0; peerIndex < peerLanes.Count; peerIndex++)
-						peerShares.Add(_laneSharePct[peerLanes[peerIndex]][grade]);
+					EnsurePeerScratchCapacity(peerCount);
+					for (int peerIndex = 0; peerIndex < peerCount; peerIndex++)
+					{
+						int peerLane = _eligiblePeerLanesScratch[peerIndex];
+						_peerShareScratch[peerIndex] = _laneSharePct[peerLane][grade];
+					}
 
-					double median = ComputeMedian(peerShares);
-					double mad = ComputeMad(peerShares, median);
+					double median = ComputeMedian(_peerShareScratch, peerCount);
+					double mad = ComputeMad(_peerShareScratch, peerCount, median);
 					double spread = Math.Max(mad * 1.4826, MinimumRobustSpreadPoints);
 					double deltaPts = _laneSharePct[lane][grade] - median;
 
@@ -444,19 +458,20 @@ namespace SizerDataCollector.Core.AnomalyDetection
 			};
 		}
 
-		private List<int> GetEligiblePeerLanes(int lane)
+		private int GetEligiblePeerLanes(int lane)
 		{
-			var peers = new List<int>();
+			EnsureEligiblePeerLaneCapacity(_lanes);
+			int count = 0;
 			for (int peer = 0; peer < _lanes; peer++)
 			{
 				if (peer == lane)
 					continue;
 
 				if (_laneAverageFpm[peer] >= _config.MinPeerLaneFpm)
-					peers.Add(peer);
+					_eligiblePeerLanesScratch[count++] = peer;
 			}
 
-			return peers;
+			return count;
 		}
 
 		private void ResetScores()
@@ -526,39 +541,48 @@ namespace SizerDataCollector.Core.AnomalyDetection
 			return dst;
 		}
 
-		private static double[] RowSums(double[][] arr)
+		private void EnsureSnapshotMappingCapacity(int length)
 		{
-			var sums = new double[arr.Length];
-			for (int i = 0; i < arr.Length; i++)
-				for (int j = 0; j < arr[i].Length; j++)
-					sums[i] += arr[i][j];
-			return sums;
+			if (_snapshotGradeMapping == null || _snapshotGradeMapping.Length < length)
+				_snapshotGradeMapping = new int[length];
 		}
 
-		private static double ComputeMedian(List<double> values)
+		private void EnsureEligiblePeerLaneCapacity(int length)
 		{
-			if (values == null || values.Count == 0)
+			if (_eligiblePeerLanesScratch == null || _eligiblePeerLanesScratch.Length < length)
+				_eligiblePeerLanesScratch = new int[length];
+		}
+
+		private void EnsurePeerScratchCapacity(int length)
+		{
+			if (_peerShareScratch == null || _peerShareScratch.Length < length)
+				_peerShareScratch = new double[length];
+			if (_peerDeviationScratch == null || _peerDeviationScratch.Length < length)
+				_peerDeviationScratch = new double[length];
+		}
+
+		private static double ComputeMedian(double[] values, int count)
+		{
+			if (values == null || count <= 0)
 				return 0;
 
-			values.Sort();
-			int mid = values.Count / 2;
-			if ((values.Count % 2) == 0)
+			Array.Sort(values, 0, count);
+			int mid = count / 2;
+			if ((count % 2) == 0)
 				return (values[mid - 1] + values[mid]) / 2.0;
 
 			return values[mid];
 		}
 
-		private static double ComputeMad(List<double> values, double median)
+		private double ComputeMad(double[] values, int count, double median)
 		{
-			if (values == null || values.Count == 0)
+			if (values == null || count <= 0)
 				return 0;
 
-			var deviations = new List<double>(values.Count);
-			for (int i = 0; i < values.Count; i++)
-				deviations.Add(Math.Abs(values[i] - median));
+			for (int i = 0; i < count; i++)
+				_peerDeviationScratch[i] = Math.Abs(values[i] - median);
 
-			return ComputeMedian(deviations);
+			return ComputeMedian(_peerDeviationScratch, count);
 		}
 	}
 }
-

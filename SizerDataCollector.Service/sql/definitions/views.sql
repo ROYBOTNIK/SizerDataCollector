@@ -50,6 +50,41 @@ FROM oee.cagg_grade_minute_batch c
 LEFT JOIN public.batches b ON (b.id = c.batch_record_id)
 GROUP BY c.minute_ts, c.serial_no, c.batch_record_id;
 
+-- Define serial-aware throughput views before OEE rollup views that depend on them.
+CREATE OR REPLACE VIEW oee.v_throughput_daily_batch AS
+SELECT day,
+       serial_no,
+       batch_record_id,
+       lot,
+       variety,
+       total_fpm,
+       missed_fpm,
+       recycle_fpm,
+       outlet_recycle_fpm,
+       combined_recycle_fpm,
+       cupfill_pct,
+       tph,
+       target_throughput,
+       oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, combined_recycle_fpm, target_throughput) AS throughput_ratio
+FROM oee.cagg_throughput_daily_batch;
+
+CREATE OR REPLACE VIEW oee.v_throughput_minute_batch AS
+SELECT minute_ts,
+       serial_no,
+       batch_record_id,
+       lot,
+       variety,
+       total_fpm,
+       missed_fpm,
+       machine_recycle_fpm,
+       outlet_recycle_fpm,
+       combined_recycle_fpm,
+       cupfill_pct,
+       tph,
+       target_throughput,
+       oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, combined_recycle_fpm, target_throughput) AS throughput_ratio
+FROM oee.cagg_throughput_minute_batch;
+
 CREATE OR REPLACE VIEW oee.cagg_oee_minute_batch AS
 SELECT a.minute_ts,
        a.serial_no,
@@ -497,40 +532,6 @@ SELECT minute_ts AS ts,
        serial_no
 FROM oee.cagg_quality_cat_minute_batch c
 GROUP BY minute_ts, serial_no;
-
-CREATE OR REPLACE VIEW oee.v_throughput_daily_batch AS
-SELECT day,
-       serial_no,
-       batch_record_id,
-       lot,
-       variety,
-       total_fpm,
-       missed_fpm,
-       recycle_fpm,
-       outlet_recycle_fpm,
-       combined_recycle_fpm,
-       cupfill_pct,
-       tph,
-       target_throughput,
-       oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, combined_recycle_fpm, target_throughput) AS throughput_ratio
-FROM oee.cagg_throughput_daily_batch;
-
-CREATE OR REPLACE VIEW oee.v_throughput_minute_batch AS
-SELECT minute_ts,
-       serial_no,
-       batch_record_id,
-       lot,
-       variety,
-       total_fpm,
-       missed_fpm,
-       machine_recycle_fpm,
-       outlet_recycle_fpm,
-       combined_recycle_fpm,
-       cupfill_pct,
-       tph,
-       target_throughput,
-       oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, combined_recycle_fpm, target_throughput) AS throughput_ratio
-FROM oee.cagg_throughput_minute_batch;
 
 CREATE OR REPLACE VIEW oee.v_grade_anomaly_event_detail AS
 SELECT a.event_ts,

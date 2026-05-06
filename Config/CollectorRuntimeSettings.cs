@@ -61,6 +61,17 @@ namespace SizerDataCollector.Core.Config
 		public int LotTransitionMinPreStableSamples { get; set; } = 3;
 		public int LotTransitionMinPostStableSamples { get; set; } = 3;
 		public double LotTransitionMinFpmForBaseline { get; set; } = 100.0;
+
+		public bool EnableMachineEventDetection { get; set; }
+		public int MachineEventEvalIntervalMinutes { get; set; } = 15;
+		public int MachineEventScanWindowHours { get; set; } = 24;
+		public double MachineEventDowntimeMaxAvailabilityRatio { get; set; } = 0.0;
+		public double MachineEventSlowdownMaxThroughputRatio { get; set; } = 0.75;
+		public double MachineEventSlowdownMinAvailabilityRatio { get; set; } = 0.5;
+		public double MachineEventSlowdownMinTotalFpm { get; set; } = 100.0;
+		public int MachineEventMinDurationMinutes { get; set; } = 3;
+		public int MachineEventMergeGapMinutes { get; set; } = 2;
+		public bool MachineEventExcludeLotTransitions { get; set; } = true;
 	}
 }
 

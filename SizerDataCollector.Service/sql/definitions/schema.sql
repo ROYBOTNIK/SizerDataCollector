@@ -247,6 +247,56 @@ CREATE TABLE IF NOT EXISTS oee.lane_grade_events (
     PRIMARY KEY (ts, serial_no, lane_no, grade_key)
 );
 
+
+CREATE TABLE IF NOT EXISTS oee.downtime_events (
+    start_ts                  timestamptz NOT NULL,
+    end_ts                    timestamptz NOT NULL,
+    duration_minutes          double precision NOT NULL,
+    serial_no                 text NOT NULL,
+    batch_record_id           bigint,
+    lot                       text,
+    variety                   text,
+    avg_availability_ratio    double precision,
+    min_availability_ratio    double precision,
+    avg_throughput_ratio      double precision,
+    min_throughput_ratio      double precision,
+    avg_total_fpm             double precision,
+    min_total_fpm             double precision,
+    avg_oee_score             double precision,
+    reason                    text,
+    overlaps_lot_transition   boolean NOT NULL DEFAULT false,
+    explanation               jsonb,
+    model_version             text NOT NULL,
+    delivered_to              text NOT NULL,
+    detected_at               timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (serial_no, start_ts, end_ts)
+);
+
+CREATE TABLE IF NOT EXISTS oee.slowdown_events (
+    start_ts                  timestamptz NOT NULL,
+    end_ts                    timestamptz NOT NULL,
+    duration_minutes          double precision NOT NULL,
+    serial_no                 text NOT NULL,
+    batch_record_id           bigint,
+    lot                       text,
+    variety                   text,
+    avg_availability_ratio    double precision,
+    min_availability_ratio    double precision,
+    avg_throughput_ratio      double precision,
+    min_throughput_ratio      double precision,
+    avg_total_fpm             double precision,
+    min_total_fpm             double precision,
+    avg_oee_score             double precision,
+    reason                    text,
+    overlaps_lot_transition   boolean NOT NULL DEFAULT false,
+    explanation               jsonb,
+    model_version             text NOT NULL,
+    delivered_to              text NOT NULL,
+    detected_at               timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (serial_no, start_ts, end_ts)
+);
+
+
 CREATE TABLE IF NOT EXISTS oee.lane_grade_minute (
     minute_ts       timestamptz NOT NULL,
     serial_no       text NOT NULL,
@@ -403,3 +453,9 @@ CREATE INDEX IF NOT EXISTS ix_lane_grade_minute_batch ON oee.lane_grade_minute U
 CREATE INDEX IF NOT EXISTS oee_minute_batch_minute_ts_idx ON oee.oee_minute_batch_old USING btree (minute_ts DESC);
 CREATE INDEX IF NOT EXISTS ix_oee_minute_batch_batch_time ON oee.oee_minute_batch_old USING btree (batch_record_id, minute_ts DESC);
 CREATE INDEX IF NOT EXISTS ix_oee_minute_batch_serial_time ON oee.oee_minute_batch_old USING btree (serial_no, minute_ts DESC);
+
+CREATE INDEX IF NOT EXISTS ix_downtime_events_serial_start
+    ON oee.downtime_events USING btree (serial_no, start_ts DESC);
+
+CREATE INDEX IF NOT EXISTS ix_slowdown_events_serial_start
+    ON oee.slowdown_events USING btree (serial_no, start_ts DESC);

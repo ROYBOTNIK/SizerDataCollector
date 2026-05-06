@@ -160,7 +160,17 @@ namespace SizerDataCollector.Core.Config
 				LotTransitionRecoveryConsecutiveSamples = config.LotTransitionRecoveryConsecutiveSamples,
 				LotTransitionMinPreStableSamples = config.LotTransitionMinPreStableSamples,
 				LotTransitionMinPostStableSamples = config.LotTransitionMinPostStableSamples,
-				LotTransitionMinFpmForBaseline = config.LotTransitionMinFpmForBaseline
+				LotTransitionMinFpmForBaseline = config.LotTransitionMinFpmForBaseline,
+				EnableMachineEventDetection = config.EnableMachineEventDetection,
+				MachineEventEvalIntervalMinutes = config.MachineEventEvalIntervalMinutes,
+				MachineEventScanWindowHours = config.MachineEventScanWindowHours,
+				MachineEventDowntimeMaxAvailabilityRatio = config.MachineEventDowntimeMaxAvailabilityRatio,
+				MachineEventSlowdownMaxThroughputRatio = config.MachineEventSlowdownMaxThroughputRatio,
+				MachineEventSlowdownMinAvailabilityRatio = config.MachineEventSlowdownMinAvailabilityRatio,
+				MachineEventSlowdownMinTotalFpm = config.MachineEventSlowdownMinTotalFpm,
+				MachineEventMinDurationMinutes = config.MachineEventMinDurationMinutes,
+				MachineEventMergeGapMinutes = config.MachineEventMergeGapMinutes,
+				MachineEventExcludeLotTransitions = config.MachineEventExcludeLotTransitions
 			};
 		}
 

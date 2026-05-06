@@ -110,6 +110,17 @@ namespace SizerDataCollector.Core.Config
 		public int LotTransitionMinPostStableSamples { get; }
 		public double LotTransitionMinFpmForBaseline { get; }
 
+		public bool EnableMachineEventDetection { get; }
+		public int MachineEventEvalIntervalMinutes { get; }
+		public int MachineEventScanWindowHours { get; }
+		public double MachineEventDowntimeMaxAvailabilityRatio { get; }
+		public double MachineEventSlowdownMaxThroughputRatio { get; }
+		public double MachineEventSlowdownMinAvailabilityRatio { get; }
+		public double MachineEventSlowdownMinTotalFpm { get; }
+		public int MachineEventMinDurationMinutes { get; }
+		public int MachineEventMergeGapMinutes { get; }
+		public bool MachineEventExcludeLotTransitions { get; }
+
 		public CollectorConfig()
 			: this(BuildRuntimeSettingsFromAppConfig())
 		{
@@ -190,6 +201,17 @@ namespace SizerDataCollector.Core.Config
 			LotTransitionMinPreStableSamples = EnsureMinimum("LotTransitionMinPreStableSamples", runtimeSettings.LotTransitionMinPreStableSamples, 1, 3);
 			LotTransitionMinPostStableSamples = EnsureMinimum("LotTransitionMinPostStableSamples", runtimeSettings.LotTransitionMinPostStableSamples, 1, 3);
 			LotTransitionMinFpmForBaseline = runtimeSettings.LotTransitionMinFpmForBaseline > 0 ? runtimeSettings.LotTransitionMinFpmForBaseline : 100.0;
+
+			EnableMachineEventDetection = runtimeSettings.EnableMachineEventDetection;
+			MachineEventEvalIntervalMinutes = EnsureMinimum("MachineEventEvalIntervalMinutes", runtimeSettings.MachineEventEvalIntervalMinutes, 1, 15);
+			MachineEventScanWindowHours = EnsureMinimum("MachineEventScanWindowHours", runtimeSettings.MachineEventScanWindowHours, 1, 24);
+			MachineEventDowntimeMaxAvailabilityRatio = NormalizeZeroToOne(runtimeSettings.MachineEventDowntimeMaxAvailabilityRatio, 0.0);
+			MachineEventSlowdownMaxThroughputRatio = NormalizeFraction(runtimeSettings.MachineEventSlowdownMaxThroughputRatio, 0.75);
+			MachineEventSlowdownMinAvailabilityRatio = NormalizeZeroToOne(runtimeSettings.MachineEventSlowdownMinAvailabilityRatio, 0.5);
+			MachineEventSlowdownMinTotalFpm = runtimeSettings.MachineEventSlowdownMinTotalFpm >= 0 ? runtimeSettings.MachineEventSlowdownMinTotalFpm : 100.0;
+			MachineEventMinDurationMinutes = EnsureMinimum("MachineEventMinDurationMinutes", runtimeSettings.MachineEventMinDurationMinutes, 1, 3);
+			MachineEventMergeGapMinutes = EnsureMinimum("MachineEventMergeGapMinutes", runtimeSettings.MachineEventMergeGapMinutes, 0, 2);
+			MachineEventExcludeLotTransitions = runtimeSettings.MachineEventExcludeLotTransitions;
 		}
 
 		private static CollectorRuntimeSettings BuildRuntimeSettingsFromAppConfig()
@@ -247,7 +269,17 @@ namespace SizerDataCollector.Core.Config
 				LotTransitionRecoveryConsecutiveSamples = GetIntWithMinimum("LotTransitionRecoveryConsecutiveSamples", 1, 2),
 				LotTransitionMinPreStableSamples = GetIntWithMinimum("LotTransitionMinPreStableSamples", 1, 3),
 				LotTransitionMinPostStableSamples = GetIntWithMinimum("LotTransitionMinPostStableSamples", 1, 3),
-				LotTransitionMinFpmForBaseline = GetDouble("LotTransitionMinFpmForBaseline", 100.0)
+				LotTransitionMinFpmForBaseline = GetDouble("LotTransitionMinFpmForBaseline", 100.0),
+				EnableMachineEventDetection = GetBool("EnableMachineEventDetection", false),
+				MachineEventEvalIntervalMinutes = GetIntWithMinimum("MachineEventEvalIntervalMinutes", 1, 15),
+				MachineEventScanWindowHours = GetIntWithMinimum("MachineEventScanWindowHours", 1, 24),
+				MachineEventDowntimeMaxAvailabilityRatio = GetDouble("MachineEventDowntimeMaxAvailabilityRatio", 0.0),
+				MachineEventSlowdownMaxThroughputRatio = GetDouble("MachineEventSlowdownMaxThroughputRatio", 0.75),
+				MachineEventSlowdownMinAvailabilityRatio = GetDouble("MachineEventSlowdownMinAvailabilityRatio", 0.5),
+				MachineEventSlowdownMinTotalFpm = GetDouble("MachineEventSlowdownMinTotalFpm", 100.0),
+				MachineEventMinDurationMinutes = GetIntWithMinimum("MachineEventMinDurationMinutes", 1, 3),
+				MachineEventMergeGapMinutes = GetIntWithMinimum("MachineEventMergeGapMinutes", 0, 2),
+				MachineEventExcludeLotTransitions = GetBool("MachineEventExcludeLotTransitions", true)
 			};
 		}
 
@@ -395,6 +427,11 @@ namespace SizerDataCollector.Core.Config
 		private static double NormalizeFraction(double value, double defaultValue)
 		{
 			return value > 0 && value < 1 ? value : defaultValue;
+		}
+
+		private static double NormalizeZeroToOne(double value, double defaultValue)
+		{
+			return value >= 0 && value <= 1 ? value : defaultValue;
 		}
 
 		private static IReadOnlyList<string> NormalizeEnabledMetrics(IEnumerable<string> metrics)

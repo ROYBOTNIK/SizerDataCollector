@@ -73,6 +73,12 @@ namespace SizerDataCollector.Service
 					return AnomalyCommands.Run(args.Skip(1).ToArray(), options);
 				case "lot-transition":
 					return LotTransitionCommands.Run(args.Skip(1).ToArray(), options);
+				case "machine-event":
+					return MachineEventCommands.Run(args.Skip(1).ToArray(), options);
+				case "downtime":
+					return MachineEventCommands.Run(args.Skip(1).ToArray(), options, "downtime");
+				case "slowdown":
+					return MachineEventCommands.Run(args.Skip(1).ToArray(), options, "slowdown");
 				case "set-anomaly":
 					return SetAnomaly(options);
 				case "set-sizer-alarm":
@@ -83,6 +89,8 @@ namespace SizerDataCollector.Service
 					return SetSizeAnomaly(options);
 				case "set-lot-transition":
 					return SetLotTransition(options);
+				case "set-machine-events":
+					return SetMachineEvents(options);
 				case "size-health":
 					return SizeHealth(options);
 				case "test-alarm":
@@ -173,6 +181,18 @@ namespace SizerDataCollector.Service
 			Console.WriteLine($"    Recovery Samples:    {settings.LotTransitionRecoveryConsecutiveSamples}");
 			Console.WriteLine($"    Min Stable Samples:  {settings.LotTransitionMinPreStableSamples}/{settings.LotTransitionMinPostStableSamples}");
 			Console.WriteLine($"    Min Baseline FPM:    {settings.LotTransitionMinFpmForBaseline}");
+			Console.WriteLine();
+			Console.WriteLine("  Machine Event Detection:");
+			Console.WriteLine($"    Enabled:             {settings.EnableMachineEventDetection}");
+			Console.WriteLine($"    Eval Interval (min): {settings.MachineEventEvalIntervalMinutes}");
+			Console.WriteLine($"    Scan Window (hours): {settings.MachineEventScanWindowHours}");
+			Console.WriteLine($"    Downtime Max Avail:  {settings.MachineEventDowntimeMaxAvailabilityRatio}");
+			Console.WriteLine($"    Slowdown Max Thrpt:  {settings.MachineEventSlowdownMaxThroughputRatio}");
+			Console.WriteLine($"    Slowdown Min Avail:  {settings.MachineEventSlowdownMinAvailabilityRatio}");
+			Console.WriteLine($"    Slowdown Min FPM:    {settings.MachineEventSlowdownMinTotalFpm}");
+			Console.WriteLine($"    Min Duration (min):  {settings.MachineEventMinDurationMinutes}");
+			Console.WriteLine($"    Merge Gap (min):     {settings.MachineEventMergeGapMinutes}");
+			Console.WriteLine($"    Exclude Transitions: {settings.MachineEventExcludeLotTransitions}");
 			return 0;
 		}
 
@@ -1227,6 +1247,103 @@ namespace SizerDataCollector.Service
 			return 0;
 		}
 
+		private static int SetMachineEvents(Dictionary<string, string> options)
+		{
+			if (options.Count == 0)
+			{
+				Console.WriteLine("Usage: set-machine-events --enabled true|false [--interval <min>] [--scan-hours <hours>]");
+				Console.WriteLine("       [--downtime-max-availability <0-1>] [--slowdown-max-throughput <0-1>]");
+				Console.WriteLine("       [--slowdown-min-availability <0-1>] [--slowdown-min-fpm <value>]");
+				Console.WriteLine("       [--min-duration <min>] [--merge-gap <min>] [--exclude-lot-transitions true|false]");
+				return 1;
+			}
+
+			var provider = new CollectorSettingsProvider();
+			var settings = provider.Load();
+			bool changed = false;
+
+			if (options.TryGetValue("enabled", out var enabledRaw) && bool.TryParse(enabledRaw, out var enabled))
+			{
+				settings.EnableMachineEventDetection = enabled;
+				Console.WriteLine($"  EnableMachineEventDetection = {enabled}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "interval", 1, out var interval))
+			{
+				settings.MachineEventEvalIntervalMinutes = interval;
+				Console.WriteLine($"  MachineEventEvalIntervalMinutes = {interval}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "scan-hours", 1, out var scanHours))
+			{
+				settings.MachineEventScanWindowHours = scanHours;
+				Console.WriteLine($"  MachineEventScanWindowHours = {scanHours}");
+				changed = true;
+			}
+
+			if (TryGetZeroToOneOption(options, "downtime-max-availability", out var downtimeMaxAvailability))
+			{
+				settings.MachineEventDowntimeMaxAvailabilityRatio = downtimeMaxAvailability;
+				Console.WriteLine($"  MachineEventDowntimeMaxAvailabilityRatio = {downtimeMaxAvailability}");
+				changed = true;
+			}
+
+			if (TryGetFractionOption(options, "slowdown-max-throughput", out var slowdownMaxThroughput))
+			{
+				settings.MachineEventSlowdownMaxThroughputRatio = slowdownMaxThroughput;
+				Console.WriteLine($"  MachineEventSlowdownMaxThroughputRatio = {slowdownMaxThroughput}");
+				changed = true;
+			}
+
+			if (TryGetZeroToOneOption(options, "slowdown-min-availability", out var slowdownMinAvailability))
+			{
+				settings.MachineEventSlowdownMinAvailabilityRatio = slowdownMinAvailability;
+				Console.WriteLine($"  MachineEventSlowdownMinAvailabilityRatio = {slowdownMinAvailability}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("slowdown-min-fpm", out var minFpmRaw) &&
+				double.TryParse(minFpmRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out var minFpm) && minFpm >= 0)
+			{
+				settings.MachineEventSlowdownMinTotalFpm = minFpm;
+				Console.WriteLine($"  MachineEventSlowdownMinTotalFpm = {minFpm}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "min-duration", 1, out var minDuration))
+			{
+				settings.MachineEventMinDurationMinutes = minDuration;
+				Console.WriteLine($"  MachineEventMinDurationMinutes = {minDuration}");
+				changed = true;
+			}
+
+			if (TryGetIntOption(options, "merge-gap", 0, out var mergeGap))
+			{
+				settings.MachineEventMergeGapMinutes = mergeGap;
+				Console.WriteLine($"  MachineEventMergeGapMinutes = {mergeGap}");
+				changed = true;
+			}
+
+			if (options.TryGetValue("exclude-lot-transitions", out var excludeRaw) && bool.TryParse(excludeRaw, out var exclude))
+			{
+				settings.MachineEventExcludeLotTransitions = exclude;
+				Console.WriteLine($"  MachineEventExcludeLotTransitions = {exclude}");
+				changed = true;
+			}
+
+			if (!changed)
+			{
+				Console.WriteLine("No valid options provided. Run 'set-machine-events' without arguments for usage.");
+				return 1;
+			}
+
+			provider.Save(settings);
+			Console.WriteLine("Machine event detection settings updated. Restart the service for changes to affect the background loop.");
+			return 0;
+		}
+
 		private static bool TryGetIntOption(Dictionary<string, string> options, string key, int minimum, out int value)
 		{
 			value = 0;
@@ -1242,6 +1359,15 @@ namespace SizerDataCollector.Service
 				&& double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
 				&& value > 0
 				&& value < 1;
+		}
+
+		private static bool TryGetZeroToOneOption(Dictionary<string, string> options, string key, out double value)
+		{
+			value = 0;
+			return options.TryGetValue(key, out var raw)
+				&& double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
+				&& value >= 0
+				&& value <= 1;
 		}
 
 		private static int TestAlarm(Dictionary<string, string> options)
@@ -1393,6 +1519,14 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("  SizerDataCollector.Service.exe lot-transition scan --serial <sn> [--hours <h> | --day <yyyy-MM-dd> | --month <yyyy-MM> | --year <yyyy>]");
 			Console.WriteLine("  SizerDataCollector.Service.exe lot-transition list --serial <sn> [--hours <h> | --day <yyyy-MM-dd> | --month <yyyy-MM> | --year <yyyy>] [--format csv]");
 			Console.WriteLine("  SizerDataCollector.Service.exe lot-transition export --serial <sn> [same window options]");
+			Console.WriteLine();
+			Console.WriteLine("Machine downtime/slowdown event detection:");
+			Console.WriteLine("  SizerDataCollector.Service.exe set-machine-events --enabled true|false [--interval <min>] [--scan-hours <hours>]");
+			Console.WriteLine("      [--downtime-max-availability <0-1>] [--slowdown-max-throughput <0-1>] [--slowdown-min-availability <0-1>]");
+			Console.WriteLine("      [--slowdown-min-fpm <value>] [--min-duration <min>] [--merge-gap <min>] [--exclude-lot-transitions true|false]");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine-event scan --serial <sn> [--type downtime|slowdown|both] [--hours <h> | --day <yyyy-MM-dd> | --month <yyyy-MM> | --year <yyyy>] [--no-persist]");
+			Console.WriteLine("  SizerDataCollector.Service.exe downtime list --serial <sn> [--hours <h> | --day <yyyy-MM-dd> | --month <yyyy-MM> | --year <yyyy>] [--format csv]");
+			Console.WriteLine("  SizerDataCollector.Service.exe slowdown list --serial <sn> [--hours <h> | --day <yyyy-MM-dd> | --month <yyyy-MM> | --year <yyyy>] [--format csv]");
 			Console.WriteLine();
 			Console.WriteLine("Alarm testing:");
 			Console.WriteLine("  SizerDataCollector.Service.exe test-alarm [--type grade|size|both] [--severity low|medium|high]");

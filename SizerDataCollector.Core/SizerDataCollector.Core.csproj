@@ -143,6 +143,10 @@
     <Compile Include="AnomalyDetection\LotTransitionConfig.cs" />
     <Compile Include="AnomalyDetection\LotTransitionDatabaseSink.cs" />
     <Compile Include="AnomalyDetection\LotTransitionModels.cs" />
+    <Compile Include="AnomalyDetection\MachineEventAnalyzer.cs" />
+    <Compile Include="AnomalyDetection\MachineEventConfig.cs" />
+    <Compile Include="AnomalyDetection\MachineEventDatabaseSink.cs" />
+    <Compile Include="AnomalyDetection\MachineEventModels.cs" />
     <Compile Include="AnomalyDetection\NarrativeBuilder.cs" />
     <Compile Include="AnomalyDetection\PriorityClassifier.cs" />
     <Compile Include="AnomalyDetection\ReplayDataSource.cs" />

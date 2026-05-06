@@ -19,6 +19,8 @@ This workflow does not replace anomaly tuning. It complements it by turning anom
 
 For grower lot changeover duration and throughput opportunity loss, use `LOT_TRANSITION_WORKFLOW.md` and the `lot-transition` CLI commands. Those events are stored separately in `oee.lot_transition_throughput_events` because they describe batch transition disruption rather than lane-level grading or sizing anomalies.
 
+For general machine stops and non-transition slow running, use `MACHINE_EVENT_WORKFLOW.md` and the `machine-event`, `downtime`, and `slowdown` CLI commands. Those events are stored in `oee.downtime_events` and `oee.slowdown_events` because they describe machine-level availability and throughput disruption outside the lot-transition-specific workflow.
+
 ## What These Reports Are Good At
 
 The current reporting layer is already useful for:
@@ -48,6 +50,20 @@ Use this when you want to answer:
 - Which lanes keep reappearing?
 - Which grade keys are repeat offenders?
 - Are the repeats mostly low noise or high-severity events?
+
+### Machine downtime and slowdown events
+
+```text
+SizerDataCollector.Service.exe machine-event scan --serial <sn> --day "2026-04-23"
+SizerDataCollector.Service.exe downtime list --serial <sn> --hours 72
+SizerDataCollector.Service.exe slowdown export --serial <sn> --day "2026-04-23"
+```
+
+Use this when you want to answer:
+
+- What downtime happened outside grower lot transitions?
+- Which periods were running slow even though the machine was still available?
+- Which batches or serials repeatedly show non-transition disruption?
 
 ### Lot transition throughput events
 

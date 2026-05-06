@@ -588,6 +588,64 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) b ON true;
 
+
+CREATE OR REPLACE VIEW oee.v_downtime_event_detail AS
+SELECT 'downtime'::text AS event_type,
+       d.start_ts,
+       d.end_ts,
+       public.time_bucket('00:01:00'::interval, d.start_ts) AS minute_ts,
+       date_trunc('day'::text, d.start_ts) AS event_day,
+       d.duration_minutes,
+       d.serial_no,
+       d.batch_record_id,
+       d.lot,
+       d.variety,
+       d.avg_availability_ratio,
+       d.min_availability_ratio,
+       d.avg_throughput_ratio,
+       d.min_throughput_ratio,
+       d.avg_total_fpm,
+       d.min_total_fpm,
+       d.avg_oee_score,
+       d.reason,
+       d.overlaps_lot_transition,
+       d.explanation,
+       d.model_version,
+       d.delivered_to,
+       d.detected_at
+FROM oee.downtime_events d;
+
+CREATE OR REPLACE VIEW oee.v_slowdown_event_detail AS
+SELECT 'slowdown'::text AS event_type,
+       s.start_ts,
+       s.end_ts,
+       public.time_bucket('00:01:00'::interval, s.start_ts) AS minute_ts,
+       date_trunc('day'::text, s.start_ts) AS event_day,
+       s.duration_minutes,
+       s.serial_no,
+       s.batch_record_id,
+       s.lot,
+       s.variety,
+       s.avg_availability_ratio,
+       s.min_availability_ratio,
+       s.avg_throughput_ratio,
+       s.min_throughput_ratio,
+       s.avg_total_fpm,
+       s.min_total_fpm,
+       s.avg_oee_score,
+       s.reason,
+       s.overlaps_lot_transition,
+       s.explanation,
+       s.model_version,
+       s.delivered_to,
+       s.detected_at
+FROM oee.slowdown_events s;
+
+CREATE OR REPLACE VIEW oee.v_machine_event_detail AS
+SELECT * FROM oee.v_downtime_event_detail
+UNION ALL
+SELECT * FROM oee.v_slowdown_event_detail;
+
 CREATE OR REPLACE VIEW oee.v_lot_transition_throughput_event_detail AS
 SELECT e.transition_ts,
        public.time_bucket('00:01:00'::interval, e.transition_ts) AS minute_ts,

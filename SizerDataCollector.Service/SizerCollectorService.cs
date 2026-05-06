@@ -204,6 +204,28 @@ namespace SizerDataCollector.Service
 								config.EnableSizerSizeAlarm ? "ON" : "OFF"));
 						}
 
+						Task machineEventTask = Task.CompletedTask;
+						if (config.EnableMachineEventDetection && !string.IsNullOrWhiteSpace(config.TimescaleConnectionString))
+						{
+							var machineEventConfig = new MachineEventConfig(config);
+							var machineEventAnalyzer = new MachineEventAnalyzer(machineEventConfig, config.TimescaleConnectionString);
+							var machineEventSink = new MachineEventDatabaseSink(config.TimescaleConnectionString);
+
+							machineEventTask = RunMachineEventLoopAsync(
+								machineEventAnalyzer,
+								machineEventSink,
+								machineEventConfig,
+								_status,
+								cancellationToken);
+
+							Logger.Log(string.Format(
+								"Machine downtime/slowdown detection enabled (interval={0}min, scanWindow={1}h, minDuration={2}min, excludeLotTransitions={3}).",
+								machineEventConfig.EvalIntervalMinutes,
+								machineEventConfig.ScanWindowHours,
+								machineEventConfig.MinDurationMinutes,
+								machineEventConfig.ExcludeLotTransitions));
+						}
+
 						Task lotTransitionTask = Task.CompletedTask;
 						if (config.EnableLotTransitionDetection && !string.IsNullOrWhiteSpace(config.TimescaleConnectionString))
 						{
@@ -228,6 +250,7 @@ namespace SizerDataCollector.Service
 
 						await runner.RunAsync(cancellationToken).ConfigureAwait(false);
 						await sizeTask.ConfigureAwait(false);
+						await machineEventTask.ConfigureAwait(false);
 						await lotTransitionTask.ConfigureAwait(false);
 					}
 
@@ -321,6 +344,65 @@ namespace SizerDataCollector.Service
 				catch (Exception ex)
 				{
 					Logger.Log("Size evaluator cycle failed.", ex, LogLevel.Warn);
+				}
+			}
+		}
+
+		private static async Task RunMachineEventLoopAsync(
+			MachineEventAnalyzer analyzer,
+			MachineEventDatabaseSink dbSink,
+			MachineEventConfig machineEventConfig,
+			CollectorStatus status,
+			CancellationToken cancellationToken)
+		{
+			var delay = TimeSpan.FromMinutes(machineEventConfig.EvalIntervalMinutes);
+			while (!cancellationToken.IsCancellationRequested)
+			{
+				try
+				{
+					await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+
+					var serialNo = status?.MachineSerial;
+					if (string.IsNullOrWhiteSpace(serialNo))
+					{
+						Logger.Log("Machine event evaluator skipped: machine serial not yet known.", level: LogLevel.Debug);
+						continue;
+					}
+
+					var toTs = DateTimeOffset.UtcNow;
+					var fromTs = toTs.AddHours(-machineEventConfig.ScanWindowHours);
+					var report = await analyzer.AnalyzeRangeAsync(serialNo, fromTs, toTs, cancellationToken).ConfigureAwait(false);
+					var inserted = 0;
+					var events = new List<MachineEvent>();
+					events.AddRange(report.DowntimeEvents);
+					events.AddRange(report.SlowdownEvents);
+
+					foreach (var evt in events)
+					{
+						evt.DeliveredTo = "db";
+						if (await dbSink.DeliverAsync(evt, cancellationToken).ConfigureAwait(false))
+							inserted++;
+					}
+
+					if (report.DowntimeCandidates > 0 || report.SlowdownCandidates > 0 || inserted > 0)
+					{
+						Logger.Log(string.Format(
+							"Machine event evaluation complete: downtimeCandidates={0}, slowdownCandidates={1}, reportableDowntime={2}, reportableSlowdown={3}, inserted={4}.",
+							report.DowntimeCandidates,
+							report.SlowdownCandidates,
+							report.DowntimeEvents.Count,
+							report.SlowdownEvents.Count,
+							inserted),
+							level: LogLevel.Info);
+					}
+				}
+				catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+				{
+					break;
+				}
+				catch (Exception ex)
+				{
+					Logger.Log("Machine event evaluator cycle failed.", ex, LogLevel.Warn);
 				}
 			}
 		}

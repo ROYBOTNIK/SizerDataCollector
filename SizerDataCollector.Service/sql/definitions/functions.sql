@@ -649,32 +649,43 @@ BEGIN
     minute_ts, serial_no, batch_record_id, lane_no, grade_key, grade_name, qty
   )
   SELECT
-    time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
-    m.serial_no,
-    m.batch_record_id::int AS batch_record_id,
+    minute_ts,
+    serial_no,
+    batch_record_id,
+    lane_no,
+    grade_key,
+    MAX(grade_name) AS grade_name,
+    AVG(qty) AS qty
+  FROM (
+    SELECT
+      time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
+      m.serial_no,
+      m.batch_record_id::int AS batch_record_id,
 
-    -- array idx 0 is lane 1 -> ordinality is already 1..N
-    lane_idx.ordinality::bigint AS lane_no,
+      -- array idx 0 is lane 1 -> ordinality is already 1..N
+      lane_idx.ordinality::bigint AS lane_no,
 
-    kv.key AS grade_key,
+      kv.key AS grade_key,
 
-    -- suffix after last underscore (e.g. EXP LIGHT, CULLS)
-    regexp_replace(kv.key, '^.*_', '') AS grade_name,
+      -- suffix after last underscore (e.g. EXP LIGHT, CULLS)
+      regexp_replace(kv.key, '^.*_', '') AS grade_name,
 
-    NULLIF(kv.value, '')::double precision AS qty
-  FROM public.metrics m
-  CROSS JOIN LATERAL jsonb_array_elements(m.value_json) WITH ORDINALITY lane_idx(lane_json, ordinality)
-  CROSS JOIN LATERAL jsonb_each_text(lane_idx.lane_json) kv(key, value)
-  WHERE m.metric = 'lanes_grade_fpm'
-    AND m.batch_record_id IS NOT NULL
-    AND jsonb_typeof(m.value_json) = 'array'
-    AND lane_idx.lane_json IS NOT NULL
-    AND jsonb_typeof(lane_idx.lane_json) = 'object'
-    AND lane_idx.ordinality <= oee.get_lane_count(m.serial_no)
-    AND kv.value IS NOT NULL
-    AND kv.value <> ''
-    AND m.ts >= now() - v_start_offset
-    AND m.ts <  now() - v_end_offset
+      NULLIF(kv.value, '')::double precision AS qty
+    FROM public.metrics m
+    CROSS JOIN LATERAL jsonb_array_elements(m.value_json) WITH ORDINALITY lane_idx(lane_json, ordinality)
+    CROSS JOIN LATERAL jsonb_each_text(lane_idx.lane_json) kv(key, value)
+    WHERE m.metric = 'lanes_grade_fpm'
+      AND m.batch_record_id IS NOT NULL
+      AND jsonb_typeof(m.value_json) = 'array'
+      AND lane_idx.lane_json IS NOT NULL
+      AND jsonb_typeof(lane_idx.lane_json) = 'object'
+      AND lane_idx.ordinality <= oee.get_lane_count(m.serial_no)
+      AND kv.value IS NOT NULL
+      AND kv.value <> ''
+      AND m.ts >= now() - v_start_offset
+      AND m.ts <  now() - v_end_offset
+  ) src
+  GROUP BY minute_ts, serial_no, batch_record_id, lane_no, grade_key
   ON CONFLICT (minute_ts, serial_no, batch_record_id, lane_no, grade_key)
   DO UPDATE SET
     grade_name = EXCLUDED.grade_name,

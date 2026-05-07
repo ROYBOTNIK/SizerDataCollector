@@ -14,6 +14,11 @@ Optional (initialize/update DB schema after install):
 .\install-from-bundle.ps1 -RunDbInit
 ```
 
+## What changed in v9 (vs v8)
+
+- **Fresh Timescale installs: `continuous_aggregates.sql` throughput CAGGs** use immutable `oee.calc_perf_ratio(...)` (four-argument overload) inside the aggregate definition. Serial-aware throughput still comes from **`oee.v_throughput_minute_batch`** / **`oee.v_throughput_daily_batch`**, which call `oee.calc_perf_ratio(serial_no, ...)`. This avoids Timescale error `only immutable functions supported in continuous aggregate view` on brand-new databases.
+- **Fresh DB: `views.sql` apply order** — `oee.v_throughput_*` views are created **before** `oee.cagg_oee_minute_batch` so **`db apply-views`** / **`db init`** does not fail with `relation "oee.v_throughput_minute_batch" does not exist` on empty installs.
+
 ## What changed in v7 (vs v6)
 
 - **Detector is now stable across grade-set fluctuation.** The rolling window no longer resets when a grade appears or disappears between minutes, and the lane count is monotonically non-decreasing. Previously this caused the window to shrink to 1-2 samples and suppress alarms on live data. Internal model bumped to `composition-mad-v3`.

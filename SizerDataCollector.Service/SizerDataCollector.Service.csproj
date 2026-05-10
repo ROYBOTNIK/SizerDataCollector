@@ -88,6 +88,7 @@
     <Compile Include="Commands\AnomalyCommands.cs" />
     <Compile Include="Commands\LotTransitionCommands.cs" />
     <Compile Include="Commands\MachineEventCommands.cs" />
+    <Compile Include="Commands\ShiftCommands.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>
     </Compile>

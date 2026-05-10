@@ -581,6 +581,33 @@ SELECT add_continuous_aggregate_policy('public.cagg_lane_size_minute',
 -- 5. CUSTOM JOBS
 -- ============================================================================
 
-SELECT add_job('oee.refresh_lane_grade_minute',
-    '00:01:00'::interval,
-    config => '{"end_offset": "00:01:00", "start_offset": "02:00:00"}'::jsonb);
+DO $$
+DECLARE
+    keep_job_id integer;
+    duplicate_job_id integer;
+BEGIN
+    SELECT min(job_id)
+    INTO keep_job_id
+    FROM timescaledb_information.jobs
+    WHERE proc_schema = 'oee'
+      AND proc_name = 'refresh_lane_grade_minute';
+
+    IF keep_job_id IS NULL THEN
+        PERFORM add_job('oee.refresh_lane_grade_minute',
+            '00:01:00'::interval,
+            config => '{"end_offset": "00:01:00", "start_offset": "02:00:00"}'::jsonb);
+        RETURN;
+    END IF;
+
+    -- Keep the oldest job registration and remove duplicate registrations
+    -- created by repeated db init / db apply-caggs runs.
+    FOR duplicate_job_id IN
+        SELECT job_id
+        FROM timescaledb_information.jobs
+        WHERE proc_schema = 'oee'
+          AND proc_name = 'refresh_lane_grade_minute'
+          AND job_id <> keep_job_id
+    LOOP
+        PERFORM delete_job(duplicate_job_id);
+    END LOOP;
+END $$;

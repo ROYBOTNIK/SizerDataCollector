@@ -256,8 +256,8 @@ The reporting layer is defined in the canonical SQL files for the service.
 
 ### Tables and indexes
 
-- `oee.grade_lane_anomalies`
-- `oee.lane_size_anomalies`
+- `oee.grade_lane_anomalies` — Persists grade events with `explanation` **jsonb** (structured detector payload: dominant / surplus / deficit grades, lane vs peer mix, deltas, robust scores, window metadata). Human-readable alarm title and details are **not** stored as separate columns on this table.
+- `oee.lane_size_anomalies` — Size events; no `explanation` column (numeric context only).
 
 Indexes for reporting filters are defined in `SizerDataCollector.Service/sql/definitions/schema.sql`.
 
@@ -265,9 +265,9 @@ Indexes for reporting filters are defined in `SizerDataCollector.Service/sql/def
 
 Defined in `SizerDataCollector.Service/sql/definitions/views.sql`:
 
-- `oee.v_grade_anomaly_event_detail`
-- `oee.v_size_anomaly_event_detail`
-- `oee.v_anomaly_event_detail`
+- `oee.v_grade_anomaly_event_detail` — Includes **`explanation`** (jsonb), sourced from `oee.grade_lane_anomalies.explanation`.
+- `oee.v_size_anomaly_event_detail` — Exposes **`explanation`** as **`NULL::jsonb`** for column alignment with the grade path.
+- `oee.v_anomaly_event_detail` — Union of grade + size detail views; **`explanation`** is populated for `anomaly_type = 'grade'` and null for `anomaly_type = 'size'`.
 - `oee.v_anomaly_offender_scorecard_daily`
 - `oee.v_operational_minute_batch`
 - `oee.v_grade_anomaly_impact_summary`
@@ -466,8 +466,8 @@ Field semantics for grade events:
 
 - `pct` / `score` (CLI column) = **share delta magnitude in percentage points** versus the peer median (the larger of the dominant-grade |delta| and the overall lane composition distance). Not "percent over expected".
 - `anomaly_score` = the robust (MAD-scaled) score for the dominant grade. Preserved for programmatic consumers and downstream filtering. This is **not** printed in the alarm text anymore.
-- `explanation_json` = structured payload containing dominant / surplus / deficit grades, each with lane share %, peer median %, delta pts, and robust score.
-- `alarm_title` / `alarm_details` = **operator-friendly** text (e.g. "Lane 32: producing mostly PEDDLER (63% vs 18% typical)"). Deliberately free of z-scores, MAD, "peer median", and "composition skew" jargon.
+- `explanation` (Postgres **jsonb** on `oee.grade_lane_anomalies`, also selected by **`oee.v_grade_anomaly_event_detail`** and **`oee.v_anomaly_event_detail`**) = structured payload (e.g. `lane_composition_skew`: dominant / surplus / deficit grades with lane share %, peer median %, delta points, robust score, plus window / FPM / peer-count context). In C# this is serialized as `AnomalyEvent.ExplanationJson` before insert; the **database column name** is **`explanation`**.
+- **Alarm narrative** — `AlarmTitle` / `AlarmDetails` on the in-memory `AnomalyEvent` are **operator-friendly** strings (e.g. "Lane 32: producing mostly PEDDLER (63% vs 18% typical)") built by `NarrativeBuilder`. They are sent to **log and Sizer alarm sinks** and are **not** persisted as separate DB columns. For SQL and dashboards, use **`explanation`** jsonb or reconstruct narrative from that payload if needed.
 
 For size anomalies, the existing size path still uses percent-deviation semantics. When comparing mixed `grade` and `size` reports, read `score` as the generic magnitude column and use the anomaly type to decide how to interpret it.
 

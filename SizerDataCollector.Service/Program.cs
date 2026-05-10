@@ -69,6 +69,8 @@ namespace SizerDataCollector.Service
 					return DbCommands.Run(args.Skip(1).ToArray());
 				case "machine":
 					return MachineCommands.Run(args.Skip(1).ToArray(), options);
+				case "shift":
+					return ShiftCommands.Run(args.Skip(1).ToArray(), options);
 				case "anomaly":
 					return AnomalyCommands.Run(args.Skip(1).ToArray(), options);
 				case "lot-transition":
@@ -1490,6 +1492,12 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("  SizerDataCollector.Service.exe machine show-bands          --serial <sn>");
 			Console.WriteLine("  SizerDataCollector.Service.exe machine set-band            --serial <sn> --band <name> --lower <v> --upper <v>");
 			Console.WriteLine("  SizerDataCollector.Service.exe machine remove-band         --serial <sn> --band <name>");
+			Console.WriteLine("  SizerDataCollector.Service.exe shift list                  --serial <sn>");
+			Console.WriteLine("  SizerDataCollector.Service.exe shift add                   --serial <sn> --name <shift> --start <HH:mm> --end <HH:mm>");
+			Console.WriteLine("      [--tz <IANA zone>] [--dow Mon-Fri|Mon,Wed,Fri|all] [--effective-from <yyyy-MM-dd>] [--effective-to <yyyy-MM-dd>] [--active true|false]");
+			Console.WriteLine("  SizerDataCollector.Service.exe shift update                --serial <sn> --name <shift> [--start <HH:mm>] [--end <HH:mm>] [--tz <IANA zone>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe shift remove                --serial <sn> --name <shift>");
+			Console.WriteLine("  SizerDataCollector.Service.exe shift show                  --serial <sn> [--day <yyyy-MM-dd>]");
 			Console.WriteLine();
 			Console.WriteLine("Grade anomaly detection:");
 			Console.WriteLine("  SizerDataCollector.Service.exe set-anomaly --enabled true|false [--window <min>] [--z-gate <val>]");

@@ -126,6 +126,22 @@ CREATE TABLE IF NOT EXISTS oee.shift_calendar (
     PRIMARY KEY (break_start, break_end)
 );
 
+CREATE TABLE IF NOT EXISTS oee.shifts (
+    serial_no         text NOT NULL,
+    shift_name        text NOT NULL,
+    start_local       time NOT NULL,
+    end_local         time NOT NULL,
+    crosses_midnight  boolean GENERATED ALWAYS AS (end_local <= start_local) STORED,
+    timezone          text NOT NULL DEFAULT 'UTC',
+    dow_mask          smallint NOT NULL DEFAULT 127,
+    is_active         boolean NOT NULL DEFAULT true,
+    effective_from    date,
+    effective_to      date,
+    created_at        timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (serial_no, shift_name),
+    CONSTRAINT shifts_effective_window_check CHECK (effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from)
+);
+
 CREATE TABLE IF NOT EXISTS oee.commissioning_status (
     serial_no                  text NOT NULL PRIMARY KEY,
     db_bootstrapped_at         timestamptz,
@@ -373,6 +389,10 @@ DO $$ BEGIN
     ALTER TABLE public.machine_settings ADD CONSTRAINT machine_settings_serial_no_fkey FOREIGN KEY (serial_no) REFERENCES public.machines(serial_no);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+DO $$ BEGIN
+    ALTER TABLE oee.shifts ADD CONSTRAINT shifts_serial_no_fkey FOREIGN KEY (serial_no) REFERENCES public.machines(serial_no);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 -- Ensure one machine_settings row per serial_no so ON CONFLICT (serial_no) upserts work.
 -- Keep the most recent row (highest id) when historical duplicates exist.
 DELETE FROM public.machine_settings ms
@@ -421,6 +441,7 @@ CREATE INDEX IF NOT EXISTS ix_batches_lot_variety_ci ON public.batches USING btr
 
 CREATE INDEX IF NOT EXISTS idx_band_definitions_active ON oee.band_definitions USING btree (machine_serial_no, is_active, effective_date DESC);
 CREATE INDEX IF NOT EXISTS idx_band_statistics_date ON oee.band_statistics USING btree (calculation_date DESC);
+CREATE INDEX IF NOT EXISTS idx_shifts_serial_active ON oee.shifts USING btree (serial_no, is_active);
 CREATE INDEX IF NOT EXISTS ix_grade_map_serial ON oee.grade_map USING btree (serial_no);
 CREATE INDEX IF NOT EXISTS ix_machine_discovery_snapshots_serial_ts ON oee.machine_discovery_snapshots USING btree (serial_no, discovered_at DESC);
 

@@ -553,7 +553,8 @@ SELECT a.event_ts,
            ELSE 0
        END AS severity_rank,
        a.model_version,
-       a.delivered_to
+       a.delivered_to,
+       a.explanation
 FROM oee.grade_lane_anomalies a;
 
 CREATE OR REPLACE VIEW oee.v_size_anomaly_event_detail AS
@@ -576,7 +577,8 @@ SELECT a.event_ts,
            ELSE 0
        END AS severity_rank,
        a.model_version,
-       a.delivered_to
+       a.delivered_to,
+       NULL::jsonb AS explanation
 FROM oee.lane_size_anomalies a
 LEFT JOIN LATERAL (
     SELECT b1.id
@@ -697,7 +699,8 @@ SELECT 'grade'::text AS anomaly_type,
        severity,
        severity_rank,
        model_version,
-       delivered_to
+       delivered_to,
+       explanation
 FROM oee.v_grade_anomaly_event_detail
 UNION ALL
 SELECT 'size'::text AS anomaly_type,
@@ -715,7 +718,8 @@ SELECT 'size'::text AS anomaly_type,
        severity,
        severity_rank,
        model_version,
-       delivered_to
+       delivered_to,
+       explanation
 FROM oee.v_size_anomaly_event_detail;
 
 CREATE OR REPLACE VIEW oee.v_anomaly_offender_scorecard_daily AS
@@ -766,6 +770,181 @@ LEFT JOIN oee.v_throughput_minute_batch t
      ON (t.minute_ts = o.minute_ts AND t.serial_no = o.serial_no AND t.batch_record_id = o.batch_record_id)
 LEFT JOIN oee.v_quality_minute_batch q
      ON (q.minute_ts = o.minute_ts AND q.serial_no = o.serial_no AND q.batch_record_id = o.batch_record_id);
+
+CREATE OR REPLACE VIEW oee.v_shift_window AS
+WITH machine_days AS (
+        SELECT DISTINCT o.serial_no,
+               s.timezone,
+               ((o.minute_ts AT TIME ZONE s.timezone))::date AS day_local
+        FROM oee.v_oee_minute_batch o
+        JOIN oee.shifts s
+          ON s.serial_no = o.serial_no
+         AND s.is_active = true
+), eligible_days AS (
+        SELECT d.serial_no,
+               d.timezone,
+               d.day_local,
+               s.shift_name,
+               s.start_local,
+               s.end_local,
+               s.crosses_midnight,
+               s.dow_mask
+        FROM machine_days d
+        JOIN oee.shifts s
+          ON s.serial_no = d.serial_no
+         AND s.timezone = d.timezone
+         AND s.is_active = true
+        WHERE (s.effective_from IS NULL OR d.day_local >= s.effective_from)
+          AND (s.effective_to IS NULL OR d.day_local <= s.effective_to)
+          AND ((s.dow_mask::integer & (1 << (extract(isodow FROM d.day_local)::integer - 1))) <> 0)
+)
+SELECT e.serial_no,
+       e.day_local,
+       e.shift_name,
+       e.timezone,
+       ((e.day_local::timestamp + e.start_local) AT TIME ZONE e.timezone) AS start_ts,
+       (((e.day_local::timestamp + e.end_local)
+         + CASE WHEN e.crosses_midnight THEN '1 day'::interval ELSE '0 day'::interval END) AT TIME ZONE e.timezone) AS end_ts
+FROM eligible_days e;
+
+CREATE OR REPLACE VIEW oee.v_availability_shift_batch AS
+SELECT w.day_local,
+       w.shift_name,
+       w.start_ts AS shift_start_ts,
+       w.end_ts AS shift_end_ts,
+       a.serial_no,
+       a.batch_record_id,
+       count(*) AS minute_count,
+       count(*) FILTER (WHERE a.state = 2) AS minutes_run,
+       count(*) FILTER (WHERE a.state = 1) AS minutes_idle,
+       count(*) FILTER (WHERE a.state = 0) AS minutes_down,
+       avg(a.availability_ratio) AS availability_ratio,
+       min(a.lot) AS lot,
+       min(a.variety) AS variety
+FROM oee.v_availability_minute_batch a
+JOIN oee.v_shift_window w
+  ON w.serial_no = a.serial_no
+ AND a.minute_ts >= w.start_ts
+ AND a.minute_ts < w.end_ts
+GROUP BY w.day_local, w.shift_name, w.start_ts, w.end_ts, a.serial_no, a.batch_record_id;
+
+CREATE OR REPLACE VIEW oee.v_throughput_shift_batch AS
+SELECT w.day_local,
+       w.shift_name,
+       w.start_ts AS shift_start_ts,
+       w.end_ts AS shift_end_ts,
+       t.serial_no,
+       t.batch_record_id,
+       count(*) AS minute_count,
+       avg(t.total_fpm) AS total_fpm,
+       avg(t.missed_fpm) AS missed_fpm,
+       avg(t.machine_recycle_fpm) AS machine_recycle_fpm,
+       avg(t.outlet_recycle_fpm) AS outlet_recycle_fpm,
+       avg(t.combined_recycle_fpm) AS combined_recycle_fpm,
+       avg(t.cupfill_pct) AS cupfill_pct,
+       avg(t.tph) AS tph,
+       avg(t.target_throughput) AS target_throughput,
+       avg(t.throughput_ratio) AS throughput_ratio,
+       min(t.lot) AS lot,
+       min(t.variety) AS variety
+FROM oee.v_throughput_minute_batch t
+JOIN oee.v_shift_window w
+  ON w.serial_no = t.serial_no
+ AND t.minute_ts >= w.start_ts
+ AND t.minute_ts < w.end_ts
+GROUP BY w.day_local, w.shift_name, w.start_ts, w.end_ts, t.serial_no, t.batch_record_id;
+
+CREATE OR REPLACE VIEW oee.v_quality_shift_batch AS
+SELECT w.day_local,
+       w.shift_name,
+       w.start_ts AS shift_start_ts,
+       w.end_ts AS shift_end_ts,
+       q.serial_no,
+       q.batch_record_id,
+       count(*) AS minute_count,
+       sum(COALESCE(q.good_qty, (0)::double precision)) AS good_qty,
+       sum(COALESCE(q.peddler_qty, (0)::double precision)) AS peddler_qty,
+       sum(COALESCE(q.bad_qty, (0)::double precision)) AS bad_qty,
+       sum(COALESCE(q.recycle_qty, (0)::double precision)) AS recycle_qty,
+       (oee.calc_quality_ratio_qv1(
+            q.serial_no,
+            sum(COALESCE(q.good_qty, (0)::double precision)),
+            sum(COALESCE(q.peddler_qty, (0)::double precision)),
+            sum(COALESCE(q.bad_qty, (0)::double precision)),
+            sum(COALESCE(q.recycle_qty, (0)::double precision))
+        ))::double precision AS quality_ratio,
+       min(q.lot) AS lot,
+       min(q.variety) AS variety
+FROM oee.v_quality_minute_batch q
+JOIN oee.v_shift_window w
+  ON w.serial_no = q.serial_no
+ AND q.minute_ts >= w.start_ts
+ AND q.minute_ts < w.end_ts
+GROUP BY w.day_local, w.shift_name, w.start_ts, w.end_ts, q.serial_no, q.batch_record_id;
+
+CREATE OR REPLACE VIEW oee.v_oee_shift_batch AS
+SELECT a.day_local,
+       a.shift_name,
+       a.shift_start_ts,
+       a.shift_end_ts,
+       a.serial_no,
+       a.batch_record_id,
+       a.minute_count,
+       a.minutes_run,
+       a.minutes_idle,
+       a.minutes_down,
+       a.availability_ratio,
+       t.throughput_ratio,
+       q.quality_ratio,
+       ((a.availability_ratio * t.throughput_ratio) * q.quality_ratio) AS oee_score,
+       t.total_fpm,
+       t.missed_fpm,
+       t.machine_recycle_fpm,
+       t.outlet_recycle_fpm,
+       t.combined_recycle_fpm,
+       t.cupfill_pct,
+       t.tph,
+       t.target_throughput,
+       q.good_qty,
+       q.peddler_qty,
+       q.bad_qty,
+       q.recycle_qty,
+       COALESCE(a.lot, t.lot, q.lot) AS lot,
+       COALESCE(a.variety, t.variety, q.variety) AS variety
+FROM oee.v_availability_shift_batch a
+JOIN oee.v_throughput_shift_batch t
+  ON t.day_local = a.day_local
+ AND t.shift_name = a.shift_name
+ AND t.shift_start_ts = a.shift_start_ts
+ AND t.shift_end_ts = a.shift_end_ts
+ AND t.serial_no = a.serial_no
+ AND t.batch_record_id = a.batch_record_id
+JOIN oee.v_quality_shift_batch q
+  ON q.day_local = a.day_local
+ AND q.shift_name = a.shift_name
+ AND q.shift_start_ts = a.shift_start_ts
+ AND q.shift_end_ts = a.shift_end_ts
+ AND q.serial_no = a.serial_no
+ AND q.batch_record_id = a.batch_record_id;
+
+CREATE OR REPLACE VIEW oee.v_oee_shift AS
+SELECT w.day_local,
+       w.shift_name,
+       w.start_ts AS shift_start_ts,
+       w.end_ts AS shift_end_ts,
+       o.serial_no,
+       count(*) AS total_minutes,
+       count(*) FILTER (WHERE o.availability_ratio > (0)::double precision) AS run_minutes,
+       avg(o.availability_ratio) AS availability_ratio,
+       avg(o.throughput_ratio) AS throughput_ratio,
+       avg(o.quality_ratio) AS quality_ratio,
+       avg(o.oee_score) AS oee_score
+FROM oee.v_operational_minute_batch o
+JOIN oee.v_shift_window w
+  ON w.serial_no = o.serial_no
+ AND o.minute_ts >= w.start_ts
+ AND o.minute_ts < w.end_ts
+GROUP BY w.day_local, w.shift_name, w.start_ts, w.end_ts, o.serial_no;
 
 CREATE OR REPLACE VIEW oee.v_grade_anomaly_impact_summary AS
 SELECT 'grade'::text AS anomaly_type,

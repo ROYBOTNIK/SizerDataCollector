@@ -64,6 +64,9 @@ flowchart TD
     - `machine list`, `register`, `status`, `set-thresholds`, `set-settings`, `grade-map`, `commission`,
       `show-quality-params`, `set-quality-params`, `show-perf-params`, `set-perf-params`,
       `show-bands`, `set-band`, `remove-band`.
+- **Shift scheduling CLI**
+  - `SizerDataCollector.Service/Commands/ShiftCommands.cs`
+    - `shift list`, `shift add`, `shift update`, `shift remove`, `shift show`.
 - **Database helpers**
   - `SizerDataCollector.Core/Db/SqlDefinitionRunner.cs`
     - Resolves SQL definition files from either:
@@ -84,7 +87,7 @@ flowchart TD
   - Grade detector: wired into `CollectorEngine.RunSinglePollAsync` (inline, zero extra threads).
   - Size evaluator: runs on its own `Task.Delay`-based timer in `SizerCollectorService.RunSupervisedLoopAsync`.
   - Lot transition evaluator: DB-driven timer in `SizerCollectorService.RunSupervisedLoopAsync`, using `machine_total_fpm` plus batch metadata.
-  - CLI commands: `set-anomaly`, `set-sizer-alarm`, `replay-anomaly`, `set-size-anomaly`, `size-health`, `set-lot-transition`, `lot-transition scan`, `lot-transition list`, `lot-transition export`, `anomaly offenders`, `anomaly impact`, `anomaly tuning-compare` in `Program.cs` / command helpers.
+  - CLI commands: `set-anomaly`, `set-sizer-alarm`, `replay-anomaly`, `set-size-anomaly`, `size-health`, `set-lot-transition`, `lot-transition scan`, `lot-transition list`, `lot-transition export`, `set-machine-events`, `machine-event scan/list/export`, `downtime list/export`, `slowdown list/export`, `anomaly offenders`, `anomaly impact`, `anomaly impact-summary`, `anomaly tuning-compare`, and `shift list/add/update/remove/show` in `Program.cs` / command helpers.
 
 When deciding **where to add logic**, prefer:
 
@@ -368,9 +371,14 @@ SizerDataCollector.Service.exe lot-transition export --serial <sn> --year 2026
 - **`public.cagg_lane_size_minute`** -- TimescaleDB continuous aggregate. Defined in `continuous_aggregates.sql`. One row per `(minute_ts, serial_no, lane_idx)`: weighted-average fruit size from `lanes_size_fpm` for that sizer only. Filters out null JSON array elements. `SizeAnomalyEvaluator` always filters `WHERE serial_no = @serial_no`. If you deployed an older CAGG without `serial_no`, drop it and re-apply (see comment in `continuous_aggregates.sql`), then refresh the aggregate.
 - **`public.lane_size_anomaly`**, **`public.lane_size_health_24h`**, **`public.lane_size_health_season`** -- Defined in `views.sql`. All partition cross-lane stats by `serial_no`. Dashboard SQL should filter `WHERE serial_no = '<sn>'` (replacing any hard-coded serial).
 - **`oee.lane_size_anomalies`** -- Event table. Defined in `schema.sql`. Stores `event_ts`, `serial_no`, `lane_no`, `window_hours`, `lane_avg_size`, `machine_avg_size`, `pct_deviation`, `z_score`, `severity`, `model_version`, `delivered_to`.
+- **`oee.grade_lane_anomalies`** -- Event table. Defined in `schema.sql`. Stores `event_ts`, `serial_no`, `batch_record_id`, `lane_no`, `grade_key`, `qty`, `pct`, `anomaly_score`, `severity`, **`explanation`** (jsonb detector payload — lane vs peer grades, deltas, robust scores, window/FPM/peers metadata), `model_version`, `delivered_to`. **Alarm title/details** (`NarrativeBuilder` output on `AnomalyEvent`) go to logs and Sizer sinks only — they are **not** persisted as separate columns here.
 - **`oee.lot_transition_throughput_events`** -- Event table. Defined in `schema.sql`. Stores serial-aware and batch-aware transition timings, FPM baselines, peak-to-peak opportunity loss, availability context, `explanation`, `model_version`, and `delivered_to`.
+- **`oee.shifts`** -- Shift-definition table. Defined in `schema.sql`. Stores per-serial local-clock shift boundaries, timezone, day-of-week mask, activation flag, and effective date range.
 - **`oee.v_lot_transition_throughput_event_detail`** -- Reporting view for saved lot transition throughput events.
-- **`oee.v_grade_anomaly_event_detail`**, **`oee.v_size_anomaly_event_detail`**, **`oee.v_anomaly_event_detail`** -- Normalized reporting inputs for persisted anomaly events.
+- **`oee.v_shift_window`**, **`oee.v_availability_shift_batch`**, **`oee.v_throughput_shift_batch`**, **`oee.v_quality_shift_batch`**, **`oee.v_oee_shift_batch`**, **`oee.v_oee_shift`** -- Shift-window expansion and shift-level OEE rollup views.
+- **`oee.v_grade_anomaly_event_detail`** -- Reporting view over `oee.grade_lane_anomalies`. Includes **`explanation`** jsonb so SQL and dashboards can read the structured detector breakdown without querying the raw table directly.
+- **`oee.v_size_anomaly_event_detail`** -- Reporting view over `oee.lane_size_anomalies`. **`explanation`** is **`NULL::jsonb`** (size events keep numeric fields only today).
+- **`oee.v_anomaly_event_detail`** -- `UNION ALL` of grade + size detail views. **`explanation`** is set for **`anomaly_type = 'grade'`** and null for **`anomaly_type = 'size'`**. Preferred surface for anomaly rows that combine both types when writing generic SQL / agent reporting.
 - **`oee.v_anomaly_offender_scorecard_daily`** -- Daily recurring-offender rollup over persisted anomaly events.
 - **`oee.v_anomaly_offender_cluster_daily`** -- Daily offender clustering metrics (active minutes, span, direction, runtime share).
 - **`oee.v_grade_anomaly_impact_summary`**, **`oee.v_size_anomaly_impact_summary`**, **`oee.v_anomaly_impact_summary`** -- Reporting views that correlate persisted anomaly events with minute-level throughput, quality, and OEE context.
@@ -574,6 +582,17 @@ All commands are executed against `SizerDataCollector.Service.exe` from the serv
   - `SizerDataCollector.Service.exe lot-transition list --serial <sn> --month <yyyy-MM>`
   - `SizerDataCollector.Service.exe lot-transition export --serial <sn> --year <yyyy>`
 - Use this workflow when the report question is about changeover duration, peak-production minutes lost, or fruit throughput opportunity cost around grower lot changes.
+
+#### Shift scheduling and shift windows
+
+- Configure shift definitions:
+  - `SizerDataCollector.Service.exe shift list --serial <sn>`
+  - `SizerDataCollector.Service.exe shift add --serial <sn> --name <shift> --start <HH:mm> --end <HH:mm> [--tz <IANA zone>] [--dow Mon-Fri|Mon,Wed,Fri|all] [--effective-from <yyyy-MM-dd>] [--effective-to <yyyy-MM-dd>] [--active true|false]`
+  - `SizerDataCollector.Service.exe shift update --serial <sn> --name <shift> [--start <HH:mm>] [--end <HH:mm>] [--tz <IANA zone>] [--dow ...] [--effective-from <yyyy-MM-dd>] [--effective-to <yyyy-MM-dd>] [--active true|false]`
+  - `SizerDataCollector.Service.exe shift remove --serial <sn> --name <shift>`
+- Validate expanded windows for a local day:
+  - `SizerDataCollector.Service.exe shift show --serial <sn> --day <yyyy-MM-dd>`
+- Use this workflow when report windows must follow local shift boundaries instead of UTC calendar days.
 
 #### Anomaly reporting
 

@@ -14,6 +14,12 @@ Optional (initialize/update DB schema after install):
 .\install-from-bundle.ps1 -RunDbInit
 ```
 
+## What changed in v13 (vs v12)
+
+- **Lot transition throughput** — Events now carry **stable**, **peak**, and optional **target** baselines (FPM-minutes shortfall, loss ratio, equivalent lost minutes). The default operator-facing impact is the **stable pre-transition** baseline; legacy peak-based numbers remain for comparison. New columns are added on `oee.lot_transition_throughput_events` (existing installs: run **`db apply-schema`** / **`db init`** as you usually would). Rescans are idempotent on `(serial_no, incoming_batch_record_id)`.
+- **Reporting view** — `oee.v_lot_transition_throughput_event_detail` exposes `primary_fruit_opportunity_shortfall`, `primary_throughput_loss_ratio`, `primary_equivalent_lost_minutes`, and `primary_baseline_label` (stable default), plus the explicit stable / peak / target columns. **`lot-transition list`** / **`export`** read from this view.
+- **Machine downtime and slowdowns** — `oee.downtime_events` and `oee.slowdown_events` now include **`overlaps_lot_transition`**, and **`oee.v_downtime_event_detail`**, **`oee.v_slowdown_event_detail`**, and **`oee.v_machine_event_detail`** surface it. Use this when reconciling transition throughput opportunity loss with general machine-event reporting (see `MachineEventExcludeLotTransitions` in `MACHINE_EVENT_WORKFLOW.md`).
+
 ## What changed in v9 (vs v8)
 
 - **Fresh Timescale installs: `continuous_aggregates.sql` throughput CAGGs** use immutable `oee.calc_perf_ratio(...)` (four-argument overload) inside the aggregate definition. Serial-aware throughput still comes from **`oee.v_throughput_minute_batch`** / **`oee.v_throughput_daily_batch`**, which call `oee.calc_perf_ratio(serial_no, ...)`. This avoids Timescale error `only immutable functions supported in continuous aggregate view` on brand-new databases.

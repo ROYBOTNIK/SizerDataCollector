@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SizerDataCollector.Core.AnomalyDetection;
 
@@ -65,6 +66,23 @@ namespace SizerDataCollector.Tests
 			Assert.AreEqual(0, report.SlowdownEvents.Count);
 		}
 
+		[TestMethod]
+		public void DatabaseSink_ReplacesShorterEventsWithSameStart()
+		{
+			var downtimeSql = ReadPrivateSql("DowntimeInsertSql");
+			var slowdownSql = ReadPrivateSql("SlowdownInsertSql");
+
+			StringAssert.Contains(downtimeSql, "existing_longer");
+			StringAssert.Contains(downtimeSql, "DELETE FROM oee.downtime_events");
+			StringAssert.Contains(downtimeSql, "end_ts < @end_ts");
+			StringAssert.Contains(downtimeSql, "WHERE NOT EXISTS (SELECT 1 FROM existing_longer)");
+
+			StringAssert.Contains(slowdownSql, "existing_longer");
+			StringAssert.Contains(slowdownSql, "DELETE FROM oee.slowdown_events");
+			StringAssert.Contains(slowdownSql, "end_ts < @end_ts");
+			StringAssert.Contains(slowdownSql, "WHERE NOT EXISTS (SELECT 1 FROM existing_longer)");
+		}
+
 		private static MachineEventAnalyzer.OperationalMinute Minute(DateTimeOffset ts, double availability, double throughput, double fpm)
 		{
 			return new MachineEventAnalyzer.OperationalMinute
@@ -79,6 +97,12 @@ namespace SizerDataCollector.Tests
 				OeeScore = availability * throughput,
 				TotalFpm = fpm
 			};
+		}
+
+		private static string ReadPrivateSql(string fieldName)
+		{
+			var field = typeof(MachineEventDatabaseSink).GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static);
+			return field.GetValue(null) as string;
 		}
 	}
 }

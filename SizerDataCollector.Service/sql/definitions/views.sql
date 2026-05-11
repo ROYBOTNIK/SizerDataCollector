@@ -615,7 +615,11 @@ SELECT 'downtime'::text AS event_type,
        d.model_version,
        d.delivered_to,
        d.detected_at
-FROM oee.downtime_events d;
+FROM (
+    SELECT DISTINCT ON (serial_no, start_ts) *
+    FROM oee.downtime_events
+    ORDER BY serial_no, start_ts, end_ts DESC, detected_at DESC
+) d;
 
 CREATE OR REPLACE VIEW oee.v_slowdown_event_detail AS
 SELECT 'slowdown'::text AS event_type,
@@ -641,7 +645,11 @@ SELECT 'slowdown'::text AS event_type,
        s.model_version,
        s.delivered_to,
        s.detected_at
-FROM oee.slowdown_events s;
+FROM (
+    SELECT DISTINCT ON (serial_no, start_ts) *
+    FROM oee.slowdown_events
+    ORDER BY serial_no, start_ts, end_ts DESC, detected_at DESC
+) s;
 
 CREATE OR REPLACE VIEW oee.v_machine_event_detail AS
 SELECT * FROM oee.v_downtime_event_detail
@@ -680,7 +688,71 @@ SELECT e.transition_ts,
        e.explanation,
        e.model_version,
        e.delivered_to,
-       e.inserted_at
+       e.inserted_at,
+       COALESCE(
+           e.break_adjusted_stable_fruit_opportunity_shortfall,
+           e.stable_fruit_opportunity_shortfall,
+           GREATEST((e.pre_stable_fpm * e.opportunity_window_minutes) - e.integrated_fpm_minutes, 0::double precision)
+       ) AS primary_fruit_opportunity_shortfall,
+       COALESCE(
+           e.break_adjusted_stable_throughput_loss_ratio,
+           e.stable_throughput_loss_ratio,
+           CASE
+               WHEN (e.pre_stable_fpm * e.opportunity_window_minutes) > 0
+               THEN GREATEST((e.pre_stable_fpm * e.opportunity_window_minutes) - e.integrated_fpm_minutes, 0::double precision) / (e.pre_stable_fpm * e.opportunity_window_minutes)
+               ELSE NULL::double precision
+           END
+       ) AS primary_throughput_loss_ratio,
+       COALESCE(
+           e.break_adjusted_stable_equivalent_lost_minutes,
+           e.stable_equivalent_lost_minutes,
+           CASE
+               WHEN e.pre_stable_fpm > 0
+               THEN GREATEST((e.pre_stable_fpm * e.opportunity_window_minutes) - e.integrated_fpm_minutes, 0::double precision) / e.pre_stable_fpm
+               ELSE NULL::double precision
+           END
+       ) AS primary_equivalent_lost_minutes,
+       'break_adjusted_stable_pre_transition_fpm'::text AS primary_baseline_label,
+       e.stable_counterfactual_fpm_minutes,
+       e.stable_fruit_opportunity_shortfall,
+       e.stable_throughput_loss_ratio,
+       e.stable_equivalent_lost_minutes,
+       e.peak_throughput_loss_ratio,
+       e.peak_equivalent_lost_minutes,
+       e.target_throughput,
+       e.target_counterfactual_fpm_minutes,
+       e.target_fruit_opportunity_shortfall,
+       e.target_equivalent_lost_minutes,
+       COALESCE(e.break_overlap_detected, false) AS break_overlap_detected,
+       COALESCE(e.break_overlap_minutes, 0::double precision) AS break_overlap_minutes,
+       COALESCE(e.break_adjusted_disruption_minutes, e.disruption_duration_minutes) AS break_adjusted_disruption_minutes,
+       COALESCE(e.break_adjusted_opportunity_window_minutes, e.opportunity_window_minutes) AS break_adjusted_opportunity_window_minutes,
+       COALESCE(
+           e.break_adjusted_stable_fruit_opportunity_shortfall,
+           e.stable_fruit_opportunity_shortfall,
+           GREATEST((e.pre_stable_fpm * e.opportunity_window_minutes) - e.integrated_fpm_minutes, 0::double precision)
+       ) AS break_adjusted_stable_fruit_opportunity_shortfall,
+       COALESCE(
+           e.break_adjusted_stable_equivalent_lost_minutes,
+           e.stable_equivalent_lost_minutes,
+           CASE
+               WHEN e.pre_stable_fpm > 0
+               THEN GREATEST((e.pre_stable_fpm * e.opportunity_window_minutes) - e.integrated_fpm_minutes, 0::double precision) / e.pre_stable_fpm
+               ELSE NULL::double precision
+           END
+       ) AS break_adjusted_stable_equivalent_lost_minutes,
+       COALESCE(
+           e.break_adjusted_stable_throughput_loss_ratio,
+           CASE
+               WHEN (e.pre_stable_fpm * COALESCE(e.break_adjusted_opportunity_window_minutes, e.opportunity_window_minutes)) > 0
+               THEN COALESCE(
+                   e.break_adjusted_stable_fruit_opportunity_shortfall,
+                   e.stable_fruit_opportunity_shortfall,
+                   GREATEST((e.pre_stable_fpm * e.opportunity_window_minutes) - e.integrated_fpm_minutes, 0::double precision)
+               ) / (e.pre_stable_fpm * COALESCE(e.break_adjusted_opportunity_window_minutes, e.opportunity_window_minutes))
+               ELSE NULL::double precision
+           END
+       ) AS break_adjusted_stable_throughput_loss_ratio
 FROM oee.lot_transition_throughput_events e;
 
 CREATE OR REPLACE VIEW oee.v_anomaly_event_detail AS

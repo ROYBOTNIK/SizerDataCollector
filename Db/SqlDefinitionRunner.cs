@@ -11,6 +11,7 @@ namespace SizerDataCollector.Core.Db
 	public sealed class SqlDefinitionRunner
 	{
 		private const string DefinitionsSubPath = @"sql\definitions";
+		private const int MaxTransientApplyAttempts = 3;
 
 		private readonly string _connectionString;
 		private readonly string _sharedDataDirectory;
@@ -46,33 +47,49 @@ namespace SizerDataCollector.Core.Db
 				return ApplyResult.Failure(fileName, $"SQL file '{resolvedPath}' is empty.");
 			}
 
-			try
+			for (var attempt = 1; attempt <= MaxTransientApplyAttempts; attempt++)
 			{
-				using (var connection = new NpgsqlConnection(_connectionString))
+				try
 				{
-					await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-
-					using (var command = new NpgsqlCommand(sql, connection))
+					using (var connection = new NpgsqlConnection(_connectionString))
 					{
-						command.CommandTimeout = 0;
-						await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-					}
-				}
+						await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-				Logger.Log($"SqlDefinitionRunner: '{fileName}' applied successfully from '{resolvedPath}'");
-				return ApplyResult.Success(fileName, resolvedPath);
+						using (var command = new NpgsqlCommand(sql, connection))
+						{
+							command.CommandTimeout = 0;
+							await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+						}
+					}
+
+					Logger.Log($"SqlDefinitionRunner: '{fileName}' applied successfully from '{resolvedPath}'");
+					return ApplyResult.Success(fileName, resolvedPath);
+				}
+				catch (PostgresException pgex) when (IsTransientApplyFailure(pgex) && attempt < MaxTransientApplyAttempts)
+				{
+					var delay = TimeSpan.FromSeconds(attempt * 5);
+					Logger.Log($"SqlDefinitionRunner: '{fileName}' hit transient SQL state {pgex.SqlState} ({pgex.MessageText}). Retrying in {delay.TotalSeconds:F0}s, attempt {attempt + 1}/{MaxTransientApplyAttempts}.");
+					await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+				}
+				catch (PostgresException pgex)
+				{
+					var detail = $"SqlState={pgex.SqlState} Message={pgex.MessageText} Position={pgex.Position}";
+					Logger.Log($"SqlDefinitionRunner: '{fileName}' failed. {detail}");
+					return ApplyResult.Failure(fileName, detail);
+				}
+				catch (Exception ex)
+				{
+					Logger.Log($"SqlDefinitionRunner: '{fileName}' failed.", ex);
+					return ApplyResult.Failure(fileName, ex.Message);
+				}
 			}
-			catch (PostgresException pgex)
-			{
-				var detail = $"SqlState={pgex.SqlState} Message={pgex.MessageText} Position={pgex.Position}";
-				Logger.Log($"SqlDefinitionRunner: '{fileName}' failed. {detail}");
-				return ApplyResult.Failure(fileName, detail);
-			}
-			catch (Exception ex)
-			{
-				Logger.Log($"SqlDefinitionRunner: '{fileName}' failed.", ex);
-				return ApplyResult.Failure(fileName, ex.Message);
-			}
+
+			return ApplyResult.Failure(fileName, $"SQL file '{resolvedPath}' failed after {MaxTransientApplyAttempts} attempts.");
+		}
+
+		private static bool IsTransientApplyFailure(PostgresException ex)
+		{
+			return ex != null && (ex.SqlState == "40P01" || ex.SqlState == "40001");
 		}
 
 		public string ResolvePath(string fileName)

@@ -13,19 +13,35 @@ namespace SizerDataCollector.Service.Commands
 	internal static class MachineEventCommands
 	{
 		private const string DowntimeListSql = @"
+WITH latest AS (
+    SELECT DISTINCT ON (serial_no, start_ts)
+           start_ts, end_ts, duration_minutes, serial_no, batch_record_id, lot, variety,
+           avg_availability_ratio, min_availability_ratio, avg_throughput_ratio, min_throughput_ratio,
+           avg_total_fpm, min_total_fpm, avg_oee_score, reason, overlaps_lot_transition
+    FROM oee.downtime_events
+    WHERE serial_no = @serial_no AND start_ts >= @from_ts AND start_ts <= @to_ts
+    ORDER BY serial_no, start_ts, end_ts DESC, detected_at DESC
+)
 SELECT start_ts, end_ts, duration_minutes, serial_no, batch_record_id, lot, variety,
        avg_availability_ratio, min_availability_ratio, avg_throughput_ratio, min_throughput_ratio,
        avg_total_fpm, min_total_fpm, avg_oee_score, reason, overlaps_lot_transition
-FROM oee.downtime_events
-WHERE serial_no = @serial_no AND start_ts >= @from_ts AND start_ts <= @to_ts
+FROM latest
 ORDER BY start_ts ASC;";
 
 		private const string SlowdownListSql = @"
+WITH latest AS (
+    SELECT DISTINCT ON (serial_no, start_ts)
+           start_ts, end_ts, duration_minutes, serial_no, batch_record_id, lot, variety,
+           avg_availability_ratio, min_availability_ratio, avg_throughput_ratio, min_throughput_ratio,
+           avg_total_fpm, min_total_fpm, avg_oee_score, reason, overlaps_lot_transition
+    FROM oee.slowdown_events
+    WHERE serial_no = @serial_no AND start_ts >= @from_ts AND start_ts <= @to_ts
+    ORDER BY serial_no, start_ts, end_ts DESC, detected_at DESC
+)
 SELECT start_ts, end_ts, duration_minutes, serial_no, batch_record_id, lot, variety,
        avg_availability_ratio, min_availability_ratio, avg_throughput_ratio, min_throughput_ratio,
        avg_total_fpm, min_total_fpm, avg_oee_score, reason, overlaps_lot_transition
-FROM oee.slowdown_events
-WHERE serial_no = @serial_no AND start_ts >= @from_ts AND start_ts <= @to_ts
+FROM latest
 ORDER BY start_ts ASC;";
 
 		public static int Run(string[] args, Dictionary<string, string> options, string forcedType = null)

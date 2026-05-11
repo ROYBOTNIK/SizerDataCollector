@@ -42,6 +42,23 @@ namespace SizerDataCollector.Core.AnomalyDetection
 		public double IntegratedFpmMinutes { get; set; }
 		public double CounterfactualFpmMinutes { get; set; }
 		public double FruitOpportunityShortfall { get; set; }
+		public double StableCounterfactualFpmMinutes { get; set; }
+		public double StableFruitOpportunityShortfall { get; set; }
+		public double StableThroughputLossRatio { get; set; }
+		public double StableEquivalentLostMinutes { get; set; }
+		public double PeakThroughputLossRatio { get; set; }
+		public double PeakEquivalentLostMinutes { get; set; }
+		public double? TargetThroughput { get; set; }
+		public double? TargetCounterfactualFpmMinutes { get; set; }
+		public double? TargetFruitOpportunityShortfall { get; set; }
+		public double? TargetEquivalentLostMinutes { get; set; }
+		public bool BreakOverlapDetected { get; set; }
+		public double BreakOverlapMinutes { get; set; }
+		public double BreakAdjustedDisruptionMinutes { get; set; }
+		public double BreakAdjustedOpportunityWindowMinutes { get; set; }
+		public double BreakAdjustedStableFruitOpportunityShortfall { get; set; }
+		public double BreakAdjustedStableEquivalentLostMinutes { get; set; }
+		public double BreakAdjustedStableThroughputLossRatio { get; set; }
 		public double? AvailabilityAvgDuringDisruption { get; set; }
 		public double? AvailabilityAvgOpportunityWindow { get; set; }
 		public string ExplanationJson { get; set; }

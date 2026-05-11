@@ -15,9 +15,15 @@ namespace SizerDataCollector.Service.Commands
 		private const string ListSql = @"
 SELECT transition_ts, serial_no, outgoing_batch_record_id, incoming_batch_record_id,
        outgoing_label, incoming_label, disruption_duration_minutes,
-       opportunity_window_minutes, fruit_opportunity_shortfall,
+       opportunity_window_minutes, primary_fruit_opportunity_shortfall,
+       primary_throughput_loss_ratio, primary_equivalent_lost_minutes,
+       fruit_opportunity_shortfall, peak_throughput_loss_ratio, peak_equivalent_lost_minutes,
+       target_throughput, target_fruit_opportunity_shortfall, target_equivalent_lost_minutes,
+       break_overlap_detected, break_overlap_minutes,
+       break_adjusted_stable_fruit_opportunity_shortfall,
+       break_adjusted_stable_equivalent_lost_minutes,
        availability_avg_during_disruption, availability_avg_opportunity_window
-FROM oee.lot_transition_throughput_events
+FROM oee.v_lot_transition_throughput_event_detail
 WHERE serial_no = @serial_no
   AND transition_ts >= @from_ts
   AND transition_ts <= @to_ts
@@ -162,9 +168,21 @@ ORDER BY transition_ts ASC;";
 								IncomingLabel = reader.IsDBNull(5) ? null : reader.GetString(5),
 								DisruptionMinutes = reader.GetDouble(6),
 								OpportunityMinutes = reader.GetDouble(7),
-								FruitShortfall = reader.GetDouble(8),
-								AvailabilityDuringDisruption = reader.IsDBNull(9) ? (double?)null : reader.GetDouble(9),
-								AvailabilityDuringOpportunity = reader.IsDBNull(10) ? (double?)null : reader.GetDouble(10)
+								PrimaryFruitShortfall = reader.GetDouble(8),
+								PrimaryThroughputLossRatio = ReadNullableDouble(reader, 9),
+								PrimaryEquivalentLostMinutes = ReadNullableDouble(reader, 10),
+								PeakFruitShortfall = reader.GetDouble(11),
+								PeakThroughputLossRatio = ReadNullableDouble(reader, 12),
+								PeakEquivalentLostMinutes = ReadNullableDouble(reader, 13),
+								TargetThroughput = ReadNullableDouble(reader, 14),
+								TargetFruitShortfall = ReadNullableDouble(reader, 15),
+								TargetEquivalentLostMinutes = ReadNullableDouble(reader, 16),
+								BreakOverlapDetected = !reader.IsDBNull(17) && reader.GetBoolean(17),
+								BreakOverlapMinutes = ReadNullableDouble(reader, 18),
+								BreakAdjustedStableFruitShortfall = ReadNullableDouble(reader, 19),
+								BreakAdjustedStableEquivalentLostMinutes = ReadNullableDouble(reader, 20),
+								AvailabilityDuringDisruption = ReadNullableDouble(reader, 21),
+								AvailabilityDuringOpportunity = ReadNullableDouble(reader, 22)
 							});
 						}
 					}
@@ -182,20 +200,25 @@ ORDER BY transition_ts ASC;";
 				return;
 			}
 
-			Console.WriteLine("Transition           Out Batch In Batch  Lot Transition                 Disrupt  OppWin  Shortfall");
-			Console.WriteLine("------------------- --------- --------- ------------------------------ -------- ------- ----------");
+			Console.WriteLine("Transition           Out Batch In Batch  Lot Transition                 Disrupt  OppWin  AdjLoss Loss%  AdjMin Break PeakLoss TargetLoss");
+			Console.WriteLine("------------------- --------- --------- ------------------------------ -------- ------- -------- ------ ------ ----- -------- ----------");
 			foreach (var evt in events)
 			{
 				Console.WriteLine(string.Format(
 					CultureInfo.InvariantCulture,
-					"{0:u} {1,9} {2,9} {3,-30} {4,7:F1}m {5,6:F1}m {6,10:F0}",
+					"{0:u} {1,9} {2,9} {3,-30} {4,7:F1}m {5,6:F1}m {6,8:F0} {7,5} {8,5:F1}m {9,5} {10,8:F0} {11,10}",
 					evt.TransitionTs.UtcDateTime,
 					evt.OutgoingBatchRecordId,
 					evt.IncomingBatchRecordId,
 					Trim(BuildTransitionLabel(evt.OutgoingLabel, evt.IncomingLabel), 30),
 					evt.DisruptionDurationMinutes,
 					evt.OpportunityWindowMinutes,
-					evt.FruitOpportunityShortfall));
+					evt.BreakAdjustedStableFruitOpportunityShortfall,
+					FormatPct(evt.BreakAdjustedStableThroughputLossRatio),
+					evt.BreakAdjustedStableEquivalentLostMinutes,
+					FormatBreak(evt.BreakOverlapDetected, evt.BreakOverlapMinutes),
+					evt.FruitOpportunityShortfall,
+					FormatNullableNum(evt.TargetFruitOpportunityShortfall, "F0")));
 
 				if (includeAvailability && (evt.AvailabilityAvgDuringDisruption.HasValue || evt.AvailabilityAvgOpportunityWindow.HasValue))
 				{
@@ -210,28 +233,31 @@ ORDER BY transition_ts ASC;";
 
 		private static void PrintRows(List<LotTransitionListRow> rows)
 		{
-			Console.WriteLine("Transition           Out Batch In Batch  Lot Transition                 Disrupt  OppWin  Shortfall  AvailD  AvailO");
-			Console.WriteLine("------------------- --------- --------- ------------------------------ -------- ------- ---------- ------- -------");
+			Console.WriteLine("Transition           Out Batch In Batch  Lot Transition                 Disrupt  OppWin  AdjLoss Loss%  AdjMin Break PeakLoss TargetLoss");
+			Console.WriteLine("------------------- --------- --------- ------------------------------ -------- ------- -------- ------ ------ ----- -------- ----------");
 			foreach (var row in rows)
 			{
 				Console.WriteLine(string.Format(
 					CultureInfo.InvariantCulture,
-					"{0:u} {1,9} {2,9} {3,-30} {4,7:F1}m {5,6:F1}m {6,10:F0} {7,7} {8,7}",
+					"{0:u} {1,9} {2,9} {3,-30} {4,7:F1}m {5,6:F1}m {6,8:F0} {7,5} {8,5}m {9,5} {10,8:F0} {11,10}",
 					row.TransitionTs.UtcDateTime,
 					row.OutgoingBatchRecordId,
 					row.IncomingBatchRecordId,
 					Trim(BuildTransitionLabel(row.OutgoingLabel, row.IncomingLabel), 30),
 					row.DisruptionMinutes,
 					row.OpportunityMinutes,
-					row.FruitShortfall,
-					FormatNullablePct(row.AvailabilityDuringDisruption),
-					FormatNullablePct(row.AvailabilityDuringOpportunity)));
+					row.PrimaryFruitShortfall,
+					FormatNullablePct(row.PrimaryThroughputLossRatio),
+					FormatNullableNum(row.PrimaryEquivalentLostMinutes, "F1"),
+					FormatBreak(row.BreakOverlapDetected, row.BreakOverlapMinutes),
+					row.PeakFruitShortfall,
+					FormatNullableNum(row.TargetFruitShortfall, "F0")));
 			}
 		}
 
 		private static void PrintCsv(List<LotTransitionListRow> rows)
 		{
-			Console.WriteLine("transition_ts,serial_no,outgoing_batch_record_id,incoming_batch_record_id,outgoing_label,incoming_label,disruption_minutes,opportunity_minutes,fruit_opportunity_shortfall,availability_disruption,availability_opportunity");
+			Console.WriteLine("transition_ts,serial_no,outgoing_batch_record_id,incoming_batch_record_id,outgoing_label,incoming_label,disruption_minutes,opportunity_minutes,primary_fruit_opportunity_shortfall,primary_throughput_loss_ratio,primary_equivalent_lost_minutes,peak_fruit_opportunity_shortfall,peak_throughput_loss_ratio,peak_equivalent_lost_minutes,target_throughput,target_fruit_opportunity_shortfall,target_equivalent_lost_minutes,break_overlap_detected,break_overlap_minutes,break_adjusted_stable_fruit_opportunity_shortfall,break_adjusted_stable_equivalent_lost_minutes,availability_disruption,availability_opportunity");
 			foreach (var row in rows)
 			{
 				Console.WriteLine(string.Join(",",
@@ -243,7 +269,19 @@ ORDER BY transition_ts ASC;";
 					Csv(row.IncomingLabel),
 					row.DisruptionMinutes.ToString("F3", CultureInfo.InvariantCulture),
 					row.OpportunityMinutes.ToString("F3", CultureInfo.InvariantCulture),
-					row.FruitShortfall.ToString("F0", CultureInfo.InvariantCulture),
+					row.PrimaryFruitShortfall.ToString("F0", CultureInfo.InvariantCulture),
+					FormatNullable(row.PrimaryThroughputLossRatio),
+					FormatNullable(row.PrimaryEquivalentLostMinutes),
+					row.PeakFruitShortfall.ToString("F0", CultureInfo.InvariantCulture),
+					FormatNullable(row.PeakThroughputLossRatio),
+					FormatNullable(row.PeakEquivalentLostMinutes),
+					FormatNullable(row.TargetThroughput),
+					FormatNullable(row.TargetFruitShortfall),
+					FormatNullable(row.TargetEquivalentLostMinutes),
+					row.BreakOverlapDetected ? "true" : "false",
+					FormatNullable(row.BreakOverlapMinutes),
+					FormatNullable(row.BreakAdjustedStableFruitShortfall),
+					FormatNullable(row.BreakAdjustedStableEquivalentLostMinutes),
 					FormatNullable(row.AvailabilityDuringDisruption),
 					FormatNullable(row.AvailabilityDuringOpportunity)));
 			}
@@ -363,6 +401,31 @@ ORDER BY transition_ts ASC;";
 			return value.HasValue ? value.Value.ToString("F6", CultureInfo.InvariantCulture) : string.Empty;
 		}
 
+		private static double? ReadNullableDouble(NpgsqlDataReader reader, int index)
+		{
+			return reader.IsDBNull(index) ? (double?)null : reader.GetDouble(index);
+		}
+
+		private static string FormatPct(double value)
+		{
+			return string.Format(CultureInfo.InvariantCulture, "{0:F1}%", value * 100.0);
+		}
+
+		private static string FormatNullableNum(double? value, string format)
+		{
+			return value.HasValue ? value.Value.ToString(format, CultureInfo.InvariantCulture) : "-";
+		}
+
+		private static string FormatBreak(bool detected, double? minutes)
+		{
+			if (!detected)
+				return "-";
+
+			return minutes.HasValue
+				? string.Format(CultureInfo.InvariantCulture, "{0:F0}m", minutes.Value)
+				: "yes";
+		}
+
 		private static string Trim(string value, int length)
 		{
 			if (string.IsNullOrEmpty(value)) return string.Empty;
@@ -393,7 +456,19 @@ ORDER BY transition_ts ASC;";
 			public string IncomingLabel { get; set; }
 			public double DisruptionMinutes { get; set; }
 			public double OpportunityMinutes { get; set; }
-			public double FruitShortfall { get; set; }
+			public double PrimaryFruitShortfall { get; set; }
+			public double? PrimaryThroughputLossRatio { get; set; }
+			public double? PrimaryEquivalentLostMinutes { get; set; }
+			public double PeakFruitShortfall { get; set; }
+			public double? PeakThroughputLossRatio { get; set; }
+			public double? PeakEquivalentLostMinutes { get; set; }
+			public double? TargetThroughput { get; set; }
+			public double? TargetFruitShortfall { get; set; }
+			public double? TargetEquivalentLostMinutes { get; set; }
+			public bool BreakOverlapDetected { get; set; }
+			public double? BreakOverlapMinutes { get; set; }
+			public double? BreakAdjustedStableFruitShortfall { get; set; }
+			public double? BreakAdjustedStableEquivalentLostMinutes { get; set; }
 			public double? AvailabilityDuringDisruption { get; set; }
 			public double? AvailabilityDuringOpportunity { get; set; }
 		}

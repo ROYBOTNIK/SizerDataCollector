@@ -10,29 +10,61 @@ namespace SizerDataCollector.Core.AnomalyDetection
 	public sealed class MachineEventDatabaseSink
 	{
 		private const string DowntimeInsertSql = @"
+WITH existing_longer AS (
+    SELECT 1
+    FROM oee.downtime_events
+    WHERE serial_no = @serial_no
+      AND start_ts = @start_ts
+      AND end_ts >= @end_ts
+    LIMIT 1
+),
+deleted_shorter AS (
+    DELETE FROM oee.downtime_events
+    WHERE serial_no = @serial_no
+      AND start_ts = @start_ts
+      AND end_ts < @end_ts
+      AND NOT EXISTS (SELECT 1 FROM existing_longer)
+)
 INSERT INTO oee.downtime_events
     (start_ts, end_ts, duration_minutes, serial_no, batch_record_id, lot, variety,
      avg_availability_ratio, min_availability_ratio, avg_throughput_ratio, min_throughput_ratio,
      avg_total_fpm, min_total_fpm, avg_oee_score, reason, overlaps_lot_transition,
      explanation, model_version, delivered_to)
-VALUES
-    (@start_ts, @end_ts, @duration_minutes, @serial_no, @batch_record_id, @lot, @variety,
-     @avg_availability_ratio, @min_availability_ratio, @avg_throughput_ratio, @min_throughput_ratio,
-     @avg_total_fpm, @min_total_fpm, @avg_oee_score, @reason, @overlaps_lot_transition,
-     @explanation::jsonb, @model_version, @delivered_to)
+SELECT
+    @start_ts, @end_ts, @duration_minutes, @serial_no, @batch_record_id, @lot, @variety,
+    @avg_availability_ratio, @min_availability_ratio, @avg_throughput_ratio, @min_throughput_ratio,
+    @avg_total_fpm, @min_total_fpm, @avg_oee_score, @reason, @overlaps_lot_transition,
+    @explanation::jsonb, @model_version, @delivered_to
+WHERE NOT EXISTS (SELECT 1 FROM existing_longer)
 ON CONFLICT (serial_no, start_ts, end_ts) DO NOTHING;";
 
 		private const string SlowdownInsertSql = @"
+WITH existing_longer AS (
+    SELECT 1
+    FROM oee.slowdown_events
+    WHERE serial_no = @serial_no
+      AND start_ts = @start_ts
+      AND end_ts >= @end_ts
+    LIMIT 1
+),
+deleted_shorter AS (
+    DELETE FROM oee.slowdown_events
+    WHERE serial_no = @serial_no
+      AND start_ts = @start_ts
+      AND end_ts < @end_ts
+      AND NOT EXISTS (SELECT 1 FROM existing_longer)
+)
 INSERT INTO oee.slowdown_events
     (start_ts, end_ts, duration_minutes, serial_no, batch_record_id, lot, variety,
      avg_availability_ratio, min_availability_ratio, avg_throughput_ratio, min_throughput_ratio,
      avg_total_fpm, min_total_fpm, avg_oee_score, reason, overlaps_lot_transition,
      explanation, model_version, delivered_to)
-VALUES
-    (@start_ts, @end_ts, @duration_minutes, @serial_no, @batch_record_id, @lot, @variety,
-     @avg_availability_ratio, @min_availability_ratio, @avg_throughput_ratio, @min_throughput_ratio,
-     @avg_total_fpm, @min_total_fpm, @avg_oee_score, @reason, @overlaps_lot_transition,
-     @explanation::jsonb, @model_version, @delivered_to)
+SELECT
+    @start_ts, @end_ts, @duration_minutes, @serial_no, @batch_record_id, @lot, @variety,
+    @avg_availability_ratio, @min_availability_ratio, @avg_throughput_ratio, @min_throughput_ratio,
+    @avg_total_fpm, @min_total_fpm, @avg_oee_score, @reason, @overlaps_lot_transition,
+    @explanation::jsonb, @model_version, @delivered_to
+WHERE NOT EXISTS (SELECT 1 FROM existing_longer)
 ON CONFLICT (serial_no, start_ts, end_ts) DO NOTHING;";
 
 		private readonly string _connectionString;

@@ -48,6 +48,8 @@ namespace SizerDataCollector.Service.Commands
 					return SetBand(options);
 				case "remove-band":
 					return RemoveBand(options);
+				case "tune-bands":
+					return TuneBands(options);
 				default:
 					ShowMachineUsage();
 					return 1;
@@ -427,25 +429,26 @@ namespace SizerDataCollector.Service.Commands
 		private static int ShowBands(Dictionary<string, string> options)
 		{
 			if (!RequireSerial(options, out var serial)) return 1;
+			if (!TryGetMetricType(options, out var metricType)) return 1;
 			var config = LoadConfig();
 			if (config == null) return 1;
 
 			var repo = new OeeParamsRepository(config.TimescaleConnectionString);
-			var bands = repo.GetBandsAsync(serial, CancellationToken.None).GetAwaiter().GetResult();
+			var bands = repo.GetBandsAsync(serial, metricType, CancellationToken.None).GetAwaiter().GetResult();
 
 			if (bands == null || bands.Count == 0)
 			{
-				Console.WriteLine($"No band definitions for '{serial}'. classify_oee_value will use hardcoded defaults.");
+				Console.WriteLine($"No {metricType} band definitions for '{serial}'. Classification will use hardcoded defaults.");
 				return 0;
 			}
 
-			Console.WriteLine($"OEE band definitions for '{serial}' ({bands.Count}):");
-			Console.WriteLine($"  {"Band",-18} {"Lower",8} {"Upper",8} {"Active",-7} {"Date",-12} {"By",-6}");
-			Console.WriteLine($"  {new string('-', 18)} {new string('-', 8)} {new string('-', 8)} {new string('-', 7)} {new string('-', 12)} {new string('-', 6)}");
+			Console.WriteLine($"{metricType} band definitions for '{serial}' ({bands.Count}):");
+			Console.WriteLine($"  {"Band",-20} {"Lower",8} {"Upper",8} {"Active",-7} {"Date",-12} {"Source",-10} {"Conf",6} {"Mins",6}");
+			Console.WriteLine($"  {new string('-', 20)} {new string('-', 8)} {new string('-', 8)} {new string('-', 7)} {new string('-', 12)} {new string('-', 10)} {new string('-', 6)} {new string('-', 6)}");
 
 			foreach (var b in bands)
 			{
-				Console.WriteLine($"  {b.BandName,-18} {b.LowerBound,8:F4} {b.UpperBound,8:F4} {b.IsActive,-7} {b.EffectiveDate:yyyy-MM-dd} {b.CreatedBy,-6}");
+				Console.WriteLine($"  {b.BandName,-20} {b.LowerBound,8:F4} {b.UpperBound,8:F4} {b.IsActive,-7} {b.EffectiveDate:yyyy-MM-dd} {b.Source ?? b.CreatedBy,-10} {FormatNullableDecimal(b.Confidence),6} {FormatNullableInt(b.ObservedMinutes),6}");
 			}
 			return 0;
 		}
@@ -453,6 +456,7 @@ namespace SizerDataCollector.Service.Commands
 		private static int SetBand(Dictionary<string, string> options)
 		{
 			if (!RequireSerial(options, out var serial)) return 1;
+			if (!TryGetMetricType(options, out var metricType)) return 1;
 
 			if (!options.TryGetValue("band", out var bandName) || string.IsNullOrWhiteSpace(bandName))
 			{
@@ -478,15 +482,16 @@ namespace SizerDataCollector.Service.Commands
 			if (config == null) return 1;
 
 			var repo = new OeeParamsRepository(config.TimescaleConnectionString);
-			repo.UpsertBandAsync(serial, bandName.Trim(), lower, upper, CancellationToken.None).GetAwaiter().GetResult();
+			repo.UpsertBandAsync(serial, metricType, bandName.Trim(), lower, upper, CancellationToken.None).GetAwaiter().GetResult();
 
-			Console.WriteLine($"Band '{bandName.Trim()}' set for '{serial}': [{lower:F4}, {upper:F4})");
+			Console.WriteLine($"{metricType} band '{bandName.Trim()}' set for '{serial}': [{lower:F4}, {upper:F4})");
 			return 0;
 		}
 
 		private static int RemoveBand(Dictionary<string, string> options)
 		{
 			if (!RequireSerial(options, out var serial)) return 1;
+			if (!TryGetMetricType(options, out var metricType)) return 1;
 
 			if (!options.TryGetValue("band", out var bandName) || string.IsNullOrWhiteSpace(bandName))
 			{
@@ -498,9 +503,82 @@ namespace SizerDataCollector.Service.Commands
 			if (config == null) return 1;
 
 			var repo = new OeeParamsRepository(config.TimescaleConnectionString);
-			repo.DeactivateBandAsync(serial, bandName.Trim(), CancellationToken.None).GetAwaiter().GetResult();
+			repo.DeactivateBandAsync(serial, metricType, bandName.Trim(), CancellationToken.None).GetAwaiter().GetResult();
 
-			Console.WriteLine($"Band '{bandName.Trim()}' deactivated for '{serial}'.");
+			Console.WriteLine($"{metricType} band '{bandName.Trim()}' deactivated for '{serial}'.");
+			return 0;
+		}
+
+		private static int TuneBands(Dictionary<string, string> options)
+		{
+			if (!RequireSerial(options, out var serial)) return 1;
+			if (!TryGetMetricType(options, out var metricType)) return 1;
+
+			if (!string.Equals(metricType, "throughput", StringComparison.OrdinalIgnoreCase))
+			{
+				Console.WriteLine("Only throughput band tuning is supported. Use --metric throughput.");
+				return 1;
+			}
+
+			var minMinutes = ParseIntOpt(options, "min-minutes", ThroughputBandTuningCalculator.DefaultMinObservedMinutes);
+			var toTs = ParseDateTimeOpt(options, "to", DateTimeOffset.UtcNow);
+			DateTimeOffset fromTs;
+			if (options.TryGetValue("from", out var fromRaw))
+			{
+				if (!DateTimeOffset.TryParse(fromRaw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out fromTs))
+				{
+					Console.WriteLine("Invalid option: --from <timestamp>");
+					return 1;
+				}
+			}
+			else
+			{
+				var historyDays = ParseIntOpt(options, "history-days", 7);
+				fromTs = toTs.AddDays(-Math.Max(1, historyDays));
+			}
+
+			if (toTs <= fromTs)
+			{
+				Console.WriteLine("--to must be later than --from.");
+				return 1;
+			}
+
+			var config = LoadConfig();
+			if (config == null) return 1;
+
+			var repo = new OeeParamsRepository(config.TimescaleConnectionString);
+			var ratios = repo.GetThroughputRatiosAsync(serial, fromTs, toTs, CancellationToken.None).GetAwaiter().GetResult();
+			var calculator = new ThroughputBandTuningCalculator();
+			var result = calculator.Tune(ratios, minMinutes);
+
+			Console.WriteLine($"Throughput band tuning for '{serial}'");
+			Console.WriteLine($"  Window:           {fromTs:u} to {toTs:u}");
+			Console.WriteLine($"  Observed minutes: {result.ObservedMinutes}");
+			Console.WriteLine($"  Min minutes:      {minMinutes}");
+
+			if (!result.CanApply)
+			{
+				Console.WriteLine("  Result:           insufficient data; no bands generated.");
+				return 1;
+			}
+
+			Console.WriteLine($"  Confidence:       {result.Confidence:F4}");
+			Console.WriteLine("  Candidate bands:");
+			foreach (var band in result.Bands)
+			{
+				Console.WriteLine($"    {band.BandName,-20} [{band.LowerBound:F4}, {band.UpperBound:F4})");
+			}
+
+			if (!options.ContainsKey("apply"))
+			{
+				Console.WriteLine("  Dry run only. Re-run with --apply to write active throughput bands.");
+				return 0;
+			}
+
+			repo.UpsertBandsAsync(serial, metricType, result.Bands, "cli-tuned", result.Confidence, result.ObservedMinutes,
+				fromTs, toTs, "Conservative quantile throughput tuning.", CancellationToken.None).GetAwaiter().GetResult();
+
+			Console.WriteLine("  Applied:          active throughput bands updated.");
 			return 0;
 		}
 
@@ -525,6 +603,51 @@ namespace SizerDataCollector.Service.Commands
 				return value;
 			}
 			return fallback;
+		}
+
+		private static int ParseIntOpt(Dictionary<string, string> options, string key, int fallback)
+		{
+			if (options.TryGetValue(key, out var raw) &&
+				int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+			{
+				return value;
+			}
+			return fallback;
+		}
+
+		private static DateTimeOffset ParseDateTimeOpt(Dictionary<string, string> options, string key, DateTimeOffset fallback)
+		{
+			if (options.TryGetValue(key, out var raw) &&
+				DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var value))
+			{
+				return value;
+			}
+			return fallback;
+		}
+
+		private static bool TryGetMetricType(Dictionary<string, string> options, out string metricType)
+		{
+			metricType = options.TryGetValue("metric", out var raw) && !string.IsNullOrWhiteSpace(raw)
+				? raw.Trim().ToLowerInvariant()
+				: "oee";
+
+			if (metricType == "oee" || metricType == "throughput" || metricType == "availability" || metricType == "quality")
+			{
+				return true;
+			}
+
+			Console.WriteLine("Invalid option: --metric <oee|throughput|availability|quality>");
+			return false;
+		}
+
+		private static string FormatNullableDecimal(decimal? value)
+		{
+			return value.HasValue ? value.Value.ToString("F4", CultureInfo.InvariantCulture) : "-";
+		}
+
+		private static string FormatNullableInt(int? value)
+		{
+			return value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : "-";
 		}
 
 		private static string CategoryName(int cat)
@@ -588,8 +711,10 @@ namespace SizerDataCollector.Service.Commands
 			Console.WriteLine("  set-perf-params     --serial <sn> [--min-effective <v>] [--low-ratio <v>]");
 			Console.WriteLine("                      [--cap-asymptote <v>]");
 			Console.WriteLine("  show-bands          --serial <sn>");
-			Console.WriteLine("  set-band            --serial <sn> --band <name> --lower <val> --upper <val>");
-			Console.WriteLine("  remove-band         --serial <sn> --band <name>");
+			Console.WriteLine("  set-band            --serial <sn> [--metric <oee|throughput>] --band <name> --lower <val> --upper <val>");
+			Console.WriteLine("  remove-band         --serial <sn> [--metric <oee|throughput>] --band <name>");
+			Console.WriteLine("  tune-bands          --serial <sn> --metric throughput [--history-days 7] [--from <ts>] [--to <ts>]");
+			Console.WriteLine("                      [--min-minutes 240] [--apply]");
 		}
 	}
 }

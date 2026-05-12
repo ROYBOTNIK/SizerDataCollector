@@ -1489,9 +1489,10 @@ namespace SizerDataCollector.Service
 			Console.WriteLine("  SizerDataCollector.Service.exe machine set-quality-params  --serial <sn> [--tgt-good <v>] ...");
 			Console.WriteLine("  SizerDataCollector.Service.exe machine show-perf-params    --serial <sn>");
 			Console.WriteLine("  SizerDataCollector.Service.exe machine set-perf-params     --serial <sn> [--min-effective <v>] ...");
-			Console.WriteLine("  SizerDataCollector.Service.exe machine show-bands          --serial <sn>");
-			Console.WriteLine("  SizerDataCollector.Service.exe machine set-band            --serial <sn> --band <name> --lower <v> --upper <v>");
-			Console.WriteLine("  SizerDataCollector.Service.exe machine remove-band         --serial <sn> --band <name>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine show-bands          --serial <sn> [--metric <oee|throughput>]");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine set-band            --serial <sn> [--metric <oee|throughput>] --band <name> --lower <v> --upper <v>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine remove-band         --serial <sn> [--metric <oee|throughput>] --band <name>");
+			Console.WriteLine("  SizerDataCollector.Service.exe machine tune-bands          --serial <sn> --metric throughput [--history-days 7] [--apply]");
 			Console.WriteLine("  SizerDataCollector.Service.exe shift list                  --serial <sn>");
 			Console.WriteLine("  SizerDataCollector.Service.exe shift add                   --serial <sn> --name <shift> --start <HH:mm> --end <HH:mm>");
 			Console.WriteLine("      [--tz <IANA zone>] [--dow Mon-Fri|Mon,Wed,Fri|all] [--effective-from <yyyy-MM-dd>] [--effective-to <yyyy-MM-dd>] [--active true|false]");

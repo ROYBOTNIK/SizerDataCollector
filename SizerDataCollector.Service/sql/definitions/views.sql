@@ -187,17 +187,25 @@ SELECT minute_ts,
 FROM oee.cagg_availability_minute
 ORDER BY minute_ts DESC;
 
+DROP VIEW IF EXISTS oee.v_current_bands;
 CREATE OR REPLACE VIEW oee.v_current_bands AS
 SELECT machine_serial_no,
+       metric_type,
        band_name,
        lower_bound,
        upper_bound,
        effective_date,
        created_by,
-       created_at
+       created_at,
+       source,
+       confidence,
+       observed_minutes,
+       tuned_from_ts,
+       tuned_to_ts,
+       notes
 FROM oee.band_definitions
 WHERE is_active = true
-ORDER BY machine_serial_no, lower_bound;
+ORDER BY machine_serial_no, metric_type, lower_bound;
 
 CREATE OR REPLACE VIEW oee.v_grade_pct_lane_minute_batch AS
 SELECT c.minute_ts,
@@ -842,6 +850,81 @@ LEFT JOIN oee.v_throughput_minute_batch t
      ON (t.minute_ts = o.minute_ts AND t.serial_no = o.serial_no AND t.batch_record_id = o.batch_record_id)
 LEFT JOIN oee.v_quality_minute_batch q
      ON (q.minute_ts = o.minute_ts AND q.serial_no = o.serial_no AND q.batch_record_id = o.batch_record_id);
+
+CREATE OR REPLACE VIEW oee.v_throughput_minute_classified AS
+WITH minute_base AS (
+    SELECT minute_ts,
+           serial_no,
+           batch_record_id,
+           lot,
+           variety,
+           COALESCE(total_fpm, 0::double precision) AS total_fpm,
+           COALESCE(target_throughput, 0::double precision) AS target_fpm,
+           COALESCE(missed_fpm, 0::double precision) AS missed_fpm,
+           COALESCE(combined_recycle_fpm, 0::double precision) AS recycle_fpm,
+           COALESCE(throughput_ratio, 0::double precision) AS throughput_ratio,
+           GREATEST(
+               0::double precision,
+               COALESCE(total_fpm, 0::double precision)
+               - COALESCE(missed_fpm, 0::double precision)
+               - COALESCE(combined_recycle_fpm, 0::double precision)
+           ) AS effective_fpm
+    FROM oee.v_operational_minute_batch
+), losses AS (
+    SELECT *,
+           GREATEST(0::double precision, target_fpm - effective_fpm) AS target_gap_fpm,
+           GREATEST(0::double precision, target_fpm - total_fpm) AS gross_flow_gap_fpm,
+           GREATEST(0::double precision, target_fpm - total_fpm) AS gross_flow_loss_fpm,
+           GREATEST(
+               0::double precision,
+               GREATEST(0::double precision, target_fpm - GREATEST(0::double precision, total_fpm - missed_fpm))
+               - GREATEST(0::double precision, target_fpm - total_fpm)
+           ) AS missed_loss_fpm,
+           GREATEST(
+               0::double precision,
+               GREATEST(0::double precision, target_fpm - effective_fpm)
+               - GREATEST(0::double precision, target_fpm - GREATEST(0::double precision, total_fpm - missed_fpm))
+           ) AS recycle_loss_fpm
+    FROM minute_base
+)
+SELECT minute_ts,
+       serial_no,
+       batch_record_id,
+       lot,
+       variety,
+       total_fpm,
+       target_fpm,
+       missed_fpm,
+       recycle_fpm,
+       throughput_ratio,
+       effective_fpm,
+       CASE
+           WHEN target_fpm <= 0 THEN 'no_target'
+           WHEN total_fpm <= 0 THEN 'stopped'
+           ELSE 'running'
+       END AS operational_state,
+       CASE
+           WHEN target_fpm <= 0 THEN 'no_target'
+           WHEN total_fpm <= 0 THEN 'stopped'
+           ELSE oee.classify_band_value(serial_no, 'throughput', throughput_ratio::numeric)
+       END AS target_band,
+       CASE
+           WHEN target_fpm <= 0 THEN 'No target configured'
+           WHEN total_fpm <= 0 THEN 'Stopped / no product flow'
+           WHEN effective_fpm <= 0 THEN 'No effective fruit flow'
+           WHEN recycle_fpm > target_fpm * 0.10 AND missed_fpm > target_fpm * 0.10 THEN 'Recycle + missed fruit'
+           WHEN recycle_fpm > target_fpm * 0.10 THEN 'Recycle penalty'
+           WHEN missed_fpm > target_fpm * 0.10 THEN 'Missed fruit penalty'
+           WHEN total_fpm < target_fpm * 0.75 THEN 'Gross flow below target'
+           WHEN effective_fpm < target_fpm THEN 'Effective flow below target'
+           ELSE 'Near target'
+       END AS primary_reason,
+       target_gap_fpm,
+       gross_flow_gap_fpm,
+       gross_flow_loss_fpm,
+       missed_loss_fpm,
+       recycle_loss_fpm
+FROM losses;
 
 CREATE OR REPLACE VIEW oee.v_shift_window AS
 WITH machine_days AS (

@@ -141,9 +141,12 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
   - `SizerDataCollector.Service.exe machine set-quality-params --serial <sn> [--tgt-good <v>] [--tgt-peddler <v>] [--tgt-bad <v>] [--tgt-recycle <v>] [--w-good <v>] [--w-peddler <v>] [--w-bad <v>] [--w-recycle <v>] [--sig-k <v>]`
   - `SizerDataCollector.Service.exe machine show-perf-params --serial <sn>`
   - `SizerDataCollector.Service.exe machine set-perf-params --serial <sn> [--min-effective <v>] [--low-ratio <v>] [--cap-asymptote <v>]`
-  - `SizerDataCollector.Service.exe machine show-bands --serial <sn>`
-  - `SizerDataCollector.Service.exe machine set-band --serial <sn> --band <name> --lower <val> --upper <val>`
-  - `SizerDataCollector.Service.exe machine remove-band --serial <sn> --band <name>`
+  - `SizerDataCollector.Service.exe machine show-bands --serial <sn> [--metric <oee|throughput>]`
+  - `SizerDataCollector.Service.exe machine set-band --serial <sn> [--metric <oee|throughput>] --band <name> --lower <val> --upper <val>`
+  - `SizerDataCollector.Service.exe machine remove-band --serial <sn> [--metric <oee|throughput>] --band <name>`
+  - `SizerDataCollector.Service.exe machine tune-bands --serial <sn> --metric throughput [--history-days 7] [--apply]`
+
+Adaptive throughput banding is described in `ADAPTIVE_THROUGHPUT_BANDS.md`. External reports should use `oee.v_throughput_minute_classified` for target-zone timelines and throughput target maps.
 
 - **Anomaly reporting**
   - `SizerDataCollector.Service.exe anomaly offenders --serial <sn> --type grade|size|both [--hours <h>]`

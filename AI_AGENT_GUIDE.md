@@ -509,11 +509,14 @@ All commands are executed against `SizerDataCollector.Service.exe` from the serv
 
 - OEE bands:
   - Show bands:
-    - `SizerDataCollector.Service.exe machine show-bands --serial <sn>`
+    - `SizerDataCollector.Service.exe machine show-bands --serial <sn> [--metric <oee|throughput>]`
   - Upsert a band:
-    - `SizerDataCollector.Service.exe machine set-band --serial <sn> --band <name> --lower <val> --upper <val>`
+    - `SizerDataCollector.Service.exe machine set-band --serial <sn> [--metric <oee|throughput>] --band <name> --lower <val> --upper <val>`
   - Deactivate a band:
-    - `SizerDataCollector.Service.exe machine remove-band --serial <sn> --band <name>`
+    - `SizerDataCollector.Service.exe machine remove-band --serial <sn> [--metric <oee|throughput>] --band <name>`
+  - Tune throughput bands from recent running minutes:
+    - `SizerDataCollector.Service.exe machine tune-bands --serial <sn> --metric throughput [--history-days 7] [--apply]`
+  - Use `oee.v_throughput_minute_classified` for throughput target-zone timelines and see `ADAPTIVE_THROUGHPUT_BANDS.md` before changing active throughput bands.
 
 #### Grade anomaly detection
 

@@ -119,6 +119,7 @@
     <Compile Include="Db\ThresholdsRepository.cs" />
     <Compile Include="Db\MachineSettingsRepository.cs" />
     <Compile Include="Db\OeeParamsRepository.cs" />
+    <Compile Include="Db\ThroughputBandTuningCalculator.cs" />
     <Compile Include="..\Logging\Logging.cs" />
     <Compile Include="..\Sizer\SizerClient.cs" />
     <Compile Include="..\Sizer\SizerClientTester.cs" />

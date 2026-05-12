@@ -101,6 +101,21 @@ oee.calc_perf_ratio(serial_no, total_fpm, missed_fpm, recycle_fpm, target_fpm)
 
 It reads `oee.perf_params` for the matching serial and falls back to the previous defaults if no row exists.
 
+### Adaptive throughput bands
+
+Throughput bands are the presentation layer over `throughput_ratio`. They live in `oee.band_definitions` with `metric_type = 'throughput'` and are documented in `ADAPTIVE_THROUGHPUT_BANDS.md`.
+
+Use the CLI to inspect, manually set, or tune them:
+
+```powershell
+SizerDataCollector.Service.exe machine show-bands --serial <sn> --metric throughput
+SizerDataCollector.Service.exe machine set-band --serial <sn> --metric throughput --band on_target --lower 0.85 --upper 0.95
+SizerDataCollector.Service.exe machine tune-bands --serial <sn> --metric throughput
+SizerDataCollector.Service.exe machine tune-bands --serial <sn> --metric throughput --apply
+```
+
+External timeline and target-map reporting should prefer `oee.v_throughput_minute_classified`.
+
 ### Serial-aware performance objects
 
 - `oee.cagg_throughput_minute_batch`

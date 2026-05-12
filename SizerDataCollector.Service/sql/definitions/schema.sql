@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS oee.machine_thresholds (
 
 CREATE TABLE IF NOT EXISTS oee.band_definitions (
     machine_serial_no text NOT NULL,
+    metric_type       text NOT NULL DEFAULT 'oee',
     effective_date    date NOT NULL,
     band_name         text NOT NULL,
     lower_bound       numeric(5,4) NOT NULL,
@@ -102,10 +103,45 @@ CREATE TABLE IF NOT EXISTS oee.band_definitions (
     created_at        timestamptz DEFAULT now(),
     created_by        text DEFAULT 'system',
     is_active         boolean DEFAULT true,
-    PRIMARY KEY (machine_serial_no, effective_date, band_name),
+    source            text DEFAULT 'manual',
+    confidence        numeric(5,4),
+    observed_minutes  integer,
+    tuned_from_ts     timestamptz,
+    tuned_to_ts       timestamptz,
+    notes             text,
+    PRIMARY KEY (machine_serial_no, metric_type, effective_date, band_name),
     CONSTRAINT band_definitions_check CHECK (upper_bound >= 0 AND upper_bound <= 1 AND upper_bound > lower_bound),
     CONSTRAINT band_definitions_lower_bound_check CHECK (lower_bound >= 0 AND lower_bound <= 1)
 );
+
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS metric_type text NOT NULL DEFAULT 'oee';
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual';
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS confidence numeric(5,4);
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS observed_minutes integer;
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS tuned_from_ts timestamptz;
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS tuned_to_ts timestamptz;
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS notes text;
+
+DELETE FROM oee.band_definitions bd
+USING (
+    SELECT ctid
+    FROM (
+        SELECT ctid,
+               row_number() OVER (
+                   PARTITION BY machine_serial_no, metric_type, effective_date, band_name
+                   ORDER BY created_at DESC NULLS LAST
+               ) AS rn
+        FROM oee.band_definitions
+    ) d
+    WHERE d.rn > 1
+) drop_rows
+WHERE bd.ctid = drop_rows.ctid;
+
+DO $$ BEGIN
+    ALTER TABLE oee.band_definitions DROP CONSTRAINT IF EXISTS band_definitions_pkey;
+    ALTER TABLE oee.band_definitions
+        ADD CONSTRAINT band_definitions_pkey PRIMARY KEY (machine_serial_no, metric_type, effective_date, band_name);
+END $$;
 
 CREATE TABLE IF NOT EXISTS oee.band_statistics (
     machine_serial_no text NOT NULL,
@@ -475,7 +511,8 @@ CREATE INDEX IF NOT EXISTS idx_batches_batch_comment_ts ON public.batches USING 
 CREATE INDEX IF NOT EXISTS idx_batches_start_ts ON public.batches USING btree (start_ts);
 CREATE INDEX IF NOT EXISTS ix_batches_lot_variety_ci ON public.batches USING btree (grower_code, lower(comments), start_ts);
 
-CREATE INDEX IF NOT EXISTS idx_band_definitions_active ON oee.band_definitions USING btree (machine_serial_no, is_active, effective_date DESC);
+DROP INDEX IF EXISTS oee.idx_band_definitions_active;
+CREATE INDEX IF NOT EXISTS idx_band_definitions_active ON oee.band_definitions USING btree (machine_serial_no, metric_type, is_active, effective_date DESC);
 CREATE INDEX IF NOT EXISTS idx_band_statistics_date ON oee.band_statistics USING btree (calculation_date DESC);
 CREATE INDEX IF NOT EXISTS idx_shifts_serial_active ON oee.shifts USING btree (serial_no, is_active);
 CREATE INDEX IF NOT EXISTS ix_grade_map_serial ON oee.grade_map USING btree (serial_no);

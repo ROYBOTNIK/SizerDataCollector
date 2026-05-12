@@ -301,34 +301,52 @@ SELECT oee.calc_quality_ratio_qv1(
 $$;
 
 
--- oee.classify_oee_value(p_machine_serial_no, p_oee_value) — V002
-CREATE OR REPLACE FUNCTION oee.classify_oee_value(p_machine_serial_no text, p_oee_value numeric) RETURNS text
-    LANGUAGE plpgsql IMMUTABLE
+-- oee.classify_band_value(p_machine_serial_no, p_metric_type, p_value) — metric-aware configurable bands
+CREATE OR REPLACE FUNCTION oee.classify_band_value(p_machine_serial_no text, p_metric_type text, p_value numeric) RETURNS text
+    LANGUAGE plpgsql STABLE
 AS $$
 DECLARE
+    v_metric_type text := COALESCE(NULLIF(trim(lower(p_metric_type)), ''), 'oee');
     v_band_name TEXT;
 BEGIN
     SELECT band_name INTO v_band_name
     FROM oee.band_definitions
     WHERE machine_serial_no = p_machine_serial_no
+      AND metric_type = v_metric_type
       AND is_active = TRUE
-      AND p_oee_value >= lower_bound
-      AND p_oee_value < upper_bound
+      AND p_value >= lower_bound
+      AND (p_value < upper_bound OR (upper_bound = 1 AND p_value <= upper_bound))
+    ORDER BY effective_date DESC, lower_bound DESC
     LIMIT 1;
 
     IF v_band_name IS NULL THEN
-        CASE
-            WHEN p_oee_value >= 0.85 THEN v_band_name := 'Excellent';
-            WHEN p_oee_value >= 0.70 THEN v_band_name := 'Good';
-            WHEN p_oee_value >= 0.55 THEN v_band_name := 'Average';
-            WHEN p_oee_value >= 0.40 THEN v_band_name := 'Below Average';
-            ELSE v_band_name := 'Poor';
-        END CASE;
+        IF v_metric_type = 'throughput' THEN
+            CASE
+                WHEN p_value >= 0.95 THEN v_band_name := 'surpassing_target';
+                WHEN p_value >= 0.85 THEN v_band_name := 'on_target';
+                WHEN p_value >= 0.70 THEN v_band_name := 'close';
+                WHEN p_value >= 0.50 THEN v_band_name := 'low';
+                ELSE v_band_name := 'very_low';
+            END CASE;
+        ELSE
+            CASE
+                WHEN p_value >= 0.85 THEN v_band_name := 'Excellent';
+                WHEN p_value >= 0.70 THEN v_band_name := 'Good';
+                WHEN p_value >= 0.55 THEN v_band_name := 'Average';
+                WHEN p_value >= 0.40 THEN v_band_name := 'Below Average';
+                ELSE v_band_name := 'Poor';
+            END CASE;
+        END IF;
     END IF;
 
     RETURN v_band_name;
 END;
 $$;
+
+-- oee.classify_oee_value(p_machine_serial_no, p_oee_value) — backwards-compatible wrapper
+CREATE OR REPLACE FUNCTION oee.classify_oee_value(p_machine_serial_no text, p_oee_value numeric) RETURNS text
+    LANGUAGE sql STABLE
+AS $$ SELECT oee.classify_band_value(p_machine_serial_no, 'oee', p_oee_value); $$;
 
 
 -- oee.get_lane_count(p_serial_no) — returns lane count from machine_settings

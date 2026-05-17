@@ -14,7 +14,8 @@ namespace SizerDataCollector.Core.Config
 			"lanes_size_fpm",
 			"machine_total_fpm",
 			"machine_cupfill",
-			"outlets_details"
+			"outlets_details",
+			"outlets_fpm"
 		});
 		private const string DefaultSizerHost = "10.155.155.10";
 		private const int DefaultSizerPort = 8001;

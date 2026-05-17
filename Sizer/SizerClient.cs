@@ -21,6 +21,14 @@ namespace SizerDataCollector.Core.Sizer
 		public DateTimeOffset StartTime { get; set; }
 
 		public string Comments { get; set; }
+
+		public Guid VarietyId { get; set; }
+
+		public string VarietyName { get; set; }
+
+		public Guid LayoutId { get; set; }
+
+		public string LayoutName { get; set; }
 	}
 
 	public interface ISizerClient : IDisposable
@@ -32,6 +40,10 @@ namespace SizerDataCollector.Core.Sizer
 		Task<CurrentBatchInfo> GetCurrentBatchAsync(CancellationToken cancellationToken);
 
 		Task<string> GetMetricJsonAsync(string logicalMetricName, CancellationToken cancellationToken);
+
+		Task<string> GetActiveVarietyJsonAsync(CancellationToken cancellationToken);
+
+		Task<string> GetActiveLayoutJsonAsync(Guid varietyId, CancellationToken cancellationToken);
 	}
 
 	public sealed class SizerClient : ISizerClient
@@ -48,6 +60,7 @@ namespace SizerDataCollector.Core.Sizer
 				["machine_cupfill"] = client => client.GetMachineCupfill(),
 				["machine_tph"] = client => client.GetMachineTonnesPH(),
 				["outlets_details"] = client => client.GetOutlets(),
+				["outlets_fpm"] = client => client.GetOutletsFPM(),
 
 				// Additional endpoints available from the service (not all used in DB today)
 				["machine_reject_fpm"] = client => client.GetMachineRejectFPM(),
@@ -148,6 +161,37 @@ namespace SizerDataCollector.Core.Sizer
 
 			var json = JsonConvert.SerializeObject(payload, Formatting.None);
 			Logger.Log($"Fetched metric '{logicalMetricName}'. Payload size: {json.Length} characters.");
+			return json;
+		}
+
+		public async Task<string> GetActiveVarietyJsonAsync(CancellationToken cancellationToken)
+		{
+			Logger.Log("Requesting active variety from Sizer...");
+			var variety = await InvokeAsync(
+				client => client.GetActiveVariety(),
+				"GetActiveVariety",
+				cancellationToken).ConfigureAwait(false);
+
+			var json = JsonConvert.SerializeObject(variety, Formatting.None);
+			Logger.Log($"Fetched active variety. Payload size: {json.Length} characters.");
+			return json;
+		}
+
+		public async Task<string> GetActiveLayoutJsonAsync(Guid varietyId, CancellationToken cancellationToken)
+		{
+			if (varietyId == Guid.Empty)
+			{
+				throw new ArgumentException("Variety ID must be a non-empty GUID.", nameof(varietyId));
+			}
+
+			Logger.Log($"Requesting active layout for variety {varietyId}...");
+			var layout = await InvokeAsync(
+				client => client.GetActiveLayout(varietyId),
+				"GetActiveLayout",
+				cancellationToken).ConfigureAwait(false);
+
+			var json = JsonConvert.SerializeObject(layout, Formatting.None);
+			Logger.Log($"Fetched active layout. Payload size: {json.Length} characters.");
 			return json;
 		}
 
@@ -307,7 +351,11 @@ namespace SizerDataCollector.Core.Sizer
 				BatchId = batchId,
 				GrowerCode = batch.GrowerCode,
 				StartTime = ToDateTimeOffset(batch.StartTime),
-				Comments = CollapseComments(batch.Comments)
+				Comments = CollapseComments(batch.Comments),
+				VarietyId = batch.VarietyId,
+				VarietyName = batch.VarietyName,
+				LayoutId = batch.LayoutId,
+				LayoutName = batch.LayoutName
 			};
 		}
 

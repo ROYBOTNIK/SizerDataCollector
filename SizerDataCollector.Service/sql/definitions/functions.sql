@@ -875,3 +875,38 @@ AS $_$
             '\.(\d+(?:\.\d+)?)\s*$'
         ))[1]::DOUBLE PRECISION;
 $_$;
+
+
+-- public.latest_product_setup(p_serial, p_ts) — V001
+-- Returns the most recent product_setup metric row at or before p_ts for a serial.
+-- The product_setup metric is emitted by ProductSetupTracker only when the active
+-- variety/layout/assignments actually change, so its 'ts' represents the start
+-- timestamp of the current setup era.
+CREATE OR REPLACE FUNCTION public.latest_product_setup(p_serial text, p_ts timestamptz)
+RETURNS TABLE (
+    setup_ts        timestamptz,
+    serial_no       text,
+    batch_record_id bigint,
+    variety_id      uuid,
+    variety_name    text,
+    layout_id       uuid,
+    layout_name     text,
+    payload         jsonb
+)
+LANGUAGE sql STABLE
+AS $$
+    SELECT m.ts AS setup_ts,
+           m.serial_no,
+           m.batch_record_id,
+           NULLIF(m.value_json ->> 'variety_id', '')::uuid AS variety_id,
+           m.value_json ->> 'variety_name' AS variety_name,
+           NULLIF(m.value_json ->> 'layout_id', '')::uuid AS layout_id,
+           m.value_json ->> 'layout_name' AS layout_name,
+           m.value_json AS payload
+    FROM public.metrics m
+    WHERE m.metric = 'product_setup'
+      AND m.serial_no = p_serial
+      AND m.ts <= p_ts
+    ORDER BY m.ts DESC
+    LIMIT 1;
+$$;

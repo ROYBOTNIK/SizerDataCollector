@@ -1653,3 +1653,96 @@ SELECT minute_ts,
        tph,
        public.calc_perf_ratio(total_fpm, missed_fpm, combined_recycle_fpm, public.get_target_throughput()) AS throughput_ratio
 FROM public.cagg_throughput_minute;
+
+
+-- ============================================================================
+-- Product setup views (V001)
+--
+-- Source data:
+--   public.metrics where metric = 'product_setup'
+--     value_json envelope from ProductSetupTracker:
+--       variety_id, variety_name, layout_id, layout_name,
+--       captured_at, trigger, assignments {outlet_id -> {...}}, products[]
+--   public.metrics where metric = 'outlets_details'
+--     value_json is an array of Outlet objects:
+--       Id, Name, Status, CurrentProductId, PendingProductId,
+--       DeliveredFruitPerMinute, MaxRateSquareCMPerMinute, LastDeliveredBatchId
+-- ============================================================================
+
+-- v_product_setup_history: one row per setup change with summary fields.
+DROP VIEW IF EXISTS public.v_product_setup_history;
+CREATE VIEW public.v_product_setup_history AS
+SELECT m.ts AS setup_ts,
+       m.serial_no,
+       m.batch_record_id,
+       NULLIF(m.value_json ->> 'variety_id', '')::uuid AS variety_id,
+       m.value_json ->> 'variety_name' AS variety_name,
+       NULLIF(m.value_json ->> 'layout_id', '')::uuid AS layout_id,
+       m.value_json ->> 'layout_name' AS layout_name,
+       m.value_json ->> 'trigger' AS trigger,
+       jsonb_array_length(COALESCE(m.value_json -> 'products', '[]'::jsonb)) AS product_count,
+       (SELECT count(*) FROM jsonb_each(COALESCE(m.value_json -> 'assignments', '{}'::jsonb))) AS assignment_count,
+       lead(m.ts) OVER (PARTITION BY m.serial_no ORDER BY m.ts) AS next_setup_ts
+FROM public.metrics m
+WHERE m.metric = 'product_setup'
+ORDER BY m.serial_no, m.ts;
+
+
+-- v_outlet_product_detail: explodes the latest outlets_details snapshot per
+-- (serial_no, ts) and joins it to the active product_setup so each outlet
+-- carries product name, elements (grade/size/quality), pack info, and a flag
+-- when DeliveredFruitPerMinute exceeds MaxRateSquareCMPerMinute.
+DROP VIEW IF EXISTS public.v_outlet_product_detail;
+CREATE VIEW public.v_outlet_product_detail AS
+WITH outlets AS (
+    SELECT m.ts,
+           m.serial_no,
+           m.batch_record_id,
+           (elem.value ->> 'Id')::int AS outlet_id,
+           elem.value ->> 'Name' AS outlet_name,
+           elem.value ->> 'Status' AS outlet_status,
+           NULLIF(elem.value ->> 'CurrentProductId', '00000000-0000-0000-0000-000000000000')::uuid AS current_product_id,
+           NULLIF(elem.value ->> 'PendingProductId', '00000000-0000-0000-0000-000000000000')::uuid AS pending_product_id,
+           (elem.value ->> 'DeliveredFruitPerMinute')::double precision AS delivered_fpm,
+           (elem.value ->> 'MaxRateSquareCMPerMinute')::double precision AS max_rate_sqcm_per_min,
+           (elem.value ->> 'LastDeliveredBatchId')::int AS last_delivered_batch_id
+    FROM public.metrics m
+    CROSS JOIN LATERAL jsonb_array_elements(m.value_json) elem(value)
+    WHERE m.metric = 'outlets_details'
+      AND jsonb_typeof(m.value_json) = 'array'
+)
+SELECT o.ts,
+       o.serial_no,
+       o.batch_record_id,
+       o.outlet_id,
+       o.outlet_name,
+       o.outlet_status,
+       o.current_product_id,
+       o.pending_product_id,
+       o.delivered_fpm,
+       o.max_rate_sqcm_per_min,
+       o.last_delivered_batch_id,
+       s.setup_ts,
+       s.variety_id,
+       s.variety_name,
+       s.layout_id,
+       s.layout_name,
+       -- Pull the per-outlet assignment entry from the active product_setup snapshot.
+       s.payload -> 'assignments' -> (o.outlet_id::text) AS assignment_entry,
+       (s.payload -> 'assignments' -> (o.outlet_id::text) ->> 'product_name') AS product_name,
+       (s.payload -> 'assignments' -> (o.outlet_id::text) ->> 'product_display_name') AS product_display_name,
+       (s.payload -> 'assignments' -> (o.outlet_id::text) ->> 'planned_product_id') AS planned_product_id,
+       (s.payload -> 'assignments' -> (o.outlet_id::text) -> 'elements') AS elements,
+       (s.payload -> 'assignments' -> (o.outlet_id::text) ->> 'pack_name') AS pack_name,
+       CASE
+           WHEN o.current_product_id IS NULL THEN NULL
+           WHEN (s.payload -> 'assignments' -> (o.outlet_id::text) ->> 'planned_product_id') IS NULL THEN NULL
+           ELSE o.current_product_id::text = (s.payload -> 'assignments' -> (o.outlet_id::text) ->> 'planned_product_id')
+       END AS matches_plan,
+       CASE
+           WHEN o.max_rate_sqcm_per_min IS NULL OR o.max_rate_sqcm_per_min <= 0 THEN NULL
+           WHEN o.delivered_fpm IS NULL THEN NULL
+           ELSE o.delivered_fpm > o.max_rate_sqcm_per_min
+       END AS fpm_exceeds_max
+FROM outlets o
+LEFT JOIN LATERAL public.latest_product_setup(o.serial_no, o.ts) s ON true;

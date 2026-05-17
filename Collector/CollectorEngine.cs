@@ -20,6 +20,7 @@ namespace SizerDataCollector.Core.Collector
 		private readonly ISizerClient _sizerClient;
 		private readonly AnomalyDetector _anomalyDetector;
 		private readonly IAlarmSink _alarmSink;
+		private readonly ProductSetupTracker _productSetupTracker;
 
 		private long _previousBatchRecordId;
 
@@ -28,13 +29,15 @@ namespace SizerDataCollector.Core.Collector
 			ITimescaleRepository repository,
 			ISizerClient sizerClient,
 			AnomalyDetector anomalyDetector = null,
-			IAlarmSink alarmSink = null)
+			IAlarmSink alarmSink = null,
+			ProductSetupTracker productSetupTracker = null)
 		{
 			_config = config ?? throw new ArgumentNullException(nameof(config));
 			_repository = repository ?? throw new ArgumentNullException(nameof(repository));
 			_sizerClient = sizerClient ?? throw new ArgumentNullException(nameof(sizerClient));
 			_anomalyDetector = anomalyDetector;
 			_alarmSink = alarmSink;
+			_productSetupTracker = productSetupTracker;
 		}
 
 		public async Task RunSinglePollAsync(CollectorStatus status, CancellationToken cancellationToken)
@@ -215,6 +218,8 @@ namespace SizerDataCollector.Core.Collector
 				throw;
 			}
 
+			await RunProductSetupTrackingAsync(metricRows, serialNo, batchRecordId, batchInfo, cancellationToken).ConfigureAwait(false);
+
 			await RunAnomalyDetectionAsync(metricRows, serialNo, batchRecordId, cancellationToken).ConfigureAwait(false);
 
 			lock (status.SyncRoot)
@@ -222,6 +227,37 @@ namespace SizerDataCollector.Core.Collector
 				status.LastSuccessUtc = DateTime.UtcNow;
 				status.LastPollCompletedUtc = DateTime.UtcNow;
 				status.LastErrorMessage = null;
+			}
+		}
+
+		private async Task RunProductSetupTrackingAsync(
+			List<MetricRow> metricRows,
+			string serialNo,
+			long batchRecordId,
+			CurrentBatchInfo batchInfo,
+			CancellationToken cancellationToken)
+		{
+			if (_productSetupTracker == null) return;
+
+			var outletsRow = metricRows.FirstOrDefault(
+				r => string.Equals(r.MetricName, "outlets_details", StringComparison.OrdinalIgnoreCase));
+			var outletsJson = outletsRow?.JsonPayload;
+
+			try
+			{
+				var setupRow = await _productSetupTracker.CheckAndRefreshAsync(
+					_sizerClient, serialNo, batchRecordId, batchInfo, outletsJson, cancellationToken)
+					.ConfigureAwait(false);
+
+				if (setupRow != null)
+				{
+					await _repository.InsertMetricsAsync(new[] { setupRow }, cancellationToken).ConfigureAwait(false);
+					Logger.Log($"Inserted product_setup row for serial '{serialNo}', batch_record_id={batchRecordId}.");
+				}
+			}
+			catch (Exception ex) when (!(ex is OperationCanceledException))
+			{
+				Logger.Log("Product setup tracking cycle failed (non-fatal).", ex, LogLevel.Warn);
 			}
 		}
 

@@ -181,7 +181,8 @@ namespace SizerDataCollector.Service
 								: "Anomaly detection enabled (Sizer alarm delivery OFF).");
 						}
 
-						var engine = new CollectorEngine(config, repository, sizerClient, anomalyDetector, alarmSink);
+						var productSetupTracker = new ProductSetupTracker();
+						var engine = new CollectorEngine(config, repository, sizerClient, anomalyDetector, alarmSink, productSetupTracker);
 						var runner = new CollectorRunner(config, engine, _status, _heartbeatWriter);
 
 						Task sizeTask = Task.CompletedTask;

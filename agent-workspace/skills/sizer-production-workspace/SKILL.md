@@ -14,10 +14,11 @@ Use this skill to operate the repo-local Model Workspace Protocol under `agent-w
 1. Read `agent-workspace/AGENTS.md`, then `agent-workspace/CONTEXT.md`.
 2. Read `agent-workspace/state/next-agent-context.md`.
 3. Pick the stage from `agent-workspace/stages/*/CONTEXT.md`.
-4. Load only the stage inputs listed there plus the backlog item being worked.
-5. For every decision, include a `do nothing` option and choose it when the change does not improve the goal.
-6. Stand in for human approval only when the approval rubric passes and protected actions are not involved.
-7. Write or update the smallest required artifact, run the stage's validation command, then refresh `state/next-agent-context.md`.
+4. Use autoreasoning to pick `A = no work`, `B = one item`, or `AB = 2-3 related items`.
+5. Load only the stage inputs listed there plus the chosen item or workset.
+6. For every decision, include a `do nothing` option and choose it when the change does not improve the goal.
+7. Stand in for human approval only when the approval rubric passes and protected actions are not involved.
+8. Work sequentially, run the stage's validation command after each item, then refresh `state/next-agent-context.md`.
 
 ## Approval Rubric
 
@@ -34,6 +35,7 @@ Require human approval for deployment, credential changes, destructive data chan
 ## Resource Sizing
 
 - One inbox note, doc change, or single-file fix: one agent, no subagents.
+- Related workset: up to 3 items when they share files, checks, risk, and direction.
 - Cross-cutting C#/SQL behavior: inspect callers first, run tests, use a review pass before release.
 - Unclear or high-risk work: create a plan artifact in `agent-workspace/backlog/items/`, then stop before protected actions.
 - Use Codex goals only when the user explicitly asks for a goal or the active environment requires it.

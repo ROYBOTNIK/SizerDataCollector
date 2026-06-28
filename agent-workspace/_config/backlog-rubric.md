@@ -11,6 +11,7 @@ Each item in `backlog/items/` should include:
 - `Acceptance checks`: build, tests, docs, SQL dry-run, manual approval, or reason no check applies.
 - `Protected action`: yes/no.
 - `Decision`: do nothing, minimal change, broader change.
+- `Workset`: none, or the related backlog item IDs selected for the same tick.
 
 ## Priority
 
@@ -29,5 +30,6 @@ Auto-approve when:
 - Acceptance checks passed.
 - The diff is scoped to the item.
 - `A = do nothing` was considered and lost for a concrete reason.
+- If part of a workset, every item shares files/checks/risk and was completed sequentially.
 
 Otherwise mark blocked and state the missing human decision.

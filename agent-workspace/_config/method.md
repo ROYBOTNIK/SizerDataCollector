@@ -25,6 +25,14 @@ Approval stand-in:
 - Prefer `B` when it satisfies the item and keeps risk low.
 - Prefer `AB` only when two related changes must ship together to avoid a broken state.
 
+Workset selection:
+
+- Compare `A = no work this tick`, `B = one highest-ready item`, and `AB = a related workset`.
+- Pick `AB` only when items share subsystem, touched files, checks, release risk, and implementation direction.
+- Cap `AB` at 3 backlog items unless the user explicitly asks for a larger batch.
+- Execute `AB` sequentially and update `state/next-agent-context.md` after each item.
+- Stop the workset when any check fails, protected action appears, acceptance criteria are unclear, or context would become broad.
+
 Sources:
 
 - Local PDF: `C:\Users\RoydonAdlam\Documents\Service-Scope-Quoting-Workspace\workspace-inspiration\Interpretable_Context_Methdology_.pdf`

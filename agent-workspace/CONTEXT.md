@@ -13,8 +13,11 @@ Purpose: turn rough notes and repo findings into production-ready SizerDataColle
 | `05_review` | Build/test/review and decide approve, revise, or do nothing. | `stages/05_review/output/*.md` |
 | `06_release` | Prepare commit, push, merge, and follow-up branch/worktree. | `stages/06_release/output/*.md` |
 
+Every stage also updates `state/next-agent-context.md` before ending.
+
 ## Shared References
 
+- `state/next-agent-context.md` is the first file to read after `AGENTS.md` and `CONTEXT.md`.
 - `_config/method.md` explains how ICM, autoresearch, and autoreason are adapted here.
 - `_config/backlog-rubric.md` defines backlog shape and approval gates.
 - `_config/repo-inventory.md` is the current stocktake.

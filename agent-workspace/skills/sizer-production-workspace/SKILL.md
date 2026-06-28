@@ -12,11 +12,12 @@ Use this skill to operate the repo-local Model Workspace Protocol under `agent-w
 ## Workflow
 
 1. Read `agent-workspace/AGENTS.md`, then `agent-workspace/CONTEXT.md`.
-2. Pick the stage from `agent-workspace/stages/*/CONTEXT.md`.
-3. Load only the stage inputs listed there plus the backlog item being worked.
-4. For every decision, include a `do nothing` option and choose it when the change does not improve the goal.
-5. Stand in for human approval only when the approval rubric passes and protected actions are not involved.
-6. Write or update the smallest required artifact, then run the stage's validation command.
+2. Read `agent-workspace/state/next-agent-context.md`.
+3. Pick the stage from `agent-workspace/stages/*/CONTEXT.md`.
+4. Load only the stage inputs listed there plus the backlog item being worked.
+5. For every decision, include a `do nothing` option and choose it when the change does not improve the goal.
+6. Stand in for human approval only when the approval rubric passes and protected actions are not involved.
+7. Write or update the smallest required artifact, run the stage's validation command, then refresh `state/next-agent-context.md`.
 
 ## Approval Rubric
 
@@ -42,3 +43,4 @@ Require human approval for deployment, credential changes, destructive data chan
 - `agent-workspace/_config/method.md`: ICM, autoresearch, and autoreason adaptation.
 - `agent-workspace/_config/repo-inventory.md`: current stocktake and risk list.
 - `agent-workspace/_config/backlog-rubric.md`: backlog item format and scoring.
+- `agent-workspace/state/next-agent-context.md`: compact handoff for the next tick.

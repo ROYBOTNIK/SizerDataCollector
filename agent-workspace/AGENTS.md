@@ -10,6 +10,7 @@ Rules:
 - Prefer existing repo patterns, .NET Framework 4.8 compatibility, and existing CLI/SQL workflows.
 - Do not touch production services, production databases, credentials, or destructive SQL without explicit human approval.
 - Every non-trivial code change needs the smallest runnable check that would catch a regression.
+- End every tick by updating `state/next-agent-context.md` with the current item, decisions, touched files, checks, and next action.
 
 Default loop:
 
@@ -17,4 +18,5 @@ Default loop:
 2. Select the highest-ready backlog item.
 3. Execute the smallest useful change.
 4. Review against `_config/backlog-rubric.md`.
-5. Stage release notes only when tests and approval gates pass.
+5. Update `state/next-agent-context.md`.
+6. Stage release notes only when tests and approval gates pass.

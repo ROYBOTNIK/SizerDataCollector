@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sizer Production Workspace"
+  short_description: "Orchestrate SizerDataCollector production work"
+  default_prompt: "Use $sizer-production-workspace to turn inbox notes into reviewed production-ready SizerDataCollector changes."

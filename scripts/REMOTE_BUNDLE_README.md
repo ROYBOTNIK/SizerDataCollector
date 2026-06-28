@@ -14,6 +14,22 @@ Optional (initialize/update DB schema after install):
 .\install-from-bundle.ps1 -RunDbInit
 ```
 
+After upgrading, apply new SQL definitions (product setup views):
+
+```powershell
+& "C:\Program Files (x86)\OPTI-FRESH\CollectorAgent\service\SizerDataCollector.Service.exe" db apply-functions
+& "C:\Program Files (x86)\OPTI-FRESH\CollectorAgent\service\SizerDataCollector.Service.exe" db apply-views
+```
+
+Restart the Windows service after replacing binaries.
+
+## What changed in v16 (vs v15)
+
+- **Product setup tracking** — The collector now captures active variety, layout, and outlet-to-product assignments when the setup changes (first run, variety/layout change from batch context, or unknown product ID at an outlet). Snapshots are stored as `metric = 'product_setup'` in `public.metrics` (not polled on a timer; no config entry needed).
+- **Per-outlet throughput** — `outlets_fpm` is included in default `EnabledMetrics` (lightweight `GetOutletsFPM()` array). Existing installs with a custom `EnabledMetrics` list should add `"outlets_fpm"` alongside `"outlets_details"`.
+- **Batch context** — Current batch now carries `VarietyId`, `VarietyName`, `LayoutId`, and `LayoutName` for change detection.
+- **Reporting** — New `public.latest_product_setup(serial, ts)`, `public.v_product_setup_history`, and `public.v_outlet_product_detail` (product name, elements, `matches_plan`, `fpm_exceeds_max`). See `MD-DOCS/PRODUCT_SETUP_WORKFLOW.md`.
+
 ## What changed in v13 (vs v12)
 
 - **Lot transition throughput** — Events now carry **stable**, **peak**, and optional **target** baselines (FPM-minutes shortfall, loss ratio, equivalent lost minutes). The default operator-facing impact is the **stable pre-transition** baseline; legacy peak-based numbers remain for comparison. New columns are added on `oee.lot_transition_throughput_events` (existing installs: run **`db apply-schema`** / **`db init`** as you usually would). Rescans are idempotent on `(serial_no, incoming_batch_record_id)`.

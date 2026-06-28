@@ -62,7 +62,7 @@ Test packages:
 
 - Resolved 2026-06-28: sample connection strings in `App.config` and `README.md` now use placeholders instead of a real-looking password.
 - P1: CLI command code uses synchronous `.GetAwaiter().GetResult()` wrappers. This is acceptable for a console boundary but should be reviewed per command for cancellation, timeout, and user-facing error behavior.
-- P1: `Npgsql` and compatibility package currency needs a vulnerability and compatibility audit for net48. `dotnet list package --vulnerable --include-transitive` stops on the production `packages.config` projects, so the scanner path itself needs fixing or a NuGet CLI fallback.
+- Resolved 2026-06-28: `scripts/audit-packages-config-vulnerabilities.ps1` audits production `packages.config` files against NuGet's official vulnerability feed. Current run found no vulnerable listed packages.
 - P1: `master` is behind the current feature branch and has one commit not in this branch. Merge requires a real conflict check.
 - P2: `MD-DOCS/DESIGN.md` still describes an older CLI direction and should be reconciled with the current service-first CLI.
 - P2: `docs/delivery/` is ignored by git and not part of the production workspace until deliberately promoted.

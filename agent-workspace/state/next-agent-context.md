@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-28
 Active item: none
-Status: documentation reality audit completed
+Status: install script preflight gap completed
 
 ## Read First
 
@@ -15,25 +15,23 @@ Status: documentation reality audit completed
 
 - Every tick must rewrite this file before ending.
 - The orchestrator may choose `A = no work`, `B = one item`, or `AB = 2-3 related items`.
-- `0005` is done. README and remote bundle docs now match current solution/DB commands.
-- `0006` tracks the unsupported `scripts/install-production.ps1` `preflight` call.
+- `0006` is done. `install-production.ps1` preflight now calls `SizerDataCollector.Service.exe show-config`.
+- `show-config` is intentionally light; API/DB checks still need explicit approved targets.
 - Stop before production services, production DB writes, credentials, generated WCF from unverified endpoints, or customer-facing compatibility claims.
 
 ## Touched Files
 
-- `README.md`
-- `scripts/REMOTE_BUNDLE_README.md`
-- `agent-workspace/backlog/items/0005-documentation-reality-audit.md`
+- `scripts/install-production.ps1`
 - `agent-workspace/backlog/items/0006-install-script-preflight-command-gap.md`
-- `agent-workspace/stages/05_review/output/0005-documentation-reality-audit-review.md`
+- `agent-workspace/stages/05_review/output/0006-install-script-preflight-command-gap-review.md`
 - `agent-workspace/state/next-agent-context.md`
 
 ## Checks
 
+- PowerShell parser check passed for `scripts/install-production.ps1`.
+- Unsupported preflight-command search returned no matches.
 - `git diff --check` passed; only CRLF normalization warnings.
-- Stale-command search found no live `db apply-schema` docs outside backlog/review history.
-- `dotnet test SizerDataCollector.sln --no-restore` passed, 30 tests.
 
 ## Next Action
 
-Process `0006` install script preflight gap, or add the first implementation item from the .NET migration plan.
+Add the first implementation item from the .NET migration plan, or refresh stocktake if no ready item exists.

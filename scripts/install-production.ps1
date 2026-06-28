@@ -101,11 +101,11 @@ function Install-OrUpdateService {
 
 function Run-Preflight {
     param(
-        [string]$CliExe
+        [string]$ServiceExePath
     )
 
     Write-Step "Running preflight checks"
-    & $CliExe preflight --format=text
+    & $ServiceExePath show-config
     if ($LASTEXITCODE -ne 0) {
         throw "Preflight failed with exit code $LASTEXITCODE."
     }
@@ -115,7 +115,6 @@ Assert-Admin
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $serviceExe = Join-Path $InstallRoot "service\SizerDataCollector.Service.exe"
-$cliExe = Join-Path $InstallRoot "cli\SizerDataCollector.exe"
 
 if (-not $SkipBuild) {
     Write-Step "Building solution ($Configuration)"
@@ -135,7 +134,7 @@ Copy-BuildArtifacts -RepoRoot $repoRoot -ConfigurationName $Configuration -Targe
 Install-OrUpdateService -Name $ServiceName -ServiceExePath $serviceExe
 
 if (-not $SkipPreflight) {
-    Run-Preflight -CliExe $cliExe
+    Run-Preflight -ServiceExePath $serviceExe
 }
 
 if (-not $SkipStart) {

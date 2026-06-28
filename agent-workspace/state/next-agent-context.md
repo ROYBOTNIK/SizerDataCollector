@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-28
 Active item: none
-Status: package audit completed
+Status: .NET 10 migration plan completed
 
 ## Read First
 
@@ -15,22 +15,21 @@ Status: package audit completed
 
 - Every tick must rewrite this file before ending.
 - The orchestrator may choose `A = no work`, `B = one item`, or `AB = 2-3 related items`.
-- New docs audit request became backlog item `0005`.
-- Package audit item `0004` is done with `scripts/audit-packages-config-vulnerabilities.ps1`.
+- `0003` is done. The chosen path is SDK-style `net48` first, then `net10.0-windows`.
+- Stop before production services, production DB writes, credentials, generated WCF from unverified endpoints, or customer-facing compatibility claims.
 
 ## Touched Files
 
-- `scripts/audit-packages-config-vulnerabilities.ps1`
-- `agent-workspace/backlog/items/0004-package-vulnerability-audit-for-packages-config.md`
-- `agent-workspace/backlog/items/0005-documentation-reality-audit.md`
-- `agent-workspace/stages/05_review/output/0004-package-vulnerability-audit-review.md`
+- `agent-workspace/backlog/items/0003-plan-dotnet-10-migration.md`
+- `agent-workspace/stages/03_plan/output/0003-plan-dotnet-10-migration.md`
+- `agent-workspace/stages/05_review/output/0003-plan-dotnet-10-migration-review.md`
 - `agent-workspace/state/next-agent-context.md`
 
 ## Checks
 
-- Package audit script passed; no vulnerable listed packages.
+- `git diff --check` passed; only CRLF normalization warnings.
 - `dotnet test SizerDataCollector.sln --no-restore` passed, 30 tests.
 
 ## Next Action
 
-Process `0003` .NET 10 migration plan or `0005` documentation reality audit.
+Process `0005` documentation reality audit, or add the first implementation item from the .NET migration plan.

@@ -1,6 +1,6 @@
 # Plan .NET 10 Migration
 
-Status: ready
+Status: done
 Priority: P1
 Source: inbox note `Remove-WPF-GUI.md`
 Goal: produce a migration plan for moving the collector from .NET Framework 4.8 to .NET 10 without breaking Windows service, WCF/Compac integration, installer, or deployment scripts.
@@ -21,3 +21,9 @@ Goal: produce a migration plan for moving the collector from .NET Framework 4.8 
 
 Protected action: no
 Decision: minimal change means planning first, not a broad runtime rewrite in an automation tick.
+
+## Work Done
+
+- Added `agent-workspace/stages/03_plan/output/0003-plan-dotnet-10-migration.md`.
+- Chose staged SDK-style `net48` first, then `net10.0-windows`.
+- Named WCF, Windows service installer, deployment script, package, runtime, and customer-machine validation gates.

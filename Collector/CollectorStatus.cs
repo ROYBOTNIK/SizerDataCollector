@@ -6,8 +6,6 @@ namespace SizerDataCollector.Core.Collector
 	{
 		private readonly object _syncRoot = new object();
 
-		public DateTime? LastPollStartUtc { get; set; }
-		public DateTime? LastPollEndUtc { get; set; }
 		public string LastPollError { get; set; }
 		public long TotalPollsStarted { get; set; }
 		public long TotalPollsSucceeded { get; set; }
@@ -34,8 +32,6 @@ namespace SizerDataCollector.Core.Collector
 			{
 				return new CollectorStatusSnapshot
 				{
-					LastPollStartUtc = LastPollStartUtc,
-					LastPollEndUtc = LastPollEndUtc,
 					LastPollError = LastPollError,
 					TotalPollsStarted = TotalPollsStarted,
 					TotalPollsSucceeded = TotalPollsSucceeded,
@@ -60,8 +56,6 @@ namespace SizerDataCollector.Core.Collector
 
 	public sealed class CollectorStatusSnapshot
 	{
-		public DateTime? LastPollStartUtc { get; set; }
-		public DateTime? LastPollEndUtc { get; set; }
 		public string LastPollError { get; set; }
 		public long TotalPollsStarted { get; set; }
 		public long TotalPollsSucceeded { get; set; }

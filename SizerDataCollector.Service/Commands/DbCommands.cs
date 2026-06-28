@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using Npgsql;
 using SizerDataCollector.Core.Config;
@@ -10,6 +12,16 @@ namespace SizerDataCollector.Service.Commands
 {
 	internal static class DbCommands
 	{
+		/// <summary>
+		/// Retired objects that may still exist on older databases. They are not defined by
+		/// sql/definitions and are omitted from list-caggs / list-views unless --include-legacy is passed.
+		/// </summary>
+		private const string LegacyCaggExcludeNote =
+			"Legacy public.cagg_lane_grade_minute omitted (not in canonical continuous_aggregates.sql). Use --include-legacy to list it.";
+
+		private const string LegacyViewExcludeNote =
+			"Legacy public views omitted: cagg_lane_grade_minute (CAGG facade), v_quality_minute_filled (old join to that CAGG). Use --include-legacy to list them.";
+
 		public static int Run(string[] args)
 		{
 			var subCommand = args.Length > 0
@@ -36,13 +48,13 @@ namespace SizerDataCollector.Service.Commands
 				case "list-functions":
 					return ListFunctions();
 				case "list-views":
-					return ListViews();
+					return ListViews(args.Skip(1).ToArray());
 				case "list-caggs":
-					return ListCaggs();
+					return ListCaggs(args.Skip(1).ToArray());
 				default:
 					Console.WriteLine("Usage: SizerDataCollector.Service.exe db <command>");
 					Console.WriteLine("Commands: status, init, apply-functions, apply-caggs, apply-views, apply-all,");
-					Console.WriteLine("          list-functions, list-views, list-caggs");
+					Console.WriteLine("          list-functions, list-views [--include-legacy], list-caggs [--include-legacy]");
 					return 1;
 			}
 		}
@@ -55,15 +67,20 @@ namespace SizerDataCollector.Service.Commands
 			Console.WriteLine("Checking database health...");
 			var introspector = new DbIntrospector(config.TimescaleConnectionString);
 			var report = introspector.RunAsync(CancellationToken.None).GetAwaiter().GetResult();
+			var canInspectDetails = report.CanConnect && report.Exception == null;
 
 			Console.WriteLine();
 			Console.WriteLine($"  Database:       {report.DatabaseName ?? "(unknown)"}");
 			Console.WriteLine($"  Can connect:    {report.CanConnect}");
-			Console.WriteLine($"  TimescaleDB:    {(report.TimescaleInstalled ? report.TimescaleVersion : "NOT INSTALLED")}");
-			Console.WriteLine($"  Migrations:     {report.AppliedMigrationsCount} applied");
+			Console.WriteLine($"  TimescaleDB:    {(canInspectDetails ? (report.TimescaleInstalled ? report.TimescaleVersion : "NOT INSTALLED") : "UNKNOWN (connection failed)")}");
+			Console.WriteLine($"  Migrations:     {(canInspectDetails ? report.AppliedMigrationsCount + " applied" : "UNKNOWN (connection failed)")}");
 			Console.WriteLine();
 
-			if (report.MissingTables.Count > 0)
+			if (!canInspectDetails)
+			{
+				Console.WriteLine("  Tables:         UNKNOWN (connection failed)");
+			}
+			else if (report.MissingTables.Count > 0)
 			{
 				Console.WriteLine($"  Missing tables ({report.MissingTables.Count}):");
 				foreach (var t in report.MissingTables) Console.WriteLine($"    - {t}");
@@ -73,7 +90,11 @@ namespace SizerDataCollector.Service.Commands
 				Console.WriteLine("  Tables:         OK");
 			}
 
-			if (report.MissingFunctions.Count > 0)
+			if (!canInspectDetails)
+			{
+				Console.WriteLine("  Functions:      UNKNOWN (connection failed)");
+			}
+			else if (report.MissingFunctions.Count > 0)
 			{
 				Console.WriteLine($"  Missing functions ({report.MissingFunctions.Count}):");
 				foreach (var f in report.MissingFunctions) Console.WriteLine($"    - {f}");
@@ -83,7 +104,11 @@ namespace SizerDataCollector.Service.Commands
 				Console.WriteLine("  Functions:      OK");
 			}
 
-			if (report.MissingContinuousAggregates.Count > 0)
+			if (!canInspectDetails)
+			{
+				Console.WriteLine("  CAGGs:          UNKNOWN (connection failed)");
+			}
+			else if (report.MissingContinuousAggregates.Count > 0)
 			{
 				Console.WriteLine($"  Missing CAGGs ({report.MissingContinuousAggregates.Count}):");
 				foreach (var c in report.MissingContinuousAggregates) Console.WriteLine($"    - {c}");
@@ -93,7 +118,11 @@ namespace SizerDataCollector.Service.Commands
 				Console.WriteLine($"  CAGGs:          OK ({report.ContinuousAggregateCount} total)");
 			}
 
-			if (report.MissingPolicies.Count > 0)
+			if (!canInspectDetails)
+			{
+				Console.WriteLine("  Refresh policies: UNKNOWN (connection failed)");
+			}
+			else if (report.MissingPolicies.Count > 0)
 			{
 				Console.WriteLine($"  Missing policies ({report.MissingPolicies.Count}):");
 				foreach (var p in report.MissingPolicies) Console.WriteLine($"    - {p}");
@@ -104,12 +133,12 @@ namespace SizerDataCollector.Service.Commands
 			}
 
 			Console.WriteLine();
-			Console.WriteLine($"  Thresholds rows:  {report.MachineThresholdsCount}");
-			Console.WriteLine($"  Band definitions: {report.BandDefinitionsCount}");
-			Console.WriteLine($"  Shift calendar:   {report.ShiftCalendarCount}");
-			Console.WriteLine($"  Discovery snaps:  {report.DiscoverySnapshotCount}");
+			Console.WriteLine($"  Thresholds rows:  {(canInspectDetails ? report.MachineThresholdsCount.ToString() : "UNKNOWN (connection failed)")}");
+			Console.WriteLine($"  Band definitions: {(canInspectDetails ? report.BandDefinitionsCount.ToString() : "UNKNOWN (connection failed)")}");
+			Console.WriteLine($"  Shift calendar:   {(canInspectDetails ? report.ShiftCalendarCount.ToString() : "UNKNOWN (connection failed)")}");
+			Console.WriteLine($"  Discovery snaps:  {(canInspectDetails ? report.DiscoverySnapshotCount.ToString() : "UNKNOWN (connection failed)")}");
 
-			if (report.LatestDiscoveryAt.HasValue)
+			if (canInspectDetails && report.LatestDiscoveryAt.HasValue)
 			{
 				Console.WriteLine($"  Latest discovery: {report.LatestDiscoveryAt.Value:u}");
 			}
@@ -120,9 +149,34 @@ namespace SizerDataCollector.Service.Commands
 			{
 				Console.WriteLine($"  ERROR: {report.Error}");
 			}
+			if (report.Exception != null)
+			{
+				Console.WriteLine("  Exception chain:");
+				Console.WriteLine(FormatExceptionChain(report.Exception));
+			}
 
 			Console.WriteLine(report.Healthy ? "  Overall: HEALTHY" : "  Overall: UNHEALTHY");
 			return report.Healthy ? 0 : 1;
+		}
+
+		private static string FormatExceptionChain(Exception exception)
+		{
+			var sb = new StringBuilder();
+			var depth = 0;
+			var current = exception;
+			while (current != null)
+			{
+				sb.Append("    ");
+				sb.Append(depth + 1);
+				sb.Append(". ");
+				sb.Append(current.GetType().FullName);
+				sb.Append(": ");
+				sb.AppendLine(current.Message);
+				current = current.InnerException;
+				depth++;
+			}
+
+			return sb.ToString().TrimEnd();
 		}
 
 		private static int Init()
@@ -221,40 +275,67 @@ ORDER BY n.nspname, p.proname;";
 			});
 		}
 
-		private static int ListViews()
+		private static int ListViews(string[] tailArgs)
 		{
 			var config = LoadConfig();
 			if (config == null) return 1;
 
-			const string sql = @"
+			var includeLegacy = tailArgs.Any(a => string.Equals(a, "--include-legacy", StringComparison.OrdinalIgnoreCase));
+
+			var legacyFilter = includeLegacy
+				? string.Empty
+				: @"  AND NOT (table_schema = 'public' AND table_name IN ('cagg_lane_grade_minute', 'v_quality_minute_filled'))
+";
+
+			var sql = $@"
 SELECT table_schema, table_name
 FROM information_schema.views
 WHERE table_schema IN ('oee', 'public')
   AND table_name NOT LIKE 'pg_%'
   AND table_name NOT LIKE 'information_%'
-ORDER BY table_schema, table_name;";
+{legacyFilter}ORDER BY table_schema, table_name;";
 
-			return RunQuery(config, sql, "Views", reader =>
+			var code = RunQuery(config, sql, "Views", reader =>
 			{
 				Console.WriteLine($"  {reader.GetString(0)}.{reader.GetString(1)}");
 			});
+
+			if (code == 0 && !includeLegacy)
+			{
+				Console.WriteLine(LegacyViewExcludeNote);
+			}
+
+			return code;
 		}
 
-		private static int ListCaggs()
+		private static int ListCaggs(string[] tailArgs)
 		{
 			var config = LoadConfig();
 			if (config == null) return 1;
 
-			const string sql = @"
+			var includeLegacy = tailArgs.Any(a => string.Equals(a, "--include-legacy", StringComparison.OrdinalIgnoreCase));
+
+			var legacyFilter = includeLegacy
+				? string.Empty
+				: "WHERE NOT (view_schema = 'public' AND view_name = 'cagg_lane_grade_minute')\n";
+
+			var sql = $@"
 SELECT view_schema, view_name,
        materialization_hypertable_schema || '.' || materialization_hypertable_name AS mat_table
 FROM timescaledb_information.continuous_aggregates
-ORDER BY view_schema, view_name;";
+{legacyFilter}ORDER BY view_schema, view_name;";
 
-			return RunQuery(config, sql, "Continuous Aggregates", reader =>
+			var code = RunQuery(config, sql, "Continuous Aggregates", reader =>
 			{
 				Console.WriteLine($"  {reader.GetString(0)}.{reader.GetString(1)}  (mat: {reader.GetString(2)})");
 			});
+
+			if (code == 0 && !includeLegacy)
+			{
+				Console.WriteLine(LegacyCaggExcludeNote);
+			}
+
+			return code;
 		}
 
 		private static int RunQuery(CollectorConfig config, string sql, string label, Action<NpgsqlDataReader> printRow)

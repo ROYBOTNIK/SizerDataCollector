@@ -17,7 +17,8 @@ SizerDataCollector is part of the **OPTI-FRESH OEE Suite**. It provides:
 - **`SizerDataCollector.Core`**: shared domain logic (config, DB access, OEE repositories, Sizer API client).
 - **`SizerDataCollector`**: legacy console probe.
 - **`SizerDataCollector.Setup`**: Visual Studio Installer project (vdproj; expected beside this repo when building installers).
-- **`SizerDataCollector.GUI.WPF`**: WPF UI (optional; not required for normal service operation).
+
+The **prototype / shipping build** is **`SizerDataCollector.sln`** only (console exe, Core, and Service). It does not include a unit-test project or the optional installer project in that solution file.
 
 ### Requirements
 
@@ -120,8 +121,10 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
   - `SizerDataCollector.Service.exe db apply-views`
   - `SizerDataCollector.Service.exe db apply-all`
   - `SizerDataCollector.Service.exe db list-functions`
-  - `SizerDataCollector.Service.exe db list-views`
-  - `SizerDataCollector.Service.exe db list-caggs`
+  - `SizerDataCollector.Service.exe db list-views`  
+    Optional `--include-legacy` lists retired `public.cagg_lane_grade_minute` and `public.v_quality_minute_filled` if they still exist.
+  - `SizerDataCollector.Service.exe db list-caggs`  
+    Optional `--include-legacy` lists retired `public.cagg_lane_grade_minute` if it still exists.
 
 - **Machine / OEE configuration**
   - `SizerDataCollector.Service.exe machine list`
@@ -138,9 +141,28 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
   - `SizerDataCollector.Service.exe machine set-quality-params --serial <sn> [--tgt-good <v>] [--tgt-peddler <v>] [--tgt-bad <v>] [--tgt-recycle <v>] [--w-good <v>] [--w-peddler <v>] [--w-bad <v>] [--w-recycle <v>] [--sig-k <v>]`
   - `SizerDataCollector.Service.exe machine show-perf-params --serial <sn>`
   - `SizerDataCollector.Service.exe machine set-perf-params --serial <sn> [--min-effective <v>] [--low-ratio <v>] [--cap-asymptote <v>]`
-  - `SizerDataCollector.Service.exe machine show-bands --serial <sn>`
-  - `SizerDataCollector.Service.exe machine set-band --serial <sn> --band <name> --lower <val> --upper <val>`
-  - `SizerDataCollector.Service.exe machine remove-band --serial <sn> --band <name>`
+  - `SizerDataCollector.Service.exe machine show-bands --serial <sn> [--metric <oee|throughput>]`
+  - `SizerDataCollector.Service.exe machine set-band --serial <sn> [--metric <oee|throughput>] --band <name> --lower <val> --upper <val>`
+  - `SizerDataCollector.Service.exe machine remove-band --serial <sn> [--metric <oee|throughput>] --band <name>`
+  - `SizerDataCollector.Service.exe machine tune-bands --serial <sn> --metric throughput [--history-days 7] [--apply]`
+
+Adaptive throughput banding is described in `ADAPTIVE_THROUGHPUT_BANDS.md`. External reports should use `oee.v_throughput_minute_classified` for target-zone timelines and throughput target maps.
+
+- **Anomaly reporting**
+  - `SizerDataCollector.Service.exe anomaly offenders --serial <sn> --type grade|size|both [--hours <h>]`
+  - `SizerDataCollector.Service.exe anomaly offenders --serial <sn> --from <date> --to <date> [--limit <n>]`
+  - Use this first to identify recurring lanes, grades, or size windows.
+  - Treat offender repeats as a recurrence signal, not a clean count of distinct failures.
+  - `SizerDataCollector.Service.exe anomaly impact --serial <sn> --type grade|size|both [--hours <h>]`
+  - `SizerDataCollector.Service.exe anomaly impact --serial <sn> --from <date> --to <date> [--limit <n>]`
+  - Use this second to determine whether the top anomaly events had throughput, quality, or OEE impact.
+  - Treat impact output as operational context and temporal association, not proof of causation.
+  - `SizerDataCollector.Service.exe anomaly impact-summary --serial <sn> --type grade|size|both [--hours <h>]`
+  - Use this after `anomaly impact` for family-level ranking by post-event OEE/throughput drift and materiality.
+  - `SizerDataCollector.Service.exe anomaly tuning-compare --serial <sn> --type grade|size|both`
+  - `--baseline-from <date> --baseline-to <date> --candidate-from <date> --candidate-to <date> [--limit <n>]`
+  - Use this third for before/after comparison across two historical windows.
+  - See `ANOMALY_REPORTING_WORKFLOW.md` for CLI-only usage, decision rubric examples, duplicate-row troubleshooting, and what empty results mean.
 
 ### Logs and operational behaviour
 
@@ -152,9 +174,8 @@ All commands are run from the `SizerDataCollector.Service` executable directory.
   - The Windows service no longer fails or idles at startup if the Sizer API is unreachable.
   - Instead, it starts normally and the internal `CollectorRunner` uses robust retry-with-backoff logic to connect when the network/API becomes available.
 
-- **WPF UI**
-  - The WPF project (`SizerDataCollector.GUI.WPF`) is optional for installation, configuration, and headless service operation.
-
 ### Additional documentation
 
 - **`DESIGN.md`**: design notes for the console `SizerDataCollector` CLI and automation-oriented workflows merged from `master`.
+- **`ADAPTIVE_THRESHOLDS_WORKFLOW.md`**: operator and AI-agent workflow for machine-specific quality/performance tuning, validation, and rollback.
+- **`ANOMALY_REPORTING_WORKFLOW.md`**: operator and AI-agent workflow for recurring offenders, anomaly-to-impact review, replay-based tuning comparison, interpretation guardrails, and documentation validation checks.

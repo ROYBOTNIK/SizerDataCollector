@@ -14,7 +14,8 @@ namespace SizerDataCollector.Core.Config
 			"lanes_size_fpm",
 			"machine_total_fpm",
 			"machine_cupfill",
-			"outlets_details"
+			"outlets_details",
+			"outlets_fpm"
 		});
 		private const string DefaultSizerHost = "10.155.155.10";
 		private const int DefaultSizerPort = 8001;
@@ -28,6 +29,18 @@ namespace SizerDataCollector.Core.Config
 		private const long DefaultLogMaxFileBytes = 10L * 1024L * 1024L;
 		private const int DefaultLogRetentionDays = 14;
 		private const int DefaultLogMaxFiles = 100;
+
+		private const int DefaultAnomalyWindowMinutes = 60;
+		private const double DefaultAnomalyZGate = 2.0;
+		private const double DefaultBandLowMin = 5.0;
+		private const double DefaultBandLowMax = 10.0;
+		private const double DefaultBandMediumMax = 20.0;
+		private const int DefaultAlarmCooldownSeconds = 300;
+		private const string DefaultRecycleGradeKey = "RCY";
+		private const double DefaultAnomalyMinLaneFpm = 150.0;
+		private const double DefaultAnomalyMinPeerLaneFpm = 150.0;
+		private const int DefaultAnomalyMinActivePeerLanes = 4;
+		private const int DefaultAnomalyMinConsecutiveWindows = 2;
 
 		public string SizerHost { get; }
 		public int SizerPort { get; }
@@ -60,6 +73,54 @@ namespace SizerDataCollector.Core.Config
 		public int LogRetentionDays { get; }
 
 		public int LogMaxFiles { get; }
+
+		public bool EnableAnomalyDetection { get; }
+		public int AnomalyWindowMinutes { get; }
+		public double AnomalyZGate { get; }
+		public double BandLowMin { get; }
+		public double BandLowMax { get; }
+		public double BandMediumMax { get; }
+		public int AlarmCooldownSeconds { get; }
+		public string RecycleGradeKey { get; }
+		public double AnomalyMinLaneFpm { get; }
+		public double AnomalyMinPeerLaneFpm { get; }
+		public int AnomalyMinActivePeerLanes { get; }
+		public int AnomalyMinConsecutiveWindows { get; }
+		public bool EnableSizerAlarm { get; }
+		public bool EnableLlmEnrichment { get; }
+		public string LlmEndpoint { get; }
+
+		public bool EnableSizeAnomalyDetection { get; }
+		public bool EnableSizerSizeAlarm { get; }
+		public int SizeEvalIntervalMinutes { get; }
+		public int SizeWindowHours { get; }
+		public double SizeZGate { get; }
+		public double SizePctDevMin { get; }
+		public int SizeCooldownMinutes { get; }
+
+		public bool EnableLotTransitionDetection { get; }
+		public int LotTransitionEvalIntervalMinutes { get; }
+		public int LotTransitionScanWindowHours { get; }
+		public int LotTransitionStableWindowMinutes { get; }
+		public int LotTransitionPeakSearchMinutes { get; }
+		public double LotTransitionSlowdownFraction { get; }
+		public double LotTransitionRecoveryFraction { get; }
+		public int LotTransitionConsecutiveSamplesForSlowdown { get; }
+		public int LotTransitionRecoveryConsecutiveSamples { get; }
+		public int LotTransitionMinPreStableSamples { get; }
+		public int LotTransitionMinPostStableSamples { get; }
+		public double LotTransitionMinFpmForBaseline { get; }
+
+		public bool EnableMachineEventDetection { get; }
+		public int MachineEventEvalIntervalMinutes { get; }
+		public int MachineEventScanWindowHours { get; }
+		public double MachineEventDowntimeMaxAvailabilityRatio { get; }
+		public double MachineEventSlowdownMaxThroughputRatio { get; }
+		public double MachineEventSlowdownMinAvailabilityRatio { get; }
+		public double MachineEventSlowdownMinTotalFpm { get; }
+		public int MachineEventMinDurationMinutes { get; }
+		public int MachineEventMergeGapMinutes { get; }
+		public bool MachineEventExcludeLotTransitions { get; }
 
 		public CollectorConfig()
 			: this(BuildRuntimeSettingsFromAppConfig())
@@ -104,6 +165,54 @@ namespace SizerDataCollector.Core.Config
 			LogMaxFileBytes = EnsureMinimumLong("LogMaxFileBytes", runtimeSettings.LogMaxFileBytes, 1024L, DefaultLogMaxFileBytes);
 			LogRetentionDays = EnsureMinimum("LogRetentionDays", runtimeSettings.LogRetentionDays, 1, DefaultLogRetentionDays);
 			LogMaxFiles = EnsureMinimum("LogMaxFiles", runtimeSettings.LogMaxFiles, 1, DefaultLogMaxFiles);
+
+			EnableAnomalyDetection = runtimeSettings.EnableAnomalyDetection;
+			AnomalyWindowMinutes = EnsureMinimum("AnomalyWindowMinutes", runtimeSettings.AnomalyWindowMinutes, 1, DefaultAnomalyWindowMinutes);
+			AnomalyZGate = runtimeSettings.AnomalyZGate > 0 ? runtimeSettings.AnomalyZGate : DefaultAnomalyZGate;
+			BandLowMin = runtimeSettings.BandLowMin > 0 ? runtimeSettings.BandLowMin : DefaultBandLowMin;
+			BandLowMax = runtimeSettings.BandLowMax > 0 ? runtimeSettings.BandLowMax : DefaultBandLowMax;
+			BandMediumMax = runtimeSettings.BandMediumMax > 0 ? runtimeSettings.BandMediumMax : DefaultBandMediumMax;
+			AlarmCooldownSeconds = EnsureMinimum("AlarmCooldownSeconds", runtimeSettings.AlarmCooldownSeconds, 0, DefaultAlarmCooldownSeconds);
+			RecycleGradeKey = string.IsNullOrWhiteSpace(runtimeSettings.RecycleGradeKey) ? DefaultRecycleGradeKey : runtimeSettings.RecycleGradeKey.Trim();
+			AnomalyMinLaneFpm = runtimeSettings.AnomalyMinLaneFpm > 0 ? runtimeSettings.AnomalyMinLaneFpm : DefaultAnomalyMinLaneFpm;
+			AnomalyMinPeerLaneFpm = runtimeSettings.AnomalyMinPeerLaneFpm > 0 ? runtimeSettings.AnomalyMinPeerLaneFpm : DefaultAnomalyMinPeerLaneFpm;
+			AnomalyMinActivePeerLanes = EnsureMinimum("AnomalyMinActivePeerLanes", runtimeSettings.AnomalyMinActivePeerLanes, 1, DefaultAnomalyMinActivePeerLanes);
+			AnomalyMinConsecutiveWindows = EnsureMinimum("AnomalyMinConsecutiveWindows", runtimeSettings.AnomalyMinConsecutiveWindows, 1, DefaultAnomalyMinConsecutiveWindows);
+			EnableSizerAlarm = runtimeSettings.EnableSizerAlarm;
+			EnableLlmEnrichment = runtimeSettings.EnableLlmEnrichment;
+			LlmEndpoint = runtimeSettings.LlmEndpoint ?? string.Empty;
+
+			EnableSizeAnomalyDetection = runtimeSettings.EnableSizeAnomalyDetection;
+			EnableSizerSizeAlarm = runtimeSettings.EnableSizerSizeAlarm;
+			SizeEvalIntervalMinutes = EnsureMinimum("SizeEvalIntervalMinutes", runtimeSettings.SizeEvalIntervalMinutes, 1, 30);
+			SizeWindowHours = EnsureMinimum("SizeWindowHours", runtimeSettings.SizeWindowHours, 1, 24);
+			SizeZGate = runtimeSettings.SizeZGate > 0 ? runtimeSettings.SizeZGate : 2.0;
+			SizePctDevMin = runtimeSettings.SizePctDevMin > 0 ? runtimeSettings.SizePctDevMin : 3.0;
+			SizeCooldownMinutes = EnsureMinimum("SizeCooldownMinutes", runtimeSettings.SizeCooldownMinutes, 0, 240);
+
+			EnableLotTransitionDetection = runtimeSettings.EnableLotTransitionDetection;
+			LotTransitionEvalIntervalMinutes = EnsureMinimum("LotTransitionEvalIntervalMinutes", runtimeSettings.LotTransitionEvalIntervalMinutes, 1, 30);
+			LotTransitionScanWindowHours = EnsureMinimum("LotTransitionScanWindowHours", runtimeSettings.LotTransitionScanWindowHours, 1, 72);
+			LotTransitionStableWindowMinutes = EnsureMinimum("LotTransitionStableWindowMinutes", runtimeSettings.LotTransitionStableWindowMinutes, 1, 10);
+			LotTransitionPeakSearchMinutes = EnsureMinimum("LotTransitionPeakSearchMinutes", runtimeSettings.LotTransitionPeakSearchMinutes, 1, 30);
+			LotTransitionSlowdownFraction = NormalizeFraction(runtimeSettings.LotTransitionSlowdownFraction, 0.15);
+			LotTransitionRecoveryFraction = NormalizeFraction(runtimeSettings.LotTransitionRecoveryFraction, 0.10);
+			LotTransitionConsecutiveSamplesForSlowdown = EnsureMinimum("LotTransitionConsecutiveSamplesForSlowdown", runtimeSettings.LotTransitionConsecutiveSamplesForSlowdown, 1, 1);
+			LotTransitionRecoveryConsecutiveSamples = EnsureMinimum("LotTransitionRecoveryConsecutiveSamples", runtimeSettings.LotTransitionRecoveryConsecutiveSamples, 1, 2);
+			LotTransitionMinPreStableSamples = EnsureMinimum("LotTransitionMinPreStableSamples", runtimeSettings.LotTransitionMinPreStableSamples, 1, 3);
+			LotTransitionMinPostStableSamples = EnsureMinimum("LotTransitionMinPostStableSamples", runtimeSettings.LotTransitionMinPostStableSamples, 1, 3);
+			LotTransitionMinFpmForBaseline = runtimeSettings.LotTransitionMinFpmForBaseline > 0 ? runtimeSettings.LotTransitionMinFpmForBaseline : 100.0;
+
+			EnableMachineEventDetection = runtimeSettings.EnableMachineEventDetection;
+			MachineEventEvalIntervalMinutes = EnsureMinimum("MachineEventEvalIntervalMinutes", runtimeSettings.MachineEventEvalIntervalMinutes, 1, 15);
+			MachineEventScanWindowHours = EnsureMinimum("MachineEventScanWindowHours", runtimeSettings.MachineEventScanWindowHours, 1, 24);
+			MachineEventDowntimeMaxAvailabilityRatio = NormalizeZeroToOne(runtimeSettings.MachineEventDowntimeMaxAvailabilityRatio, 0.0);
+			MachineEventSlowdownMaxThroughputRatio = NormalizeFraction(runtimeSettings.MachineEventSlowdownMaxThroughputRatio, 0.75);
+			MachineEventSlowdownMinAvailabilityRatio = NormalizeZeroToOne(runtimeSettings.MachineEventSlowdownMinAvailabilityRatio, 0.5);
+			MachineEventSlowdownMinTotalFpm = runtimeSettings.MachineEventSlowdownMinTotalFpm >= 0 ? runtimeSettings.MachineEventSlowdownMinTotalFpm : 100.0;
+			MachineEventMinDurationMinutes = EnsureMinimum("MachineEventMinDurationMinutes", runtimeSettings.MachineEventMinDurationMinutes, 1, 3);
+			MachineEventMergeGapMinutes = EnsureMinimum("MachineEventMergeGapMinutes", runtimeSettings.MachineEventMergeGapMinutes, 0, 2);
+			MachineEventExcludeLotTransitions = runtimeSettings.MachineEventExcludeLotTransitions;
 		}
 
 		private static CollectorRuntimeSettings BuildRuntimeSettingsFromAppConfig()
@@ -127,7 +236,51 @@ namespace SizerDataCollector.Core.Config
 				LogAsJson = GetBool("LogAsJson", false),
 				LogMaxFileBytes = GetLongWithMinimum("LogMaxFileBytes", 1024L, DefaultLogMaxFileBytes),
 				LogRetentionDays = GetIntWithMinimum("LogRetentionDays", 1, DefaultLogRetentionDays),
-				LogMaxFiles = GetIntWithMinimum("LogMaxFiles", 1, DefaultLogMaxFiles)
+				LogMaxFiles = GetIntWithMinimum("LogMaxFiles", 1, DefaultLogMaxFiles),
+				EnableAnomalyDetection = GetBool("EnableAnomalyDetection", false),
+				AnomalyWindowMinutes = GetIntWithMinimum("AnomalyWindowMinutes", 1, DefaultAnomalyWindowMinutes),
+				AnomalyZGate = GetDouble("AnomalyZGate", DefaultAnomalyZGate),
+				BandLowMin = GetDouble("BandLowMin", DefaultBandLowMin),
+				BandLowMax = GetDouble("BandLowMax", DefaultBandLowMax),
+				BandMediumMax = GetDouble("BandMediumMax", DefaultBandMediumMax),
+				AlarmCooldownSeconds = GetIntWithMinimum("AlarmCooldownSeconds", 0, DefaultAlarmCooldownSeconds),
+				RecycleGradeKey = GetString("RecycleGradeKey", DefaultRecycleGradeKey),
+				AnomalyMinLaneFpm = GetDouble("AnomalyMinLaneFpm", DefaultAnomalyMinLaneFpm),
+				AnomalyMinPeerLaneFpm = GetDouble("AnomalyMinPeerLaneFpm", DefaultAnomalyMinPeerLaneFpm),
+				AnomalyMinActivePeerLanes = GetIntWithMinimum("AnomalyMinActivePeerLanes", 1, DefaultAnomalyMinActivePeerLanes),
+				AnomalyMinConsecutiveWindows = GetIntWithMinimum("AnomalyMinConsecutiveWindows", 1, DefaultAnomalyMinConsecutiveWindows),
+				EnableSizerAlarm = GetBool("EnableSizerAlarm", true),
+				EnableLlmEnrichment = GetBool("EnableLlmEnrichment", false),
+				LlmEndpoint = GetString("LlmEndpoint", string.Empty),
+				EnableSizeAnomalyDetection = GetBool("EnableSizeAnomalyDetection", false),
+				EnableSizerSizeAlarm = GetBool("EnableSizerSizeAlarm", false),
+				SizeEvalIntervalMinutes = GetIntWithMinimum("SizeEvalIntervalMinutes", 1, 30),
+				SizeWindowHours = GetIntWithMinimum("SizeWindowHours", 1, 24),
+				SizeZGate = GetDouble("SizeZGate", 2.0),
+				SizePctDevMin = GetDouble("SizePctDevMin", 3.0),
+				SizeCooldownMinutes = GetIntWithMinimum("SizeCooldownMinutes", 0, 240),
+				EnableLotTransitionDetection = GetBool("EnableLotTransitionDetection", false),
+				LotTransitionEvalIntervalMinutes = GetIntWithMinimum("LotTransitionEvalIntervalMinutes", 1, 30),
+				LotTransitionScanWindowHours = GetIntWithMinimum("LotTransitionScanWindowHours", 1, 72),
+				LotTransitionStableWindowMinutes = GetIntWithMinimum("LotTransitionStableWindowMinutes", 1, 10),
+				LotTransitionPeakSearchMinutes = GetIntWithMinimum("LotTransitionPeakSearchMinutes", 1, 30),
+				LotTransitionSlowdownFraction = GetDouble("LotTransitionSlowdownFraction", 0.15),
+				LotTransitionRecoveryFraction = GetDouble("LotTransitionRecoveryFraction", 0.10),
+				LotTransitionConsecutiveSamplesForSlowdown = GetIntWithMinimum("LotTransitionConsecutiveSamplesForSlowdown", 1, 1),
+				LotTransitionRecoveryConsecutiveSamples = GetIntWithMinimum("LotTransitionRecoveryConsecutiveSamples", 1, 2),
+				LotTransitionMinPreStableSamples = GetIntWithMinimum("LotTransitionMinPreStableSamples", 1, 3),
+				LotTransitionMinPostStableSamples = GetIntWithMinimum("LotTransitionMinPostStableSamples", 1, 3),
+				LotTransitionMinFpmForBaseline = GetDouble("LotTransitionMinFpmForBaseline", 100.0),
+				EnableMachineEventDetection = GetBool("EnableMachineEventDetection", false),
+				MachineEventEvalIntervalMinutes = GetIntWithMinimum("MachineEventEvalIntervalMinutes", 1, 15),
+				MachineEventScanWindowHours = GetIntWithMinimum("MachineEventScanWindowHours", 1, 24),
+				MachineEventDowntimeMaxAvailabilityRatio = GetDouble("MachineEventDowntimeMaxAvailabilityRatio", 0.0),
+				MachineEventSlowdownMaxThroughputRatio = GetDouble("MachineEventSlowdownMaxThroughputRatio", 0.75),
+				MachineEventSlowdownMinAvailabilityRatio = GetDouble("MachineEventSlowdownMinAvailabilityRatio", 0.5),
+				MachineEventSlowdownMinTotalFpm = GetDouble("MachineEventSlowdownMinTotalFpm", 100.0),
+				MachineEventMinDurationMinutes = GetIntWithMinimum("MachineEventMinDurationMinutes", 1, 3),
+				MachineEventMergeGapMinutes = GetIntWithMinimum("MachineEventMergeGapMinutes", 0, 2),
+				MachineEventExcludeLotTransitions = GetBool("MachineEventExcludeLotTransitions", true)
 			};
 		}
 
@@ -141,6 +294,15 @@ namespace SizerDataCollector.Core.Config
 		{
 			var value = ConfigurationManager.AppSettings[key];
 			if (int.TryParse(value, out int result))
+				return result;
+
+			return defaultValue;
+		}
+
+		private static double GetDouble(string key, double defaultValue)
+		{
+			var value = ConfigurationManager.AppSettings[key];
+			if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double result))
 				return result;
 
 			return defaultValue;
@@ -261,6 +423,16 @@ namespace SizerDataCollector.Core.Config
 			}
 
 			return value;
+		}
+
+		private static double NormalizeFraction(double value, double defaultValue)
+		{
+			return value > 0 && value < 1 ? value : defaultValue;
+		}
+
+		private static double NormalizeZeroToOne(double value, double defaultValue)
+		{
+			return value >= 0 && value <= 1 ? value : defaultValue;
 		}
 
 		private static IReadOnlyList<string> NormalizeEnabledMetrics(IEnumerable<string> metrics)

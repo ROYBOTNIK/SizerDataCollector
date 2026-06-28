@@ -24,6 +24,54 @@ namespace SizerDataCollector.Core.Config
 		public long LogMaxFileBytes { get; set; } = 10485760;
 		public int LogRetentionDays { get; set; } = 14;
 		public int LogMaxFiles { get; set; } = 100;
+
+		public bool EnableAnomalyDetection { get; set; }
+		public int AnomalyWindowMinutes { get; set; } = 60;
+		public double AnomalyZGate { get; set; } = 2.0;
+		public double BandLowMin { get; set; } = 5.0;
+		public double BandLowMax { get; set; } = 10.0;
+		public double BandMediumMax { get; set; } = 20.0;
+		public int AlarmCooldownSeconds { get; set; } = 300;
+		public string RecycleGradeKey { get; set; } = "RCY";
+		public double AnomalyMinLaneFpm { get; set; } = 150.0;
+		public double AnomalyMinPeerLaneFpm { get; set; } = 150.0;
+		public int AnomalyMinActivePeerLanes { get; set; } = 4;
+		public int AnomalyMinConsecutiveWindows { get; set; } = 2;
+		public bool EnableSizerAlarm { get; set; } = true;
+		public bool EnableLlmEnrichment { get; set; }
+		public string LlmEndpoint { get; set; } = string.Empty;
+
+		public bool EnableSizeAnomalyDetection { get; set; }
+		public bool EnableSizerSizeAlarm { get; set; }
+		public int SizeEvalIntervalMinutes { get; set; } = 30;
+		public int SizeWindowHours { get; set; } = 24;
+		public double SizeZGate { get; set; } = 2.0;
+		public double SizePctDevMin { get; set; } = 3.0;
+		public int SizeCooldownMinutes { get; set; } = 240;
+
+		public bool EnableLotTransitionDetection { get; set; }
+		public int LotTransitionEvalIntervalMinutes { get; set; } = 30;
+		public int LotTransitionScanWindowHours { get; set; } = 72;
+		public int LotTransitionStableWindowMinutes { get; set; } = 10;
+		public int LotTransitionPeakSearchMinutes { get; set; } = 30;
+		public double LotTransitionSlowdownFraction { get; set; } = 0.15;
+		public double LotTransitionRecoveryFraction { get; set; } = 0.10;
+		public int LotTransitionConsecutiveSamplesForSlowdown { get; set; } = 1;
+		public int LotTransitionRecoveryConsecutiveSamples { get; set; } = 2;
+		public int LotTransitionMinPreStableSamples { get; set; } = 3;
+		public int LotTransitionMinPostStableSamples { get; set; } = 3;
+		public double LotTransitionMinFpmForBaseline { get; set; } = 100.0;
+
+		public bool EnableMachineEventDetection { get; set; }
+		public int MachineEventEvalIntervalMinutes { get; set; } = 15;
+		public int MachineEventScanWindowHours { get; set; } = 24;
+		public double MachineEventDowntimeMaxAvailabilityRatio { get; set; } = 0.0;
+		public double MachineEventSlowdownMaxThroughputRatio { get; set; } = 0.75;
+		public double MachineEventSlowdownMinAvailabilityRatio { get; set; } = 0.5;
+		public double MachineEventSlowdownMinTotalFpm { get; set; } = 100.0;
+		public int MachineEventMinDurationMinutes { get; set; } = 3;
+		public int MachineEventMergeGapMinutes { get; set; } = 2;
+		public bool MachineEventExcludeLotTransitions { get; set; } = true;
 	}
 }
 

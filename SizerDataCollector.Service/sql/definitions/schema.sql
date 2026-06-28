@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS oee.machine_thresholds (
 
 CREATE TABLE IF NOT EXISTS oee.band_definitions (
     machine_serial_no text NOT NULL,
+    metric_type       text NOT NULL DEFAULT 'oee',
     effective_date    date NOT NULL,
     band_name         text NOT NULL,
     lower_bound       numeric(5,4) NOT NULL,
@@ -102,10 +103,45 @@ CREATE TABLE IF NOT EXISTS oee.band_definitions (
     created_at        timestamptz DEFAULT now(),
     created_by        text DEFAULT 'system',
     is_active         boolean DEFAULT true,
-    PRIMARY KEY (machine_serial_no, effective_date, band_name),
+    source            text DEFAULT 'manual',
+    confidence        numeric(5,4),
+    observed_minutes  integer,
+    tuned_from_ts     timestamptz,
+    tuned_to_ts       timestamptz,
+    notes             text,
+    PRIMARY KEY (machine_serial_no, metric_type, effective_date, band_name),
     CONSTRAINT band_definitions_check CHECK (upper_bound >= 0 AND upper_bound <= 1 AND upper_bound > lower_bound),
     CONSTRAINT band_definitions_lower_bound_check CHECK (lower_bound >= 0 AND lower_bound <= 1)
 );
+
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS metric_type text NOT NULL DEFAULT 'oee';
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual';
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS confidence numeric(5,4);
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS observed_minutes integer;
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS tuned_from_ts timestamptz;
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS tuned_to_ts timestamptz;
+ALTER TABLE oee.band_definitions ADD COLUMN IF NOT EXISTS notes text;
+
+DELETE FROM oee.band_definitions bd
+USING (
+    SELECT ctid
+    FROM (
+        SELECT ctid,
+               row_number() OVER (
+                   PARTITION BY machine_serial_no, metric_type, effective_date, band_name
+                   ORDER BY created_at DESC NULLS LAST
+               ) AS rn
+        FROM oee.band_definitions
+    ) d
+    WHERE d.rn > 1
+) drop_rows
+WHERE bd.ctid = drop_rows.ctid;
+
+DO $$ BEGIN
+    ALTER TABLE oee.band_definitions DROP CONSTRAINT IF EXISTS band_definitions_pkey;
+    ALTER TABLE oee.band_definitions
+        ADD CONSTRAINT band_definitions_pkey PRIMARY KEY (machine_serial_no, metric_type, effective_date, band_name);
+END $$;
 
 CREATE TABLE IF NOT EXISTS oee.band_statistics (
     machine_serial_no text NOT NULL,
@@ -124,6 +160,22 @@ CREATE TABLE IF NOT EXISTS oee.shift_calendar (
     break_start timestamptz NOT NULL,
     break_end   timestamptz NOT NULL,
     PRIMARY KEY (break_start, break_end)
+);
+
+CREATE TABLE IF NOT EXISTS oee.shifts (
+    serial_no         text NOT NULL,
+    shift_name        text NOT NULL,
+    start_local       time NOT NULL,
+    end_local         time NOT NULL,
+    crosses_midnight  boolean GENERATED ALWAYS AS (end_local <= start_local) STORED,
+    timezone          text NOT NULL DEFAULT 'UTC',
+    dow_mask          smallint NOT NULL DEFAULT 127,
+    is_active         boolean NOT NULL DEFAULT true,
+    effective_from    date,
+    effective_to      date,
+    created_at        timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (serial_no, shift_name),
+    CONSTRAINT shifts_effective_window_check CHECK (effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from)
 );
 
 CREATE TABLE IF NOT EXISTS oee.commissioning_status (
@@ -177,6 +229,88 @@ CREATE TABLE IF NOT EXISTS oee.grade_lane_anomalies (
     delivered_to    text NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS oee.lane_size_anomalies (
+    event_ts         timestamptz NOT NULL,
+    serial_no        text NOT NULL,
+    lane_no          smallint NOT NULL,
+    window_hours     integer NOT NULL,
+    lane_avg_size    double precision NOT NULL,
+    machine_avg_size double precision NOT NULL,
+    pct_deviation    double precision NOT NULL,
+    z_score          double precision NOT NULL,
+    severity         text NOT NULL,
+    model_version    text NOT NULL,
+    delivered_to     text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS oee.lot_transition_throughput_events (
+    transition_ts                         timestamptz NOT NULL,
+    serial_no                             text NOT NULL,
+    outgoing_batch_record_id              bigint NOT NULL,
+    incoming_batch_record_id              bigint NOT NULL,
+    outgoing_grower_code                  text,
+    incoming_grower_code                  text,
+    outgoing_label                        text,
+    incoming_label                        text,
+    disruption_start_ts                   timestamptz NOT NULL,
+    trough_ts                             timestamptz NOT NULL,
+    stable_recovery_ts                    timestamptz NOT NULL,
+    disruption_duration_minutes           double precision NOT NULL,
+    pre_stable_fpm                        double precision NOT NULL,
+    trough_fpm                            double precision NOT NULL,
+    post_stable_fpm                       double precision NOT NULL,
+    pre_peak_fpm                          double precision NOT NULL,
+    post_peak_fpm                         double precision NOT NULL,
+    opportunity_window_start_ts           timestamptz NOT NULL,
+    opportunity_window_end_ts             timestamptz NOT NULL,
+    opportunity_window_minutes            double precision NOT NULL,
+    integrated_fpm_minutes                double precision NOT NULL,
+    counterfactual_fpm_minutes            double precision NOT NULL,
+    fruit_opportunity_shortfall           double precision NOT NULL,
+    stable_counterfactual_fpm_minutes     double precision,
+    stable_fruit_opportunity_shortfall    double precision,
+    stable_throughput_loss_ratio          double precision,
+    stable_equivalent_lost_minutes        double precision,
+    peak_throughput_loss_ratio            double precision,
+    peak_equivalent_lost_minutes          double precision,
+    target_throughput                     double precision,
+    target_counterfactual_fpm_minutes     double precision,
+    target_fruit_opportunity_shortfall    double precision,
+    target_equivalent_lost_minutes        double precision,
+    break_overlap_detected                boolean,
+    break_overlap_minutes                 double precision,
+    break_adjusted_disruption_minutes     double precision,
+    break_adjusted_opportunity_window_minutes double precision,
+    break_adjusted_stable_fruit_opportunity_shortfall double precision,
+    break_adjusted_stable_equivalent_lost_minutes double precision,
+    break_adjusted_stable_throughput_loss_ratio double precision,
+    availability_avg_during_disruption    double precision,
+    availability_avg_opportunity_window   double precision,
+    explanation                           jsonb,
+    model_version                         text NOT NULL,
+    delivered_to                          text NOT NULL,
+    inserted_at                           timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE oee.lot_transition_throughput_events
+    ADD COLUMN IF NOT EXISTS stable_counterfactual_fpm_minutes double precision,
+    ADD COLUMN IF NOT EXISTS stable_fruit_opportunity_shortfall double precision,
+    ADD COLUMN IF NOT EXISTS stable_throughput_loss_ratio double precision,
+    ADD COLUMN IF NOT EXISTS stable_equivalent_lost_minutes double precision,
+    ADD COLUMN IF NOT EXISTS peak_throughput_loss_ratio double precision,
+    ADD COLUMN IF NOT EXISTS peak_equivalent_lost_minutes double precision,
+    ADD COLUMN IF NOT EXISTS target_throughput double precision,
+    ADD COLUMN IF NOT EXISTS target_counterfactual_fpm_minutes double precision,
+    ADD COLUMN IF NOT EXISTS target_fruit_opportunity_shortfall double precision,
+    ADD COLUMN IF NOT EXISTS target_equivalent_lost_minutes double precision,
+    ADD COLUMN IF NOT EXISTS break_overlap_detected boolean,
+    ADD COLUMN IF NOT EXISTS break_overlap_minutes double precision,
+    ADD COLUMN IF NOT EXISTS break_adjusted_disruption_minutes double precision,
+    ADD COLUMN IF NOT EXISTS break_adjusted_opportunity_window_minutes double precision,
+    ADD COLUMN IF NOT EXISTS break_adjusted_stable_fruit_opportunity_shortfall double precision,
+    ADD COLUMN IF NOT EXISTS break_adjusted_stable_equivalent_lost_minutes double precision,
+    ADD COLUMN IF NOT EXISTS break_adjusted_stable_throughput_loss_ratio double precision;
+
 CREATE TABLE IF NOT EXISTS oee.etl_watermarks (
     key     text NOT NULL PRIMARY KEY,
     last_ts timestamptz NOT NULL
@@ -200,6 +334,56 @@ CREATE TABLE IF NOT EXISTS oee.lane_grade_events (
     qty             double precision NOT NULL,
     PRIMARY KEY (ts, serial_no, lane_no, grade_key)
 );
+
+
+CREATE TABLE IF NOT EXISTS oee.downtime_events (
+    start_ts                  timestamptz NOT NULL,
+    end_ts                    timestamptz NOT NULL,
+    duration_minutes          double precision NOT NULL,
+    serial_no                 text NOT NULL,
+    batch_record_id           bigint,
+    lot                       text,
+    variety                   text,
+    avg_availability_ratio    double precision,
+    min_availability_ratio    double precision,
+    avg_throughput_ratio      double precision,
+    min_throughput_ratio      double precision,
+    avg_total_fpm             double precision,
+    min_total_fpm             double precision,
+    avg_oee_score             double precision,
+    reason                    text,
+    overlaps_lot_transition   boolean NOT NULL DEFAULT false,
+    explanation               jsonb,
+    model_version             text NOT NULL,
+    delivered_to              text NOT NULL,
+    detected_at               timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (serial_no, start_ts, end_ts)
+);
+
+CREATE TABLE IF NOT EXISTS oee.slowdown_events (
+    start_ts                  timestamptz NOT NULL,
+    end_ts                    timestamptz NOT NULL,
+    duration_minutes          double precision NOT NULL,
+    serial_no                 text NOT NULL,
+    batch_record_id           bigint,
+    lot                       text,
+    variety                   text,
+    avg_availability_ratio    double precision,
+    min_availability_ratio    double precision,
+    avg_throughput_ratio      double precision,
+    min_throughput_ratio      double precision,
+    avg_total_fpm             double precision,
+    min_total_fpm             double precision,
+    avg_oee_score             double precision,
+    reason                    text,
+    overlaps_lot_transition   boolean NOT NULL DEFAULT false,
+    explanation               jsonb,
+    model_version             text NOT NULL,
+    delivered_to              text NOT NULL,
+    detected_at               timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (serial_no, start_ts, end_ts)
+);
+
 
 CREATE TABLE IF NOT EXISTS oee.lane_grade_minute (
     minute_ts       timestamptz NOT NULL,
@@ -277,6 +461,28 @@ DO $$ BEGIN
     ALTER TABLE public.machine_settings ADD CONSTRAINT machine_settings_serial_no_fkey FOREIGN KEY (serial_no) REFERENCES public.machines(serial_no);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+DO $$ BEGIN
+    ALTER TABLE oee.shifts ADD CONSTRAINT shifts_serial_no_fkey FOREIGN KEY (serial_no) REFERENCES public.machines(serial_no);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Ensure one machine_settings row per serial_no so ON CONFLICT (serial_no) upserts work.
+-- Keep the most recent row (highest id) when historical duplicates exist.
+DELETE FROM public.machine_settings ms
+USING (
+    SELECT id
+    FROM (
+        SELECT id,
+               row_number() OVER (PARTITION BY serial_no ORDER BY id DESC) AS rn
+        FROM public.machine_settings
+        WHERE serial_no IS NOT NULL
+    ) d
+    WHERE d.rn > 1
+) drop_rows
+WHERE ms.id = drop_rows.id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_machine_settings_serial_no
+    ON public.machine_settings USING btree (serial_no);
+
 -- ============================================================
 -- Hypertables (TimescaleDB)
 -- ============================================================
@@ -305,14 +511,31 @@ CREATE INDEX IF NOT EXISTS idx_batches_batch_comment_ts ON public.batches USING 
 CREATE INDEX IF NOT EXISTS idx_batches_start_ts ON public.batches USING btree (start_ts);
 CREATE INDEX IF NOT EXISTS ix_batches_lot_variety_ci ON public.batches USING btree (grower_code, lower(comments), start_ts);
 
-CREATE INDEX IF NOT EXISTS idx_band_definitions_active ON oee.band_definitions USING btree (machine_serial_no, is_active, effective_date DESC);
+DROP INDEX IF EXISTS oee.idx_band_definitions_active;
+CREATE INDEX IF NOT EXISTS idx_band_definitions_active ON oee.band_definitions USING btree (machine_serial_no, metric_type, is_active, effective_date DESC);
 CREATE INDEX IF NOT EXISTS idx_band_statistics_date ON oee.band_statistics USING btree (calculation_date DESC);
+CREATE INDEX IF NOT EXISTS idx_shifts_serial_active ON oee.shifts USING btree (serial_no, is_active);
 CREATE INDEX IF NOT EXISTS ix_grade_map_serial ON oee.grade_map USING btree (serial_no);
 CREATE INDEX IF NOT EXISTS ix_machine_discovery_snapshots_serial_ts ON oee.machine_discovery_snapshots USING btree (serial_no, discovered_at DESC);
 
 CREATE INDEX IF NOT EXISTS grade_lane_anomalies_batch_record_id_idx ON oee.grade_lane_anomalies USING btree (batch_record_id);
 CREATE INDEX IF NOT EXISTS grade_lane_anomalies_event_ts_idx ON oee.grade_lane_anomalies USING btree (event_ts DESC);
 CREATE INDEX IF NOT EXISTS grade_lane_anomalies_event_ts_severity_idx ON oee.grade_lane_anomalies USING btree (event_ts DESC, severity);
+CREATE INDEX IF NOT EXISTS grade_lane_anomalies_serial_event_ts_idx ON oee.grade_lane_anomalies USING btree (serial_no, event_ts DESC);
+CREATE INDEX IF NOT EXISTS grade_lane_anomalies_serial_lane_grade_event_ts_idx ON oee.grade_lane_anomalies USING btree (serial_no, lane_no, grade_key, event_ts DESC);
+
+CREATE INDEX IF NOT EXISTS lane_size_anomalies_event_ts_idx ON oee.lane_size_anomalies USING btree (event_ts DESC);
+CREATE INDEX IF NOT EXISTS lane_size_anomalies_serial_event_ts_idx ON oee.lane_size_anomalies USING btree (serial_no, event_ts DESC);
+CREATE INDEX IF NOT EXISTS lane_size_anomalies_serial_lane_event_ts_idx ON oee.lane_size_anomalies USING btree (serial_no, lane_no, event_ts DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_lot_transition_events_serial_incoming_batch
+    ON oee.lot_transition_throughput_events USING btree (serial_no, incoming_batch_record_id);
+CREATE INDEX IF NOT EXISTS lot_transition_events_serial_transition_ts_idx
+    ON oee.lot_transition_throughput_events USING btree (serial_no, transition_ts DESC);
+CREATE INDEX IF NOT EXISTS lot_transition_events_incoming_batch_idx
+    ON oee.lot_transition_throughput_events USING btree (incoming_batch_record_id);
+CREATE INDEX IF NOT EXISTS lot_transition_events_outgoing_batch_idx
+    ON oee.lot_transition_throughput_events USING btree (outgoing_batch_record_id);
 
 CREATE INDEX IF NOT EXISTS lane_grade_events_ts_idx ON oee.lane_grade_events USING btree (ts DESC);
 CREATE INDEX IF NOT EXISTS ix_lane_grade_events_batch_ts ON oee.lane_grade_events USING btree (batch_record_id, ts DESC);
@@ -324,3 +547,9 @@ CREATE INDEX IF NOT EXISTS ix_lane_grade_minute_batch ON oee.lane_grade_minute U
 CREATE INDEX IF NOT EXISTS oee_minute_batch_minute_ts_idx ON oee.oee_minute_batch_old USING btree (minute_ts DESC);
 CREATE INDEX IF NOT EXISTS ix_oee_minute_batch_batch_time ON oee.oee_minute_batch_old USING btree (batch_record_id, minute_ts DESC);
 CREATE INDEX IF NOT EXISTS ix_oee_minute_batch_serial_time ON oee.oee_minute_batch_old USING btree (serial_no, minute_ts DESC);
+
+CREATE INDEX IF NOT EXISTS ix_downtime_events_serial_start
+    ON oee.downtime_events USING btree (serial_no, start_ts DESC);
+
+CREATE INDEX IF NOT EXISTS ix_slowdown_events_serial_start
+    ON oee.slowdown_events USING btree (serial_no, start_ts DESC);

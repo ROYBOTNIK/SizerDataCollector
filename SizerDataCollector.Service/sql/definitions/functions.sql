@@ -67,6 +67,15 @@ BEGIN
 END;
 $$;
 
+-- oee.calc_perf_ratio — float8 overload (preserves legacy double precision return type)
+CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(total_fpm double precision, missed_fpm double precision, recycle_fpm double precision, target_fpm double precision) RETURNS double precision
+    LANGUAGE sql
+    IMMUTABLE
+    PARALLEL SAFE
+AS $$
+SELECT (oee.calc_perf_ratio(total_fpm::numeric, missed_fpm::numeric, recycle_fpm::numeric, target_fpm::numeric))::double precision;
+$$;
+
 
 -- oee.calc_perf_ratio (serial-aware) — reads from oee.perf_params, falls back to defaults
 CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(p_serial_no text, total_fpm numeric, missed_fpm numeric, recycle_fpm numeric, target_fpm numeric) RETURNS numeric
@@ -106,6 +115,21 @@ BEGIN
 
     RETURN LEAST(1, GREATEST(0, ratio));
 END;
+$$;
+
+-- oee.calc_perf_ratio (serial-aware float8 overload) — delegates to numeric implementation
+CREATE OR REPLACE FUNCTION oee.calc_perf_ratio(p_serial_no text, total_fpm double precision, missed_fpm double precision, recycle_fpm double precision, target_fpm double precision) RETURNS numeric
+    LANGUAGE sql
+    STABLE
+    PARALLEL SAFE
+AS $$
+SELECT oee.calc_perf_ratio(
+    p_serial_no,
+    total_fpm::numeric,
+    missed_fpm::numeric,
+    recycle_fpm::numeric,
+    target_fpm::numeric
+);
 $$;
 
 
@@ -169,6 +193,15 @@ BEGIN
          + part_bad     * w_bad
          + part_recycle * w_recycle;
 END;
+$$;
+
+-- oee.calc_quality_ratio_qv1 — float8 overload (preserves legacy double precision return type)
+CREATE OR REPLACE FUNCTION oee.calc_quality_ratio_qv1(good_qty double precision, peddler_qty double precision, bad_qty double precision, recycle_qty double precision) RETURNS double precision
+    LANGUAGE sql
+    IMMUTABLE
+    PARALLEL SAFE
+AS $$
+SELECT (oee.calc_quality_ratio_qv1(good_qty::numeric, peddler_qty::numeric, bad_qty::numeric, recycle_qty::numeric))::double precision;
 $$;
 
 
@@ -252,35 +285,68 @@ BEGIN
 END;
 $$;
 
+-- oee.calc_quality_ratio_qv1 (serial-aware float8 overload) — delegates to numeric implementation
+CREATE OR REPLACE FUNCTION oee.calc_quality_ratio_qv1(p_serial_no text, good_qty double precision, peddler_qty double precision, bad_qty double precision, recycle_qty double precision) RETURNS numeric
+    LANGUAGE sql
+    STABLE
+    PARALLEL SAFE
+AS $$
+SELECT oee.calc_quality_ratio_qv1(
+    p_serial_no,
+    good_qty::numeric,
+    peddler_qty::numeric,
+    bad_qty::numeric,
+    recycle_qty::numeric
+);
+$$;
 
--- oee.classify_oee_value(p_machine_serial_no, p_oee_value) — V002
-CREATE OR REPLACE FUNCTION oee.classify_oee_value(p_machine_serial_no text, p_oee_value numeric) RETURNS text
-    LANGUAGE plpgsql IMMUTABLE
+
+-- oee.classify_band_value(p_machine_serial_no, p_metric_type, p_value) — metric-aware configurable bands
+CREATE OR REPLACE FUNCTION oee.classify_band_value(p_machine_serial_no text, p_metric_type text, p_value numeric) RETURNS text
+    LANGUAGE plpgsql STABLE
 AS $$
 DECLARE
+    v_metric_type text := COALESCE(NULLIF(trim(lower(p_metric_type)), ''), 'oee');
     v_band_name TEXT;
 BEGIN
     SELECT band_name INTO v_band_name
     FROM oee.band_definitions
     WHERE machine_serial_no = p_machine_serial_no
+      AND metric_type = v_metric_type
       AND is_active = TRUE
-      AND p_oee_value >= lower_bound
-      AND p_oee_value < upper_bound
+      AND p_value >= lower_bound
+      AND (p_value < upper_bound OR (upper_bound = 1 AND p_value <= upper_bound))
+    ORDER BY effective_date DESC, lower_bound DESC
     LIMIT 1;
 
     IF v_band_name IS NULL THEN
-        CASE
-            WHEN p_oee_value >= 0.85 THEN v_band_name := 'Excellent';
-            WHEN p_oee_value >= 0.70 THEN v_band_name := 'Good';
-            WHEN p_oee_value >= 0.55 THEN v_band_name := 'Average';
-            WHEN p_oee_value >= 0.40 THEN v_band_name := 'Below Average';
-            ELSE v_band_name := 'Poor';
-        END CASE;
+        IF v_metric_type = 'throughput' THEN
+            CASE
+                WHEN p_value >= 0.95 THEN v_band_name := 'surpassing_target';
+                WHEN p_value >= 0.85 THEN v_band_name := 'on_target';
+                WHEN p_value >= 0.70 THEN v_band_name := 'close';
+                WHEN p_value >= 0.50 THEN v_band_name := 'low';
+                ELSE v_band_name := 'very_low';
+            END CASE;
+        ELSE
+            CASE
+                WHEN p_value >= 0.85 THEN v_band_name := 'Excellent';
+                WHEN p_value >= 0.70 THEN v_band_name := 'Good';
+                WHEN p_value >= 0.55 THEN v_band_name := 'Average';
+                WHEN p_value >= 0.40 THEN v_band_name := 'Below Average';
+                ELSE v_band_name := 'Poor';
+            END CASE;
+        END IF;
     END IF;
 
     RETURN v_band_name;
 END;
 $$;
+
+-- oee.classify_oee_value(p_machine_serial_no, p_oee_value) — backwards-compatible wrapper
+CREATE OR REPLACE FUNCTION oee.classify_oee_value(p_machine_serial_no text, p_oee_value numeric) RETURNS text
+    LANGUAGE sql STABLE
+AS $$ SELECT oee.classify_band_value(p_machine_serial_no, 'oee', p_oee_value); $$;
 
 
 -- oee.get_lane_count(p_serial_no) — returns lane count from machine_settings
@@ -442,29 +508,30 @@ IMMUTABLE
 AS $$ SELECT oee.grade_to_cat(NULL, p_grade); $$;
 
 
--- oee.grade_qty(grade_json, desired_cat) — V002 (single-arg, uses oee.grade_to_cat(key))
+-- oee.grade_qty(j, desired_cat) — V002 (single-arg, uses oee.grade_to_cat(key))
+-- DROP required: return type changed from integer to numeric; CREATE OR REPLACE cannot alter it.
 DROP FUNCTION IF EXISTS oee.grade_qty(jsonb, integer);
 
-CREATE OR REPLACE FUNCTION oee.grade_qty(grade_json jsonb, desired_cat integer)
-RETURNS integer
+CREATE OR REPLACE FUNCTION oee.grade_qty(j jsonb, desired_cat integer)
+RETURNS numeric
 LANGUAGE plpgsql
 IMMUTABLE
 AS $$
 DECLARE
-  total integer := 0;
+  total numeric := 0;
   kv record;
-  v_int integer;
+  v_num numeric;
 BEGIN
-  IF grade_json IS NULL THEN
+  IF j IS NULL OR jsonb_typeof(j) <> 'object' THEN
     RETURN 0;
   END IF;
 
-  FOR kv IN SELECT key, value FROM jsonb_each_text(grade_json)
+  FOR kv IN SELECT key, value FROM jsonb_each_text(j)
   LOOP
-    v_int := COALESCE(NULLIF(kv.value, '')::integer, 0);
+    v_num := COALESCE(NULLIF(kv.value, '')::numeric, 0);
 
     IF oee.grade_to_cat(kv.key) = desired_cat THEN
-      total := total + v_int;
+      total := total + v_num;
     END IF;
   END LOOP;
 
@@ -484,7 +551,7 @@ DECLARE
   kv record;
   v_int integer;
 BEGIN
-  IF grade_json IS NULL THEN
+  IF grade_json IS NULL OR jsonb_typeof(grade_json) <> 'object' THEN
     RETURN 0;
   END IF;
 
@@ -508,9 +575,14 @@ CREATE OR REPLACE FUNCTION oee.grade_qty(p_serial_no text, j jsonb, desired_cat 
 AS $$
 SELECT COALESCE(
          SUM((kv.value)::numeric), 0)
-FROM   jsonb_array_elements(j)               AS lane(lj)
-       CROSS JOIN LATERAL jsonb_each_text(lj) AS kv(key,value)
-WHERE  oee.grade_to_cat(p_serial_no, kv.key) = desired_cat;
+FROM   jsonb_array_elements(
+         CASE WHEN jsonb_typeof(j) = 'array' THEN j ELSE '[]'::jsonb END
+       ) AS lane(lj)
+       CROSS JOIN LATERAL jsonb_each_text(
+         CASE WHEN jsonb_typeof(lj) = 'object' THEN lj ELSE '{}'::jsonb END
+       ) AS kv(key,value)
+WHERE  jsonb_typeof(lj) = 'object'
+  AND  oee.grade_to_cat(p_serial_no, kv.key) = desired_cat;
 $$;
 
 
@@ -595,32 +667,43 @@ BEGIN
     minute_ts, serial_no, batch_record_id, lane_no, grade_key, grade_name, qty
   )
   SELECT
-    time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
-    m.serial_no,
-    m.batch_record_id::int AS batch_record_id,
+    minute_ts,
+    serial_no,
+    batch_record_id,
+    lane_no,
+    grade_key,
+    MAX(grade_name) AS grade_name,
+    AVG(qty) AS qty
+  FROM (
+    SELECT
+      time_bucket('00:01:00'::interval, m.ts) AS minute_ts,
+      m.serial_no,
+      m.batch_record_id::int AS batch_record_id,
 
-    -- array idx 0 is lane 1 -> ordinality is already 1..N
-    lane_idx.ordinality::bigint AS lane_no,
+      -- array idx 0 is lane 1 -> ordinality is already 1..N
+      lane_idx.ordinality::bigint AS lane_no,
 
-    kv.key AS grade_key,
+      kv.key AS grade_key,
 
-    -- suffix after last underscore (e.g. EXP LIGHT, CULLS)
-    regexp_replace(kv.key, '^.*_', '') AS grade_name,
+      -- suffix after last underscore (e.g. EXP LIGHT, CULLS)
+      regexp_replace(kv.key, '^.*_', '') AS grade_name,
 
-    NULLIF(kv.value, '')::double precision AS qty
-  FROM public.metrics m
-  CROSS JOIN LATERAL jsonb_array_elements(m.value_json) WITH ORDINALITY lane_idx(lane_json, ordinality)
-  CROSS JOIN LATERAL jsonb_each_text(lane_idx.lane_json) kv(key, value)
-  WHERE m.metric = 'lanes_grade_fpm'
-    AND m.batch_record_id IS NOT NULL
-    AND jsonb_typeof(m.value_json) = 'array'
-    AND lane_idx.lane_json IS NOT NULL
-    AND jsonb_typeof(lane_idx.lane_json) = 'object'
-    AND lane_idx.ordinality <= oee.get_lane_count(m.serial_no)
-    AND kv.value IS NOT NULL
-    AND kv.value <> ''
-    AND m.ts >= now() - v_start_offset
-    AND m.ts <  now() - v_end_offset
+      NULLIF(kv.value, '')::double precision AS qty
+    FROM public.metrics m
+    CROSS JOIN LATERAL jsonb_array_elements(m.value_json) WITH ORDINALITY lane_idx(lane_json, ordinality)
+    CROSS JOIN LATERAL jsonb_each_text(lane_idx.lane_json) kv(key, value)
+    WHERE m.metric = 'lanes_grade_fpm'
+      AND m.batch_record_id IS NOT NULL
+      AND jsonb_typeof(m.value_json) = 'array'
+      AND lane_idx.lane_json IS NOT NULL
+      AND jsonb_typeof(lane_idx.lane_json) = 'object'
+      AND lane_idx.ordinality <= oee.get_lane_count(m.serial_no)
+      AND kv.value IS NOT NULL
+      AND kv.value <> ''
+      AND m.ts >= now() - v_start_offset
+      AND m.ts <  now() - v_end_offset
+  ) src
+  GROUP BY minute_ts, serial_no, batch_record_id, lane_no, grade_key
   ON CONFLICT (minute_ts, serial_no, batch_record_id, lane_no, grade_key)
   DO UPDATE SET
     grade_name = EXCLUDED.grade_name,
@@ -792,3 +875,38 @@ AS $_$
             '\.(\d+(?:\.\d+)?)\s*$'
         ))[1]::DOUBLE PRECISION;
 $_$;
+
+
+-- public.latest_product_setup(p_serial, p_ts) — V001
+-- Returns the most recent product_setup metric row at or before p_ts for a serial.
+-- The product_setup metric is emitted by ProductSetupTracker only when the active
+-- variety/layout/assignments actually change, so its 'ts' represents the start
+-- timestamp of the current setup era.
+CREATE OR REPLACE FUNCTION public.latest_product_setup(p_serial text, p_ts timestamptz)
+RETURNS TABLE (
+    setup_ts        timestamptz,
+    serial_no       text,
+    batch_record_id bigint,
+    variety_id      uuid,
+    variety_name    text,
+    layout_id       uuid,
+    layout_name     text,
+    payload         jsonb
+)
+LANGUAGE sql STABLE
+AS $$
+    SELECT m.ts AS setup_ts,
+           m.serial_no,
+           m.batch_record_id,
+           NULLIF(m.value_json ->> 'variety_id', '')::uuid AS variety_id,
+           m.value_json ->> 'variety_name' AS variety_name,
+           NULLIF(m.value_json ->> 'layout_id', '')::uuid AS layout_id,
+           m.value_json ->> 'layout_name' AS layout_name,
+           m.value_json AS payload
+    FROM public.metrics m
+    WHERE m.metric = 'product_setup'
+      AND m.serial_no = p_serial
+      AND m.ts <= p_ts
+    ORDER BY m.ts DESC
+    LIMIT 1;
+$$;

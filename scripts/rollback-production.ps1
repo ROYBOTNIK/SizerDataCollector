@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$BackupPath,
-    [string]$InstallRoot = "C:\Program Files\Opti-Fresh\SizerDataCollector",
+    [string]$InstallRoot = "C:\Program Files (x86)\OPTI-FRESH\CollectorAgent",
     [string]$ServiceName = "SizerDataCollectorService",
     [switch]$StartService
 )

@@ -107,7 +107,7 @@ namespace SizerDataCollector.Core.Commissioning
 				var machineName = await client.GetMachineNameAsync(cancellationToken).ConfigureAwait(false);
 
 				if (string.IsNullOrWhiteSpace(reportedSerial) ||
-				    !string.Equals(reportedSerial, expectedSerial, StringComparison.OrdinalIgnoreCase))
+					!string.Equals(reportedSerial, expectedSerial, StringComparison.OrdinalIgnoreCase))
 				{
 					status.BlockingReasons.Add(new CommissioningReason("SIZER_SERIAL_MISMATCH", "Sizer connection succeeded but serial number did not match expected."));
 					return false;

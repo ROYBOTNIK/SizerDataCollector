@@ -1,6 +1,6 @@
 param(
     [string]$Configuration = "Release",
-    [string]$InstallRoot = "C:\Program Files\Opti-Fresh\SizerDataCollector",
+    [string]$InstallRoot = "C:\Program Files (x86)\OPTI-FRESH\CollectorAgent",
     [string]$ServiceName = "SizerDataCollectorService",
     [switch]$SkipBuild,
     [switch]$SkipPreflight,
@@ -88,8 +88,11 @@ function Install-OrUpdateService {
         sc.exe config $Name binPath= "`"$ServiceExePath`"" start= auto | Out-Null
     }
     else {
-        Write-Step "Creating service '$Name'"
-        sc.exe create $Name binPath= "`"$ServiceExePath`"" start= auto DisplayName= "Opti-Fresh Sizer Data Collector" | Out-Null
+        Write-Step "Registering service '$Name' (installer API; same as InstallUtil)"
+        & $ServiceExePath service install
+        if ($LASTEXITCODE -ne 0) {
+            throw "Service install failed with exit code $LASTEXITCODE. Run from an elevated shell and ensure '$ServiceExePath' exists."
+        }
     }
 
     sc.exe description $Name "Collects sizer telemetry and writes to TimescaleDB." | Out-Null

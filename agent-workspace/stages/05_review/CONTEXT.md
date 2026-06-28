@@ -8,7 +8,7 @@
 
 ## Process
 
-Run the smallest relevant checks. Review for correctness, data loss, security, lifecycle, docs drift, and missing tests. Compare the final diff against doing nothing.
+Run the smallest relevant checks. Review for correctness, data loss, security, lifecycle, docs drift, missing tests, and whether `../../_config/repo-inventory.md` was updated when the codebase shape changed. Compare the final diff against doing nothing.
 
 ## Outputs
 

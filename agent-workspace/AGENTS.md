@@ -10,6 +10,7 @@ Rules:
 - Prefer existing repo patterns, .NET Framework 4.8 compatibility, and existing CLI/SQL workflows.
 - Do not touch production services, production databases, credentials, or destructive SQL without explicit human approval.
 - Every non-trivial code change needs the smallest runnable check that would catch a regression.
+- When code, project files, packages, scripts, command surfaces, deployment behavior, or repo shape changes, update `_config/repo-inventory.md` in the same tick or record why it was not applicable.
 - End every tick by updating `state/next-agent-context.md` with the current item, decisions, touched files, checks, and next action.
 
 Default loop:

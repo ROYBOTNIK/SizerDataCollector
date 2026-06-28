@@ -18,7 +18,7 @@ Use this skill to operate the repo-local Model Workspace Protocol under `agent-w
 5. Load only the stage inputs listed there plus the chosen item or workset.
 6. For every decision, include a `do nothing` option and choose it when the change does not improve the goal.
 7. Stand in for human approval only when the approval rubric passes and protected actions are not involved.
-8. Work sequentially, run the stage's validation command after each item, then refresh `state/next-agent-context.md`.
+8. Work sequentially, update `agent-workspace/_config/repo-inventory.md` when codebase shape changes, run the stage's validation command after each item, then refresh `state/next-agent-context.md`.
 
 ## Approval Rubric
 

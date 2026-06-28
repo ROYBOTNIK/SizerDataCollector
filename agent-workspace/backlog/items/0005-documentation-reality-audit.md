@@ -1,6 +1,6 @@
 # Documentation Reality Audit
 
-Status: ready
+Status: done
 Priority: P1
 Source: inbox note `update-workflow-documentation.md`
 Goal: review repo documentation and update it to match the current production app, commands, references, and supported workflows.
@@ -28,3 +28,9 @@ Goal: review repo documentation and update it to match the current production ap
 Protected action: no
 Decision: minimal change
 Workset: none
+
+## Work Done
+
+- Corrected `README.md` to match the current solution contents: `SizerDataCollector.sln` includes the test project; installer work lives in `OptiFresh.OeeSuite.sln`.
+- Corrected `scripts/REMOTE_BUNDLE_README.md` to remove the stale `db apply-schema` command and use current DB commands.
+- Captured the unsupported `scripts/install-production.ps1` `preflight` call as backlog item `0006`.

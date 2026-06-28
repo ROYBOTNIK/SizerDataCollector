@@ -18,7 +18,7 @@ SizerDataCollector is part of the **OPTI-FRESH OEE Suite**. It provides:
 - **`SizerDataCollector`**: legacy console probe.
 - **`SizerDataCollector.Setup`**: Visual Studio Installer project (vdproj; expected beside this repo when building installers).
 
-The **prototype / shipping build** is **`SizerDataCollector.sln`** only (console exe, Core, and Service). It does not include a unit-test project or the optional installer project in that solution file.
+The **standard code/test build** is **`SizerDataCollector.sln`** (console exe, Core, Service, and tests). The optional installer project is only in `OptiFresh.OeeSuite.sln` and is expected beside this repo when building installers.
 
 ### Requirements
 
@@ -59,7 +59,8 @@ The **prototype / shipping build** is **`SizerDataCollector.sln`** only (console
 ### Quickstart: build and run
 
 1. **Build the solution**
-   - Open `OptiFresh.OeeSuite.sln` in Visual Studio and build in `Release` or `Debug`.
+   - For normal code and test work: `dotnet build SizerDataCollector.sln -c Release`
+   - For installer work: open `OptiFresh.OeeSuite.sln` in Visual Studio and build in `Release` or `Debug`.
 2. **Open an elevated command prompt**
    - Navigate to the `SizerDataCollector.Service` output directory (e.g. `bin\Release`).
 3. **Configure connections**

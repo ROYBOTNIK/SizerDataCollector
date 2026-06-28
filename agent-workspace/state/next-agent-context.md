@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-28
 Active item: none
-Status: .NET 10 migration plan completed
+Status: documentation reality audit completed
 
 ## Read First
 
@@ -15,21 +15,25 @@ Status: .NET 10 migration plan completed
 
 - Every tick must rewrite this file before ending.
 - The orchestrator may choose `A = no work`, `B = one item`, or `AB = 2-3 related items`.
-- `0003` is done. The chosen path is SDK-style `net48` first, then `net10.0-windows`.
+- `0005` is done. README and remote bundle docs now match current solution/DB commands.
+- `0006` tracks the unsupported `scripts/install-production.ps1` `preflight` call.
 - Stop before production services, production DB writes, credentials, generated WCF from unverified endpoints, or customer-facing compatibility claims.
 
 ## Touched Files
 
-- `agent-workspace/backlog/items/0003-plan-dotnet-10-migration.md`
-- `agent-workspace/stages/03_plan/output/0003-plan-dotnet-10-migration.md`
-- `agent-workspace/stages/05_review/output/0003-plan-dotnet-10-migration-review.md`
+- `README.md`
+- `scripts/REMOTE_BUNDLE_README.md`
+- `agent-workspace/backlog/items/0005-documentation-reality-audit.md`
+- `agent-workspace/backlog/items/0006-install-script-preflight-command-gap.md`
+- `agent-workspace/stages/05_review/output/0005-documentation-reality-audit-review.md`
 - `agent-workspace/state/next-agent-context.md`
 
 ## Checks
 
 - `git diff --check` passed; only CRLF normalization warnings.
+- Stale-command search found no live `db apply-schema` docs outside backlog/review history.
 - `dotnet test SizerDataCollector.sln --no-restore` passed, 30 tests.
 
 ## Next Action
 
-Process `0005` documentation reality audit, or add the first implementation item from the .NET migration plan.
+Process `0006` install script preflight gap, or add the first implementation item from the .NET migration plan.

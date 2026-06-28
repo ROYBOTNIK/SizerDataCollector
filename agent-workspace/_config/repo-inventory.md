@@ -1,8 +1,8 @@
 # Repo Inventory - 2026-06-28
 
-Branch: `codex/adaptive_throughput_work` tracking `origin/codex/adaptive_throughput_work`.
+Branch: `codex/production-workspace` tracking `origin/codex/production-workspace`.
 Remote default: `origin/master`.
-Current branch was 20 commits ahead of `origin/master` and missing 1 `origin/master` commit at stocktake time.
+Current branch is 5 commits ahead of `origin/master` and missing 0 `origin/master` commits at stocktake time.
 
 ## Application Shape
 
@@ -19,18 +19,18 @@ Generated from tracked and workspace-visible source/docs excluding `bin`, `obj`,
 
 | Type | Files | Lines |
 | --- | ---: | ---: |
-| C# | 79 | 20297 |
-| SQL | 8 | 5191 |
-| Markdown | 34 | 3728 |
+| C# | 79 | 22392 |
+| SQL | 8 | 5881 |
+| Markdown | 62 | 5752 |
 | WSDL | 2 | 3461 |
 | XSD | 8 | 2040 |
-| C# projects | 4 | 511 |
-| Python | 1 | 398 |
-| PowerShell | 5 | 336 |
-| config | 6 | 242 |
-| solutions | 2 | 170 |
+| C# projects | 4 | 513 |
+| Python | 1 | 470 |
+| PowerShell | 6 | 542 |
+| config | 6 | 245 |
+| solutions | 2 | 172 |
 
-C# split: 15663 handwritten lines plus 4634 generated WCF proxy lines.
+C# split: 17757 handwritten lines plus 4635 generated WCF proxy lines.
 
 ## Packages
 
@@ -51,23 +51,28 @@ Test packages:
 
 | Script | Lines | Purpose |
 | --- | ---: | --- |
-| `scripts/build-remote-bundle.ps1` | 75 | Build deployment bundle. |
-| `scripts/install-from-bundle.ps1` | 62 | Install from bundle. |
-| `scripts/install-production.ps1` | 123 | Production install helper. |
-| `scripts/rollback-production.ps1` | 42 | Roll back production install. |
-| `scripts/uninstall-production.ps1` | 34 | Uninstall production service. |
-| `scripts/verify-adaptive-thresholds.py` | 398 | Verify adaptive thresholds. |
+| `scripts/audit-packages-config-vulnerabilities.ps1` | 138 | Audit `packages.config` files against NuGet vulnerability feeds. |
+| `scripts/build-remote-bundle.ps1` | 87 | Build deployment bundle. |
+| `scripts/install-from-bundle.ps1` | 75 | Install from bundle. |
+| `scripts/install-production.ps1` | 148 | Production install helper; preflight now calls `SizerDataCollector.Service.exe show-config`. |
+| `scripts/REMOTE_BUNDLE_README.md` | 83 | Remote bundle operator notes. |
+| `scripts/rollback-production.ps1` | 53 | Roll back production install. |
+| `scripts/uninstall-production.ps1` | 41 | Uninstall production service. |
+| `scripts/verify-adaptive-thresholds.py` | 470 | Verify adaptive thresholds. |
 
 ## Immediate Risks
 
 - Resolved 2026-06-28: sample connection strings in `App.config` and `README.md` now use placeholders instead of a real-looking password.
 - P1: CLI command code uses synchronous `.GetAwaiter().GetResult()` wrappers. This is acceptable for a console boundary but should be reviewed per command for cancellation, timeout, and user-facing error behavior.
 - Resolved 2026-06-28: `scripts/audit-packages-config-vulnerabilities.ps1` audits production `packages.config` files against NuGet's official vulnerability feed. Current run found no vulnerable listed packages.
-- P1: `master` is behind the current feature branch and has one commit not in this branch. Merge requires a real conflict check.
+- Resolved 2026-06-28: `scripts/install-production.ps1` no longer calls the unsupported legacy `preflight` command; preflight now uses the deployed service executable's `show-config`.
+- P1: production projects are still legacy MSBuild with `packages.config`; backlog item `0007` is ready for SDK-style `net48` conversion.
+- P1: `master` is behind the current production workspace branch. Merge still requires a real conflict check.
 - P2: `MD-DOCS/DESIGN.md` still describes an older CLI direction and should be reconciled with the current service-first CLI.
 - P2: `docs/delivery/` is ignored by git and not part of the production workspace until deliberately promoted.
 
 ## Validation
 
-- `dotnet test SizerDataCollector.sln --no-restore`: passed, 30 tests.
+- 2026-06-28 stocktake: `git status --short --branch`, project/package inventory, script inventory, and risk pattern search refreshed.
+- `dotnet test SizerDataCollector.sln --no-restore`: last passed, 30 tests.
 - Skill validation: passed with system Python. Bundled Python was missing `yaml`.

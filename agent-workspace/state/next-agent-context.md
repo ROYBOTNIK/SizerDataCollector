@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-28
 Active item: none
-Status: install script preflight gap completed
+Status: stocktake refreshed; migration item ready
 
 ## Read First
 
@@ -15,23 +15,23 @@ Status: install script preflight gap completed
 
 - Every tick must rewrite this file before ending.
 - The orchestrator may choose `A = no work`, `B = one item`, or `AB = 2-3 related items`.
-- `0006` is done. `install-production.ps1` preflight now calls `SizerDataCollector.Service.exe show-config`.
-- `show-config` is intentionally light; API/DB checks still need explicit approved targets.
+- No actionable inbox note was present.
+- `0007` is ready: convert production projects to SDK-style `net48` with `PackageReference`.
+- Do not retarget to .NET 10 in `0007`; keep the first implementation step build-system only.
 - Stop before production services, production DB writes, credentials, generated WCF from unverified endpoints, or customer-facing compatibility claims.
 
 ## Touched Files
 
-- `scripts/install-production.ps1`
-- `agent-workspace/backlog/items/0006-install-script-preflight-command-gap.md`
-- `agent-workspace/stages/05_review/output/0006-install-script-preflight-command-gap-review.md`
+- `agent-workspace/_config/repo-inventory.md`
+- `agent-workspace/backlog/items/0007-convert-production-projects-sdk-style-net48.md`
+- `agent-workspace/stages/05_review/output/0007-stocktake-ready-item-review.md`
 - `agent-workspace/state/next-agent-context.md`
 
 ## Checks
 
-- PowerShell parser check passed for `scripts/install-production.ps1`.
-- Unsupported preflight-command search returned no matches.
 - `git diff --check` passed; only CRLF normalization warnings.
+- Ready backlog check shows only `0007`.
 
 ## Next Action
 
-Add the first implementation item from the .NET migration plan, or refresh stocktake if no ready item exists.
+Process `0007` with `msbuild-modernization`; stop before production services, DBs, credentials, or unverified endpoints.

@@ -94,12 +94,15 @@ function Get-VulnerabilityMap {
 $feed = Get-VulnerabilityMap -IndexUrl $VulnerabilityIndexUrl
 $findings = New-Object System.Collections.Generic.List[object]
 $packagesSeen = 0
+$existingPackagesConfig = @($PackagesConfig | Where-Object { Test-Path -LiteralPath $_ })
 
-foreach ($path in $PackagesConfig) {
-    if (-not (Test-Path -LiteralPath $path)) {
-        throw "packages.config not found: $path"
-    }
+if ($existingPackagesConfig.Count -eq 0) {
+    Write-Host "No packages.config files found. Production projects now use PackageReference."
+    Write-Host "Run: dotnet list SizerDataCollector.sln package --vulnerable --include-transitive"
+    exit 0
+}
 
+foreach ($path in $existingPackagesConfig) {
     [xml]$xml = Get-Content -LiteralPath $path -Raw
     foreach ($package in @($xml.packages.package)) {
         $packagesSeen++
@@ -126,7 +129,7 @@ foreach ($path in $PackagesConfig) {
 }
 
 Write-Host "NuGet vulnerability feed updated: $($feed.Updated)"
-Write-Host "Audited packages.config files: $($PackagesConfig -join ', ')"
+Write-Host "Audited packages.config files: $($existingPackagesConfig -join ', ')"
 Write-Host "Package entries checked: $packagesSeen"
 
 if ($findings.Count -eq 0) {

@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-28
 Active item: none
-Status: inventory workflow guard completed
+Status: `0007` completed
 
 ## Read First
 
@@ -13,31 +13,22 @@ Status: inventory workflow guard completed
 
 ## Current Decisions
 
-- Every tick must rewrite this file before ending.
-- The orchestrator may choose `A = no work`, `B = one item`, or `AB = 2-3 related items`.
-- Inbox note `update-inventory.md` became done backlog item `0008`.
-- `0007` is ready: convert production projects to SDK-style `net48` with `PackageReference`.
-- Do not retarget to .NET 10 in `0007`; keep the first implementation step build-system only.
-- Future codebase-shape edits must update `_config/repo-inventory.md` or explain why not applicable.
-- Stop before production services, production DB writes, credentials, generated WCF from unverified endpoints, or customer-facing compatibility claims.
+- Production projects are now SDK-style `net48` with `PackageReference`; do not retarget to .NET 10 except through a new backlog item.
+- Future codebase-shape edits must update `_config/repo-inventory.md`.
+- Stop before production services, DB writes, credentials, generated WCF from unverified endpoints, force pushes, branch deletion, or customer-facing compatibility claims.
 
 ## Touched Files
 
-- `agent-workspace/AGENTS.md`
-- `agent-workspace/orchestrator.md`
-- `agent-workspace/stages/04_execute/CONTEXT.md`
-- `agent-workspace/stages/05_review/CONTEXT.md`
-- `agent-workspace/skills/sizer-production-workspace/SKILL.md`
-- `agent-workspace/backlog/items/0008-update-inventory-workflow-guard.md`
-- `agent-workspace/stages/05_review/output/0008-update-inventory-workflow-guard-review.md`
-- `agent-workspace/state/next-agent-context.md`
+- Production `.csproj` files and production `packages.config` removals
+- `scripts/audit-packages-config-vulnerabilities.ps1`
+- `agent-workspace/_config/repo-inventory.md`
+- `agent-workspace/backlog/items/0007-convert-production-projects-sdk-style-net48.md`
+- `agent-workspace/stages/05_review/output/0007-convert-production-projects-sdk-style-net48-review.md`
 
 ## Checks
 
-- Inventory-rule search confirmed the guard in AGENTS, orchestrator, execute/review stages, and the repo-local skill.
-- `git diff --check` passed; only CRLF normalization warnings.
-- Ready backlog check shows only `0007`.
+Restore, Release build, tests, package vulnerability audit, SQL-copy check, WCF-link check, and legacy package-audit script passed.
 
 ## Next Action
 
-Process `0007` with `msbuild-modernization`; stop before production services, DBs, credentials, or unverified endpoints.
+Process inbox. If still empty, create/select the next ready backlog item before coding.

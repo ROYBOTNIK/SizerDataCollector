@@ -1,245 +1,42 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9A68A51B-03B1-466C-BB76-9C6BDF34D50A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>SizerDataCollector.Core</RootNamespace>
-    <AssemblyName>SizerDataCollector.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <TargetFramework>net48</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=10.0.0.7, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.10.0.7\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Npgsql, Version=6.0.13.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
-      <HintPath>..\packages\Npgsql.6.0.13\lib\netstandard2.0\Npgsql.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Collections.Immutable, Version=10.0.0.7, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Collections.Immutable.10.0.7\lib\net462\System.Collections.Immutable.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Npgsql" Version="6.0.13" />
+    <PackageReference Include="System.Buffers" Version="4.6.1" />
+    <PackageReference Include="System.Collections.Immutable" Version="10.0.7" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.7" />
+    <PackageReference Include="System.IO.Pipelines" Version="10.0.7" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.6.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="10.0.7" />
+    <PackageReference Include="System.Text.Json" Version="10.0.7" />
+    <PackageReference Include="System.Threading.Channels" Version="10.0.7" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
+    <PackageReference Include="System.ValueTuple" Version="4.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Diagnostics.DiagnosticSource, Version=10.0.0.7, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.10.0.7\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Pipelines, Version=10.0.0.7, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.IO.Pipelines.10.0.7\lib\net462\System.IO.Pipelines.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-    </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Text.Encodings.Web, Version=10.0.0.7, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Text.Encodings.Web.10.0.7\lib\net462\System.Text.Encodings.Web.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Text.Json, Version=10.0.0.7, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Text.Json.10.0.7\lib\net462\System.Text.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Channels, Version=10.0.0.7, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Threading.Channels.10.0.7\lib\net462\System.Threading.Channels.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.6.3\lib\net462\System.Threading.Tasks.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ValueTuple" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="..\Collector\CollectorEngine.cs" />
-    <Compile Include="..\Collector\CollectorRunner.cs" />
-    <Compile Include="Sizer\Discovery\MachineDiscoverySnapshot.cs" />
-    <Compile Include="Sizer\Discovery\MachineDiscoverySummary.cs" />
-    <Compile Include="Sizer\Discovery\DiscoveryRunner.cs" />
-    <Compile Include="Collector\HeartbeatPayload.cs" />
-    <Compile Include="Collector\HeartbeatWriter.cs" />
-    <Compile Include="..\Collector\CollectorStatus.cs" />
-    <Compile Include="..\Db\SqlDefinitionRunner.cs" />
-    <Compile Include="..\Db\MachineDiscoveryRepository.cs" />
-    <Compile Include="..\Config\CollectorConfig.cs" />
-    <Compile Include="..\Config\CollectorRuntimeSettings.cs" />
-    <Compile Include="..\Config\CollectorSettingsProvider.cs" />
-    <Compile Include="..\Db\DatabaseTester.cs" />
-    <Compile Include="..\Db\MetricRow.cs" />
-    <Compile Include="..\Db\DbIntrospector.cs" />
-    <Compile Include="Commissioning\CommissioningService.cs" />
-    <Compile Include="Commissioning\CommissioningStatus.cs" />
-    <Compile Include="Commissioning\CommissioningReason.cs" />
-    <Compile Include="Schema\SchemaModels.cs" />
-    <Compile Include="Schema\SchemaParser.cs" />
-    <Compile Include="Schema\SchemaSerialization.cs" />
-    <Compile Include="..\Db\TimescaleRepository.cs" />
-    <Compile Include="Db\CommissioningRepository.cs" />
-    <Compile Include="Db\AnomalyReportingRepository.cs" />
-    <Compile Include="Db\ThresholdsRepository.cs" />
-    <Compile Include="Db\MachineSettingsRepository.cs" />
-    <Compile Include="Db\OeeParamsRepository.cs" />
-    <Compile Include="Db\ThroughputBandTuningCalculator.cs" />
-    <Compile Include="..\Logging\Logging.cs" />
-    <Compile Include="..\Sizer\SizerClient.cs" />
-    <Compile Include="..\Sizer\SizerClientTester.cs" />
-    <Compile Include="Sizer\ProductSetupTracker.cs" />
-    <Compile Include="..\Connected Services\SizerServiceReference\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="AnomalyDetection\AnomalyDetector.cs" />
-    <Compile Include="AnomalyDetection\AnomalyDetectorConfig.cs" />
-    <Compile Include="AnomalyDetection\AnomalyEvent.cs" />
-    <Compile Include="AnomalyDetection\CooldownTracker.cs" />
-    <Compile Include="AnomalyDetection\CompositeAlarmSink.cs" />
-    <Compile Include="AnomalyDetection\DatabaseAlarmSink.cs" />
-    <Compile Include="AnomalyDetection\GradeMatrix.cs" />
-    <Compile Include="AnomalyDetection\GradeMatrixParser.cs" />
-    <Compile Include="AnomalyDetection\IAlarmSink.cs" />
-    <Compile Include="AnomalyDetection\LlmEnricher.cs" />
-    <Compile Include="AnomalyDetection\LogAlarmSink.cs" />
-    <Compile Include="AnomalyDetection\LotTransitionAnalyzer.cs" />
-    <Compile Include="AnomalyDetection\LotTransitionConfig.cs" />
-    <Compile Include="AnomalyDetection\LotTransitionDatabaseSink.cs" />
-    <Compile Include="AnomalyDetection\LotTransitionModels.cs" />
-    <Compile Include="AnomalyDetection\MachineEventAnalyzer.cs" />
-    <Compile Include="AnomalyDetection\MachineEventConfig.cs" />
-    <Compile Include="AnomalyDetection\MachineEventDatabaseSink.cs" />
-    <Compile Include="AnomalyDetection\MachineEventModels.cs" />
-    <Compile Include="AnomalyDetection\NarrativeBuilder.cs" />
-    <Compile Include="AnomalyDetection\PriorityClassifier.cs" />
-    <Compile Include="AnomalyDetection\ReplayDataSource.cs" />
-    <Compile Include="AnomalyDetection\SizerAlarmSink.cs" />
-    <Compile Include="AnomalyDetection\SizeAnomalyConfig.cs" />
-    <Compile Include="AnomalyDetection\SizeAnomalyEvent.cs" />
-    <Compile Include="AnomalyDetection\SizeAnomalyEvaluator.cs" />
-    <Compile Include="AnomalyDetection\SizeDatabaseAlarmSink.cs" />
+    <Compile Include="..\Collector\*.cs" Link="Collector\%(Filename)%(Extension)" />
+    <Compile Include="..\Config\*.cs" Link="Config\%(Filename)%(Extension)" />
+    <Compile Include="..\Db\*.cs" Link="Db\%(Filename)%(Extension)" />
+    <Compile Include="..\Logging\*.cs" Link="Logging\%(Filename)%(Extension)" />
+    <Compile Include="..\Sizer\*.cs" Link="Sizer\%(Filename)%(Extension)" />
+    <Compile Include="..\Connected Services\SizerServiceReference\Reference.cs" Link="Connected Services\SizerServiceReference\Reference.cs" />
+    <None Include="..\Connected Services\SizerServiceReference\**\*.*" Exclude="..\Connected Services\SizerServiceReference\Reference.cs" LinkBase="Connected Services\SizerServiceReference" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config" />
-    <None Include="..\Connected Services\SizerServiceReference\item.wsdl" />
-    <None Include="..\Connected Services\SizerServiceReference\item.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\item1.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\item2.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\item3.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\item4.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\item5.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\item6.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\item7.xsd">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.AbstractSamplingConfiguration.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Batch.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.GetVersionResponse.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Grower.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Label.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.LaneGroup.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Layout.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Outlet.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Pack.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Product.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.SamplingProgress.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.ServiceVersion.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerDataCollector.SizerServiceReference.Variety.datasource">
-      <DependentUpon>Reference.svcmap</DependentUpon>
-    </None>
-    <None Include="..\Connected Services\SizerServiceReference\SizerService.wsdl" />
-    <None Include="..\Connected Services\SizerServiceReference\item.disco" />
-    <None Include="..\Connected Services\SizerServiceReference\configuration91.svcinfo" />
-    <None Include="..\Connected Services\SizerServiceReference\configuration.svcinfo" />
-    <None Include="..\Connected Services\SizerServiceReference\Reference.svcmap">
-      <Generator>WCF Proxy Generator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets" Condition="Exists('..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets'))" />
-  </Target>
 </Project>

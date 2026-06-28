@@ -1,5 +1,7 @@
 # SizerDataCollector CLI Design
 
+> Historical note: this file describes the older console-first CLI design. The production entry point is now `SizerDataCollector.Service.exe`; use `README.md` and `MD-DOCS/AI_AGENT_GUIDE.md` for the current service-first command surface.
+
 ## Goals
 
 Turn the existing SizerDataCollector console harness into an agent‑ and cron‑friendly CLI for:

@@ -34,7 +34,7 @@ The **prototype / shipping build** is **`SizerDataCollector.sln`** only (console
 - **Service configuration (`SizerDataCollector.Service/app.config`)**
   - `connectionStrings`:
     - `TimescaleDb`: Postgres connection string used by the service and CLI, for example:  
-      `Host=127.0.0.1;Port=5432;Username=postgres;Password=root;Database=sizer_metrics_staging;`
+      `Host=localhost;Port=5432;Username=YOUR_USER;Password=YOUR_PASSWORD;Database=YOUR_DATABASE;`
   - `appSettings`:
     - `LogDirectory`: base directory for log files. If empty, logs default to `<exe>\logs`.
 

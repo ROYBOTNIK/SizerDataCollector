@@ -60,7 +60,7 @@ Test packages:
 
 ## Immediate Risks
 
-- P0: `Password=root` sample connection string appears in `App.config` and README examples. Replace with placeholder-only examples before calling this production polished.
+- Resolved 2026-06-28: sample connection strings in `App.config` and `README.md` now use placeholders instead of a real-looking password.
 - P1: CLI command code uses synchronous `.GetAwaiter().GetResult()` wrappers. This is acceptable for a console boundary but should be reviewed per command for cancellation, timeout, and user-facing error behavior.
 - P1: `Npgsql` and compatibility package currency needs a vulnerability and compatibility audit for net48. `dotnet list package --vulnerable --include-transitive` stops on the production `packages.config` projects, so the scanner path itself needs fixing or a NuGet CLI fallback.
 - P1: `master` is behind the current feature branch and has one commit not in this branch. Merge requires a real conflict check.
